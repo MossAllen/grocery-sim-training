@@ -95,6 +95,8 @@
 
 ## 6. Prompt สำเร็จรูปสำหรับแต่ละ AI
 
+> ชุดส่งงานพร้อมใช้ (ไฟล์แนบ + prompt + คำสั่ง git ตอนรับงานกลับ) อยู่ที่ `handoff/to-chatgpt-sol.md`, `handoff/to-gemini-neo.md`, `handoff/to-blender.md` และไฟล์ zip ใน `dist/` (สร้างด้วย `python tools/make_bundles.py`)
+
 คัดลอกไปใช้ได้เลย แทน `<...>` ด้วยข้อมูลจริง และแนบไฟล์ที่ระบุ
 
 ### ① ChatGPT SOL — แบบแผนเกม
@@ -146,6 +148,7 @@
 
 ## 7. Checklist ก่อน merge เข้า main
 
+- [ ] `node tools/check.js` ผ่าน (GitHub Actions รันให้อัตโนมัติทุก PR)
 - [ ] เปิด `game/index.html` ผ่าน http server ได้ ไม่มี error ใน console
 - [ ] เล่นรอบที่แก้จนจบ ได้หน้าดาว และบันทึกลงแฟ้มผลงาน
 - [ ] ทดสอบครบ 3 สินค้า (น้ำดื่ม / ขนม / ของใช้) ถ้าแก้เนื้อหา

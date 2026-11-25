@@ -4,6 +4,7 @@ name: Deploy game to GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,11 +21,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Check JavaScript syntax
-        run: for f in game/js/*.js game/assets/*/manifest.js; do node --check "$f"; done
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Check game content, keys and assets
+        run: node tools/check.js
+      - if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: game
-      - id: deployment
+      - if: github.event_name != 'pull_request'
+        id: deployment
         uses: actions/deploy-pages@v4

@@ -8,3 +8,6 @@ desktop.ini
 .vscode/
 # Office lock files
 ~$*.docx
+
+# ชุดส่งงานที่สร้างจาก tools/make_bundles.py
+dist/

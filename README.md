@@ -56,6 +56,18 @@ marketing-training-lab/
 └─ .github/                        ← template PR/issue + deploy GitHub Pages
 ```
 
+## ก่อนส่งงานต่อ
+
+```powershell
+node tools/check.js
+```
+
+```powershell
+python tools/make_bundles.py
+```
+
+คำสั่งแรกตรวจโจทย์ทุกรอบ คีย์เสียง/ภาพ และเฉลยท้ายแผน (GitHub Actions ก็รันทุก PR) คำสั่งที่สองสร้าง zip สำหรับอัปโหลดให้แต่ละ AI ใน `dist/` โดยมี `README-ส่งงาน.md` (prompt พร้อมใช้) อยู่ในแต่ละไฟล์ — ดูรายละเอียดที่ `handoff/to-*.md`
+
 ## สร้างภาพใหม่จาก Blender
 
 ```powershell

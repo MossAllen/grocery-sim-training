@@ -14,6 +14,7 @@ python -m http.server 8765 --directory game
 <!-- รอบที่ต้องเปิด และสิ่งที่ควรเห็น -->
 
 ## Checklist (docs/HANDOFF.md §7)
+- [ ] `node tools/check.js` ผ่าน
 - [ ] เปิดเกมได้ ไม่มี error ใน console
 - [ ] เล่นรอบที่แก้จนจบ ได้หน้าดาว
 - [ ] ทดสอบครบ 3 สินค้า (ถ้าแก้เนื้อหา)
