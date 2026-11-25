@@ -1,7 +1,8 @@
 # ใบส่งต่องาน: Claude Opus → ChatGPT SOL, Gemini Neo, Blender — เกมเวอร์ชัน 0.1
 
 - **วันที่:** 2026-11-25
-- **branch / PR:** commit แรกของ repo
+- **repo:** https://github.com/MossAllen/grocery-sim-training (branch `main`)
+- **เล่นออนไลน์:** https://mossallen.github.io/grocery-sim-training/
 
 ## 1. ทำอะไรเสร็จแล้ว
 
@@ -42,4 +43,3 @@ python -m http.server 8765 --directory game
 ## 6. คำถามค้าง
 
 - ต้องการเสียงพากย์คนจริงแทน TTS ของเบราว์เซอร์หรือไม่
-- จะ host บน GitHub Pages แบบ public หรือ private repo

@@ -5,6 +5,10 @@
 
 ## เล่นเกม
 
+🎮 **เล่นออนไลน์:** <https://mossallen.github.io/grocery-sim-training/>  ·  📂 **Repo:** <https://github.com/MossAllen/grocery-sim-training>
+
+หรือรันในเครื่อง:
+
 ```powershell
 python -m http.server 8765 --directory game
 ```
