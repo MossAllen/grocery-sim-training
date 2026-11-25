@@ -41,7 +41,7 @@ python -m http.server 8765 --directory game
 | ภาพ/โมเดล 3D | **Blender** | `blender/`, `game/assets/sprites/`, `docs/ART_SPEC.md` |
 | ส่งข้อมูลและส่งต่องาน | **GitHub** | `.github/`, `handoff/` |
 
-📚 แหล่งอ้างอิง คลิปสอน และเครื่องมือที่ตรวจแล้ว: **[docs/RESEARCH.md](docs/RESEARCH.md)** · แผนก่อนลงมือทำจริง: **[docs/ROADMAP.md](docs/ROADMAP.md)**
+📚 ส่วนประกอบจากภายนอกและใบอนุญาต: [THIRD_PARTY.md](THIRD_PARTY.md) · แหล่งอ้างอิง คลิปสอน และเครื่องมือที่ตรวจแล้ว: **[docs/RESEARCH.md](docs/RESEARCH.md)** · แผนก่อนลงมือทำจริง: **[docs/ROADMAP.md](docs/ROADMAP.md)**
 
 อ่านขั้นตอนละเอียดที่ **[docs/HANDOFF.md](docs/HANDOFF.md)** — มี branch, ใบส่งต่องาน, checklist และ prompt สำเร็จรูปของแต่ละ AI
 

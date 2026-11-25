@@ -92,6 +92,12 @@ const checkManifest = (name, man, keys) => {
   keys.forEach((k) => { if (!(k in man)) err(`${name}: ขาดคีย์ "${k}" (ห้ามลบ/เปลี่ยนชื่อคีย์)`); });
   Object.entries(man).forEach(([k, v]) => {
     if (!keys.includes(k)) err(`${name}: คีย์ใหม่ "${k}" ต้องขอผ่าน Issue และให้ Claude เพิ่มในโค้ดก่อน`);
+    if (Array.isArray(v)) {
+      if (k === 'bgm_store' || name.includes('sprites')) err(`${name}: "${k}" ต้องเป็น path ไฟล์ ไม่ใช่ array`);
+      if (v.length > 21 || !v.every((x) => x === undefined || Number.isFinite(x))) err(`${name}: "${k}" พารามิเตอร์ ZzFX ต้องเป็นตัวเลขไม่เกิน 21 ค่า`);
+      return;
+    }
+    if (v && typeof v !== 'string') return err(`${name}: "${k}" ต้องเป็น null, path หรือ array`);
     if (v && !fs.existsSync(path.join(GAME, v))) err(`${name}: "${k}" อ้างไฟล์ ${v} แต่ไม่มีไฟล์`);
     if (v && /\.(ogg|mp3|wav)$/i.test(v) && fs.statSync(path.join(GAME, v)).size > (k.startsWith('bgm') ? 1.5e6 : 2e5)) err(`${name}: ไฟล์ ${v} ใหญ่เกินสเปก`);
   });

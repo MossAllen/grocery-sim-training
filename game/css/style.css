@@ -1,3 +1,9 @@
+/* ฟอนต์ไทยฝังในเกม (SIL OFL 1.1 — ดูไฟล์ OFL.txt ในโฟลเดอร์ฟอนต์แต่ละตัว) */
+@font-face{font-family:"Sarabun";src:url(../assets/fonts/sarabun/Sarabun-Regular.ttf) format("truetype");font-weight:400;font-display:swap}
+@font-face{font-family:"Sarabun";src:url(../assets/fonts/sarabun/Sarabun-SemiBold.ttf) format("truetype");font-weight:600;font-display:swap}
+@font-face{font-family:"Sarabun";src:url(../assets/fonts/sarabun/Sarabun-Bold.ttf) format("truetype");font-weight:700;font-display:swap}
+@font-face{font-family:"Kanit";src:url(../assets/fonts/kanit/Kanit-SemiBold.ttf) format("truetype");font-weight:600;font-display:swap}
+
 :root{
   --bg:#f6f2ea; --panel:#fffdf8; --ink:#2a2622; --muted:#7a7166; --line:#e5dccd;
   --brand:#e0622d; --brand-d:#b94a1c; --ok:#2f9e60; --bad:#d64545; --info:#2f6fb5;
@@ -21,6 +27,7 @@ input,select,textarea{font:inherit}
 .icon-btn.off{opacity:.35}
 
 main{max-width:1100px;margin:0 auto;padding:22px 18px 60px}
+h1,h2,h3,.brand{font-family:"Kanit","Sarabun","Leelawadee UI",sans-serif;font-weight:600}
 h1,h2,h3{line-height:1.25;margin:.2em 0 .5em}
 h1{font-size:30px} h2{font-size:23px} h3{font-size:18px}
 p{margin:.4em 0 .8em}

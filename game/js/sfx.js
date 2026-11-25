@@ -1,7 +1,10 @@
 /*
  * sfx.js — ระบบเสียง (โค้ด: Claude / ไฟล์เสียงจริง: Gemini Neo)
  * เรียกใช้: MTL.sfx.play('correct')
- * ลำดับการหาเสียง: 1) ไฟล์ใน MTL_AUDIO_MANIFEST  2) เสียงสังเคราะห์สำรองด้านล่าง
+ * ลำดับการหาเสียง: 1) ค่าใน MTL_AUDIO_MANIFEST  2) เสียงสังเคราะห์สำรองด้านล่าง
+ * ค่าใน manifest เป็นได้ 2 แบบ:
+ *   "assets/audio/x.ogg"        → เล่นไฟล์เสียง
+ *   [1,.05,523,0,.1,.2,1]       → พารามิเตอร์ ZzFX (ออกแบบได้ที่ https://killedbyapixel.github.io/ZzFX/)
  */
 (function () {
   const M = (window.MTL = window.MTL || {});
@@ -57,7 +60,10 @@
     play(key) {
       if (!M.State || !M.State.data.settings.sound) return;
       const url = manifest[key];
-      if (url) {
+      if (Array.isArray(url) && typeof zzfx === 'function') {
+        try { zzfxX.resume(); zzfx(...url); return; } catch (e) { /* ใช้เสียงสำรองด้านล่าง */ }
+      }
+      if (typeof url === 'string' && url) {
         let a = cache[key];
         if (!a) { a = cache[key] = new Audio(url); a.onerror = () => { manifest[key] = null; }; }
         const b = a.cloneNode(); b.volume = 0.7;
@@ -67,7 +73,7 @@
       synth[key] && synth[key]();
     },
     startBgm() {
-      if (!M.State || !M.State.data.settings.sound || !manifest.bgm_store) return;
+      if (!M.State || !M.State.data.settings.sound || typeof manifest.bgm_store !== 'string') return;
       if (!bgm) { bgm = new Audio(manifest.bgm_store); bgm.loop = true; bgm.volume = 0.25; }
       bgm.play().catch(() => {});
     },

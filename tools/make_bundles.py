@@ -18,7 +18,7 @@ BUNDLES = {
     },
     "handoff-gemini-neo": {
         "readme": "handoff/to-gemini-neo.md",
-        "files": ["docs/AUDIO_SPEC.md", "game/assets/audio/manifest.js", "game/js/sfx.js", "game/js/curriculum.js"] + COMMON,
+        "files": ["docs/AUDIO_SPEC.md", "game/assets/audio/manifest.js", "game/js/sfx.js", "game/vendor/zzfx/ZzFXMicro.js", "game/js/curriculum.js"] + COMMON,
     },
     "handoff-blender": {
         "readme": "handoff/to-blender.md",
