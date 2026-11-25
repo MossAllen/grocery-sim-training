@@ -41,6 +41,8 @@ python -m http.server 8765 --directory game
 | ภาพ/โมเดล 3D | **Blender** | `blender/`, `game/assets/sprites/`, `docs/ART_SPEC.md` |
 | ส่งข้อมูลและส่งต่องาน | **GitHub** | `.github/`, `handoff/` |
 
+📚 แหล่งอ้างอิง คลิปสอน และเครื่องมือที่ตรวจแล้ว: **[docs/RESEARCH.md](docs/RESEARCH.md)** · แผนก่อนลงมือทำจริง: **[docs/ROADMAP.md](docs/ROADMAP.md)**
+
 อ่านขั้นตอนละเอียดที่ **[docs/HANDOFF.md](docs/HANDOFF.md)** — มี branch, ใบส่งต่องาน, checklist และ prompt สำเร็จรูปของแต่ละ AI
 
 ## โครงสร้างโฟลเดอร์
@@ -55,7 +57,7 @@ marketing-training-lab/
 │  ├─ assets/audio/manifest.js     ← Gemini ใส่ไฟล์เสียง
 │  └─ assets/sprites/manifest.js   ← Blender เขียนทับอัตโนมัติ
 ├─ blender/generate_store_assets.py
-├─ docs/  GDD · HANDOFF · AUDIO_SPEC · ART_SPEC
+├─ docs/  GDD · HANDOFF · AUDIO_SPEC · ART_SPEC · RESEARCH · ROADMAP
 ├─ handoff/                        ← ใบส่งต่องานแต่ละรอบ
 └─ .github/                        ← template PR/issue + deploy GitHub Pages
 ```

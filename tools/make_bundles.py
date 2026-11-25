@@ -10,7 +10,7 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST = os.path.join(ROOT, "dist")
 
-COMMON = ["handoff/TEMPLATE.md", "handoff/2026-11-25_claude-to-all_v0.1.md", "docs/HANDOFF.md"]
+COMMON = ["docs/RESEARCH.md", "docs/ROADMAP.md", "handoff/TEMPLATE.md", "handoff/2026-11-25_claude-to-all_v0.1.md", "docs/HANDOFF.md"]
 BUNDLES = {
     "handoff-chatgpt-sol": {
         "readme": "handoff/to-chatgpt-sol.md",

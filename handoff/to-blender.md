@@ -6,6 +6,8 @@
 1. `blender/generate_store_assets.py` — สคริปต์สร้างโมเดล + render + เขียน manifest
 2. `docs/ART_SPEC.md` — คีย์ ขนาด สไตล์ และสิ่งที่ควรทำต่อ
 3. `game/assets/sprites/*` — ภาพเวอร์ชัน 0.1 (ใช้เทียบ)
+4. `docs/RESEARCH.md` §2 (คลิป Blender) และ §4 (คู่มือ bpy, Kenney CC0, awesome-blender)
+5. `docs/ROADMAP.md` เฟส 3 — ฉาก isometric และลูกค้า 4 แบบ 2 ท่า
 
 ## ขั้นตอน (ทำในเครื่องนี้ได้เลย — มี Blender 5.3 แล้ว)
 
