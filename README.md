@@ -43,6 +43,8 @@ python -m http.server 8765 --directory game
 
 📚 ส่วนประกอบจากภายนอกและใบอนุญาต: [THIRD_PARTY.md](THIRD_PARTY.md) · แหล่งอ้างอิง คลิปสอน และเครื่องมือที่ตรวจแล้ว: **[docs/RESEARCH.md](docs/RESEARCH.md)** · แผนก่อนลงมือทำจริง: **[docs/ROADMAP.md](docs/ROADMAP.md)**
 
+📍 **[STATUS.md](STATUS.md)** — งานอยู่ตรงไหน ใครทำอะไรต่อ ส่งต่อที่ไหน
+
 อ่านขั้นตอนละเอียดที่ **[docs/HANDOFF.md](docs/HANDOFF.md)** — มี branch, ใบส่งต่องาน, checklist และ prompt สำเร็จรูปของแต่ละ AI
 
 ## โครงสร้างโฟลเดอร์
