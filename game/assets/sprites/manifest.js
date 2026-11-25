@@ -1,0 +1,16 @@
+/* สร้างอัตโนมัติโดย blender/generate_store_assets.py — ดู docs/ART_SPEC.md */
+window.MTL_SPRITE_MANIFEST = {
+  shelf: "assets/sprites/shelf.png",
+  counter: "assets/sprites/counter.png",
+  customer_1: "assets/sprites/customer_1.png",
+  customer_2: "assets/sprites/customer_2.png",
+  customer_3: "assets/sprites/customer_3.png",
+  customer_4: "assets/sprites/customer_4.png",
+  customer_5: "assets/sprites/customer_5.png",
+  item_water_small: "assets/sprites/item_water_small.png",
+  item_water_big: "assets/sprites/item_water_big.png",
+  item_snack_small: "assets/sprites/item_snack_small.png",
+  item_snack_big: "assets/sprites/item_snack_big.png",
+  item_household_small: "assets/sprites/item_household_small.png",
+  item_household_big: "assets/sprites/item_household_big.png"
+};

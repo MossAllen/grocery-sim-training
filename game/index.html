@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ร้านชำจำลอง — Marketing Training Lab</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="brand" id="homeBtn" title="กลับหน้าแผนที่">🏪 <span>ร้านชำจำลอง</span> <small>Marketing Training Lab</small></button>
+  <div class="top-right">
+    <span class="badge" id="productBadge"></span>
+    <span class="badge star" id="starBadge">⭐ 0</span>
+    <button class="icon-btn" id="soundBtn" title="เปิด/ปิดเสียง">🔊</button>
+    <button class="icon-btn" id="ttsBtn" title="เปิด/ปิดเสียงพูดภาษาอังกฤษ">🗣️</button>
+    <button class="icon-btn" id="menuBtn" title="ตั้งค่า">⚙️</button>
+  </div>
+</header>
+
+<main id="app" aria-live="polite"></main>
+
+<div class="modal hidden" id="modal"><div class="modal-card" id="modalCard"></div></div>
+
+<!-- ไฟล์ส่งต่องาน: Gemini (เสียง) และ Blender (ภาพ) แก้แค่ manifest สองไฟล์นี้ -->
+<script src="assets/audio/manifest.js"></script>
+<script src="assets/sprites/manifest.js"></script>
+<!-- โค้ดเกม (Claude) -->
+<script src="js/util.js"></script>
+<script src="js/sfx.js"></script>
+<script src="js/state.js"></script>
+<script src="js/store-scene.js"></script>
+<script src="js/curriculum.js"></script>
+<script src="js/engines.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
