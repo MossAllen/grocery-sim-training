@@ -1,5 +1,6 @@
-# Deploy โฟลเดอร์ game/ ไป GitHub Pages ทุกครั้งที่ push เข้า main
+# ตรวจเกมทุก push และทุก PR · deploy โฟลเดอร์ game/ ไป GitHub Pages เฉพาะเมื่อ push เข้า main
 # เปิดใช้: Settings → Pages → Source: GitHub Actions
+# แยกเป็น 2 job เพราะ environment github-pages อนุญาตเฉพาะ main — PR จากสาขาอื่นจึงต้องตรวจใน job ที่ไม่ผูก environment
 name: Deploy game to GitHub Pages
 on:
   push:
@@ -8,27 +9,33 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: pages
-  cancel-in-progress: true
 jobs:
-  deploy:
+  check:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check game content, keys and assets
+        run: node tools/check.js
+
+  deploy:
+    needs: check
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: true
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Check game content, keys and assets
-        run: node tools/check.js
-      - if: github.event_name != 'pull_request'
-        uses: actions/configure-pages@v5
-      - if: github.event_name != 'pull_request'
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: game
-      - if: github.event_name != 'pull_request'
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4
