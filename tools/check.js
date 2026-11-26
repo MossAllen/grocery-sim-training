@@ -28,7 +28,7 @@ for (const f of jsFiles) {
 const sandbox = { window: {}, console, Math, Date, JSON };
 sandbox.window = sandbox;
 vm.createContext(sandbox);
-for (const f of ['assets/audio/manifest.js', 'assets/sprites/manifest.js', 'js/util.js', 'js/curriculum.js', 'js/reading.js', 'js/lesson-kit.js', 'js/lessons-w1.js', 'js/lessons-w4.js']) {
+for (const f of ['assets/audio/manifest.js', 'assets/sprites/manifest.js', 'js/util.js', 'js/curriculum.js', 'js/reading.js', 'js/lesson-kit.js', 'js/lessons-w1.js', 'js/lessons-w2.js', 'js/lessons-w4.js']) {
   try { vm.runInContext(fs.readFileSync(path.join(GAME, f), 'utf8'), sandbox, { filename: f }); } catch (e) { err(`load ${f}: ${e.message}`); }
 }
 const M = sandbox.MTL;
@@ -89,7 +89,7 @@ for (const pid of Object.keys(M.PRODUCTS)) {
 
 // ---- 2b) บทเรียนก่อนเล่น: ทุกขั้นสร้างได้ เฉลยเป็นตัวเลข ตัวเลือกไม่ซ้ำ ----
 const LESSON_TYPES = ['say', 'reveal', 'try', 'pick'];
-const LESSON_WEEKS = [0, 3]; // สัปดาห์ที่ทำบทเรียนครบแล้ว (ดัชนีเริ่ม 0) — เพิ่มเมื่อทำสัปดาห์ใหม่
+const LESSON_WEEKS = [0, 1, 3]; // สัปดาห์ที่ทำบทเรียนครบแล้ว (ดัชนีเริ่ม 0) — เพิ่มเมื่อทำสัปดาห์ใหม่
 for (const pid of Object.keys(M.PRODUCTS)) {
   for (const st of [fakeState(), Object.assign(fakeState(), { sim: { plan: { bundle: 2 * M.PRODUCTS[pid].promo.price, sign: 30 } } })]) {
     M.WEEKS.forEach((W, w) => W.rounds.forEach((R, r) => {
