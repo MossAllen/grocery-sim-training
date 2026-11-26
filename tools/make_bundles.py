@@ -10,15 +10,19 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST = os.path.join(ROOT, "dist")
 
-COMMON = ["docs/RESEARCH.md", "docs/ROADMAP.md", "handoff/TEMPLATE.md", "handoff/2026-11-25_claude-to-all_v0.1.md", "docs/HANDOFF.md"]
+COMMON = ["docs/RESEARCH.md", "docs/ROADMAP.md", "handoff/TEMPLATE.md", "handoff/2026-11-26_claude-to-all_v0.3.md", "docs/HANDOFF.md"]
 BUNDLES = {
     "handoff-chatgpt-sol": {
         "readme": "handoff/to-chatgpt-sol.md",
-        "files": ["แผนฝึกการตลาด 8 สัปดาห์.docx", "docs/GDD.md", "README.md"] + COMMON,
+        "files": ["แผนฝึกการตลาด 8 สัปดาห์.docx", "docs/GDD.md", "README.md", "game/js/curriculum.js", "game/js/lesson-kit.js"]
+        + sorted(os.path.relpath(p, ROOT).replace("\\", "/") for p in glob.glob(os.path.join(ROOT, "game/js/lessons-w*.js")))
+        + COMMON,
     },
     "handoff-gemini-neo": {
         "readme": "handoff/to-gemini-neo.md",
-        "files": ["docs/AUDIO_SPEC.md", "docs/VOICE_LINES.md", "game/assets/audio/manifest.js", "game/js/sfx.js", "game/vendor/zzfx/ZzFXMicro.js", "game/js/curriculum.js"] + COMMON,
+        "files": ["docs/AUDIO_SPEC.md", "docs/VOICE_LINES.md", "game/assets/audio/manifest.js", "game/js/sfx.js", "game/vendor/zzfx/ZzFXMicro.js", "game/js/curriculum.js"]
+        + sorted(os.path.relpath(p, ROOT).replace("\\", "/") for p in glob.glob(os.path.join(ROOT, "game/js/lessons-w*.js")))
+        + COMMON,
     },
     "handoff-blender": {
         "readme": "handoff/to-blender.md",

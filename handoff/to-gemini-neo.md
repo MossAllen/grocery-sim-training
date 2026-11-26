@@ -1,5 +1,7 @@
 # 📦 ชุดส่งงาน → Gemini Neo (เสียงเอฟเฟกต์และรายละเอียดในเกม)
 
+> อัปเดต 2026-11-26 · เกม v0.3 มีบทเรียนก่อนเล่นครบ 40 รอบ และฉากสัปดาห์ 4 มีเหตุการณ์ฝน ของหน้าชั้นหมด และคู่แข่งลดราคาแล้ว
+
 ## ✅ การตัดสินใจเฟส 1 (2026-11-25) — ใช้เป็นกรอบงาน
 1. เทคโนโลยี: HTML/CSS/JS ล้วน (ย้ายฉากร้านไป LittleJS เมื่อจำเป็น)
 2. ภาพ: low-poly 3D จาก Blender render เป็น 2D + Kenney CC0
@@ -14,9 +16,10 @@
 2. `game/assets/audio/manifest.js` — ไฟล์ที่ต้องใส่ path เสียง
 3. `game/js/sfx.js` — เสียงสังเคราะห์สำรองที่ใช้อยู่ตอนนี้ (ใช้เทียบโทนเสียง)
 4. `game/js/curriculum.js` — ข้อความลูกค้าและบทสนทนาทั้งหมด (สำหรับเสนอรายละเอียดฉาก)
-5. `handoff/2026-11-25_claude-to-all_v0.1.md`, `handoff/TEMPLATE.md`
+5. `handoff/2026-11-26_claude-to-all_v0.3.md`, `handoff/TEMPLATE.md`
 6. `docs/RESEARCH.md` §5 — ZzFX, jsfxr, Tone.js และคลังเสียง CC0 ที่ตรวจแล้ว
 7. `docs/VOICE_LINES.md` — รายการเสียงพากย์ภาษาอังกฤษ 78 ประโยค พร้อม id ชื่อไฟล์
+8. `game/js/lessons-w1.js` … `lessons-w8.js` — บทเรียน 40 รอบ (ประโยคอังกฤษที่มีปุ่ม 🔊 อยู่ในช่อง `say:`)
 
 ## คัดลอก prompt นี้ไปวาง
 
@@ -40,7 +43,9 @@
 - เสนอพฤติกรรมลูกค้าใหม่อย่างน้อย 6 แบบสำหรับฉากสังเกต ในรูปแบบ
   { see: "สิ่งที่เห็นหรือได้ยิน", good: "เหตุผลที่เป็นไปได้", P: "Product|Price|Place|Promotion" }
   (ดูตัวอย่างใน curriculum.js ฟังก์ชัน M.behaviors) ใช้คำว่า "ลูกค้า" ไม่ใช้ชื่อคน
-- เสนอคีย์เสียงใหม่ที่ควรมี (เช่น เสียงฝนเมื่อเกิดเหตุการณ์ฝนตก) พร้อมจุดที่เล่น
+- เสนอคีย์เสียงใหม่ที่ควรมี พร้อมจุดที่เล่น อย่างน้อย:
+  `rain` (สัปดาห์ 4 ฉากจำลองเมื่อเกิดฝน วนซ้ำได้) และ `lesson_step` (เปิดขั้นใหม่ในบทเรียน เบามาก)
+- (ไม่บังคับ) เลือกประโยค `say:` ในไฟล์ lessons ที่ควรมีไฟล์พากย์จริง เสนอ id ใหม่ต่อท้าย VOICE_LINES.md
 - ห้ามเปลี่ยนชื่อคีย์เดิม
 
 ส่งกลับ:
@@ -53,18 +58,13 @@ E) ใบส่งต่องานถึง Claude Opus ตามแม่แ�
 
 ## เมื่อได้ไฟล์กลับมา
 
-วางไฟล์เสียงใน `game/assets/audio/` และไฟล์ .md/.js ทับของเดิม แล้วรัน:
+วางไฟล์เสียงใน `game/assets/audio/` (พากย์ใน `game/assets/voice/`) และไฟล์ .md/.js ทับของเดิม
+แล้วบอก Claude ว่า **"รับงาน Gemini"** — Claude จะรัน `node tools/check.js` ต่อคีย์ใหม่เข้ากับโค้ด และเปิด PR ให้เอง
+
+ถ้าอยากลองฟังเองก่อน:
 
 ```powershell
-node tools/check.js
+python -m http.server 8765 --directory game
 ```
 
-```powershell
-git switch -c audio/sfx-v1
-git add game/assets/audio docs/AUDIO_SPEC.md handoff/
-git commit -m "audio: เสียงเอฟเฟกต์ชุดแรกจาก Gemini Neo"
-git push -u origin audio/sfx-v1
-gh pr create --fill
-```
-
-ทดสอบฟัง: `python -m http.server 8765 --directory game` → เปิด http://localhost:8765 → สัปดาห์ 4 รอบ 1
+เปิด http://localhost:8765 → กด 🔊 ให้เปิด → สัปดาห์ 4 รอบ 1

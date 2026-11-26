@@ -5,7 +5,7 @@
  *
  * ชนิดขั้น (step):
  *   { type:'say',    text, visual }                         อ่านและดูภาพ
- *   { type:'reveal', text, visual, parts:[{btn, html}] }      แตะเปิดทีละส่วน (ตัวอย่างทำให้ดู)
+ *   { type:'reveal', text, visual, parts:[{btn, html}], build? }  แตะเปิดทีละส่วน · build:true = ภาพใหม่แทนภาพเดิม (ภาพสะสม)
  *   { type:'try',    text, visual, ask, answer, unit, hints:[], explain }   ลองคำนวณเอง มีคำใบ้
  *   { type:'pick',   text, visual, ask, options, answer, explain }          เลือกคำตอบ
  *   ทุกชนิดใส่ say:'English sentence' เพื่อมีปุ่ม 🔊 ได้ · level: 'ง่าย'|'กลาง'|'ของจริง'
@@ -124,6 +124,7 @@
           act.insertAdjacentHTML('beforeend', `<button class="btn lv-rev">👆 ${esc(s.parts[k].btn)}</button>`);
           $('.lv-rev', act).onclick = (e) => {
             sfx.play('note'); e.target.remove();
+            if (s.build) act.querySelectorAll('.lv-part').forEach((x) => x.remove()); // build: ภาพสะสม แทนภาพก่อนหน้า
             act.insertAdjacentHTML('beforeend', `<div class="lv-part pop-in">${s.parts[k].html}</div>`);
             k++; step();
           };
