@@ -95,7 +95,7 @@
   }
 
   // ---------- หน้าเล่น ----------
-  function playScreen(w, r) {
+  function playScreen(w, r, opts = {}) {
     leave(); header();
     const isFinal = w === 'final';
     const R = isFinal ? M.FINAL : M.WEEKS[w].rounds[r];
@@ -103,6 +103,7 @@
     app.innerHTML = `<button class="btn ghost small" id="back">← ${isFinal ? 'แผนที่' : 'สัปดาห์ ' + (w + 1)}</button>
       <div class="play-head"><h2>${isFinal ? '📝 ' : `สัปดาห์ ${w + 1} · รอบ ${r + 1} — `}${esc(R.title)} <span class="tag">${M.SKILLS[R.skill]}</span></h2></div>
       <div class="theory"><b>📖 ทฤษฎี</b> ${R.theory}${isFinal ? '' : ' <button class="btn small ghost rd">📚 อ่านประกอบ</button>'}</div>
+      <div class="lesson-wrap"></div>
       <div class="precheck"></div>
       <div class="task hidden"><b>🛠️ ลงมือทำ</b> ${R.task}</div>
       <div class="stage card hidden"></div>`;
@@ -112,7 +113,23 @@
       $('.task').classList.remove('hidden'); $('.stage').classList.remove('hidden');
       runEngine();
     };
-    if (R.check && !isFinal) precheck(R, w, r, begin); else begin();
+    const afterLesson = () => { if (R.check && !isFinal) precheck(R, w, r, begin); else begin(); };
+    // บทเรียนก่อนเล่น: ครั้งแรกเปิดเอง · เรียนแล้วย่อเป็นแถบให้กดทบทวน
+    const lkey = `${w}-${r}`, seen = !!(State.data.lessons || {})[lkey];
+    const lessonBar = () => {
+      $('.lesson-wrap').innerHTML = `<div class="lesson-bar">📖 <b>บทเรียนก่อนเล่น</b> <span class="muted">เรียนแล้ว ✓</span> <button class="btn small ghost relesson">ทบทวนบทเรียน</button></div>`;
+      $('.relesson').onclick = () => { sfx.play('click'); playScreen(w, r, { lesson: true }); };
+    };
+    if (R.lesson && !isFinal && (!seen || opts.lesson)) {
+      M.playLesson($('.lesson-wrap'), R.lesson(ctx), () => {
+        State.data.lessons = State.data.lessons || {}; State.data.lessons[lkey] = true; State.save();
+        lessonBar(); afterLesson();
+        $('.precheck').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, { canSkip: seen || State.data.settings.unlockAll });
+    } else {
+      if (R.lesson && !isFinal) lessonBar();
+      afterLesson();
+    }
     function runEngine() {
     const engine = M.engines[R.engine];
     engine($('.stage'), R, ctx, (score, summary) => {

@@ -28,7 +28,7 @@ for (const f of jsFiles) {
 const sandbox = { window: {}, console, Math, Date, JSON };
 sandbox.window = sandbox;
 vm.createContext(sandbox);
-for (const f of ['assets/audio/manifest.js', 'assets/sprites/manifest.js', 'js/util.js', 'js/curriculum.js', 'js/reading.js']) {
+for (const f of ['assets/audio/manifest.js', 'assets/sprites/manifest.js', 'js/util.js', 'js/curriculum.js', 'js/reading.js', 'js/lesson-kit.js', 'js/lessons-w4.js']) {
   try { vm.runInContext(fs.readFileSync(path.join(GAME, f), 'utf8'), sandbox, { filename: f }); } catch (e) { err(`load ${f}: ${e.message}`); }
 }
 const M = sandbox.MTL;
@@ -85,6 +85,34 @@ for (const pid of Object.keys(M.PRODUCTS)) {
       }
     });
   });
+}
+
+// ---- 2b) บทเรียนก่อนเล่น: ทุกขั้นสร้างได้ เฉลยเป็นตัวเลข ตัวเลือกไม่ซ้ำ ----
+const LESSON_TYPES = ['say', 'reveal', 'try', 'pick'];
+for (const pid of Object.keys(M.PRODUCTS)) {
+  for (const st of [fakeState(), Object.assign(fakeState(), { sim: { plan: { bundle: 2 * M.PRODUCTS[pid].promo.price, sign: 30 } } })]) {
+    M.WEEKS.forEach((W, w) => W.rounds.forEach((R, r) => {
+      if (!R.lesson) { if (w === 3) err(`${pid} ส.4 ร.${r + 1}: ต้องมีบทเรียนก่อนเล่น`); return; }
+      const tag = `${pid} ส.${w + 1} ร.${r + 1} บทเรียน`;
+      let steps;
+      try { steps = R.lesson({ product: M.PRODUCTS[pid], state: st, week: w, idx: r }); } catch (e) { return err(`${tag}: ${e.message}`); }
+      if (!Array.isArray(steps) || steps.length < 3) err(`${tag}: ต้องมีอย่างน้อย 3 ขั้น`);
+      steps.forEach((s, k) => {
+        checks++;
+        const t = `${tag} ขั้น ${k + 1}`;
+        if (!LESSON_TYPES.includes(s.type)) err(`${t}: ชนิดขั้นไม่รู้จัก "${s.type}"`);
+        if (!s.text) err(`${t}: ไม่มีข้อความ`);
+        if (/undefined|NaN/.test(String(s.text) + (s.visual || '') + (s.ask || ''))) err(`${t}: มี undefined/NaN ในเนื้อหา`);
+        if (s.type === 'reveal' && !(s.parts && s.parts.length && s.parts.every((p) => p.btn && p.html && !/undefined|NaN/.test(p.html)))) err(`${t}: reveal ต้องมี parts ที่มี btn และ html`);
+        if (s.type === 'try' && (!Number.isFinite(s.answer) || !s.ask)) err(`${t}: try ต้องมี ask และ answer เป็นตัวเลข`);
+        if (s.type === 'pick') {
+          if (!(s.answer >= 0 && s.answer < s.options.length)) err(`${t}: pick เฉลยผิด index`);
+          if (new Set(s.options).size !== s.options.length) err(`${t}: pick ตัวเลือกซ้ำ`);
+        }
+      });
+      if (w === 3 && !steps.some((s) => s.level === 'ง่าย') ) err(`${tag}: ต้องเริ่มจากตัวอย่างระดับง่าย`);
+    }));
+  }
 }
 
 // ---- 3) เฉลยแบบทดสอบท้ายแผน (หน้า 14 ของ docx) ----
