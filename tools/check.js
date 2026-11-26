@@ -28,7 +28,7 @@ for (const f of jsFiles) {
 const sandbox = { window: {}, console, Math, Date, JSON };
 sandbox.window = sandbox;
 vm.createContext(sandbox);
-for (const f of ['assets/audio/manifest.js', 'assets/sprites/manifest.js', 'js/util.js', 'js/curriculum.js', 'js/reading.js', 'js/lesson-kit.js', 'js/lessons-w4.js']) {
+for (const f of ['assets/audio/manifest.js', 'assets/sprites/manifest.js', 'js/util.js', 'js/curriculum.js', 'js/reading.js', 'js/lesson-kit.js', 'js/lessons-w1.js', 'js/lessons-w4.js']) {
   try { vm.runInContext(fs.readFileSync(path.join(GAME, f), 'utf8'), sandbox, { filename: f }); } catch (e) { err(`load ${f}: ${e.message}`); }
 }
 const M = sandbox.MTL;
@@ -52,7 +52,7 @@ for (const pid of Object.keys(M.PRODUCTS)) {
         const c = R.check;
         if (!c.q || !c.explain || !(c.answer >= 0 && c.answer < c.options.length)) err(`${tag}: คำถามเช็กก่อนเล่นไม่ครบหรือเฉลยผิด index`);
         if (new Set(c.options).size !== c.options.length) err(`${tag}: ตัวเลือกเช็กก่อนเล่นซ้ำ`);
-      } else if (w === 3) err(`${tag}: สัปดาห์ 4 ต้องมีคำถามเช็กก่อนเล่น (GDD §4)`);
+      } else if (w === 3 || R.lesson) err(`${tag}: รอบที่มีบทเรียนต้องมีคำถามเช็กก่อนเล่น (GDD §4)`);
       const rd = M.READING && M.READING[`${w}-${r}`];
       if (!rd) err(`${tag}: ไม่มีรายการอ่านประกอบ (รัน node tools/build_reading.js)`);
       else for (const x of [rd.clip, rd.official]) { checks++; if (x.status === 'ok' && !/^https:\/\//.test(x.url)) err(`${tag}: ลิงก์อ่านประกอบต้องเป็น https`); }
@@ -89,10 +89,11 @@ for (const pid of Object.keys(M.PRODUCTS)) {
 
 // ---- 2b) บทเรียนก่อนเล่น: ทุกขั้นสร้างได้ เฉลยเป็นตัวเลข ตัวเลือกไม่ซ้ำ ----
 const LESSON_TYPES = ['say', 'reveal', 'try', 'pick'];
+const LESSON_WEEKS = [0, 3]; // สัปดาห์ที่ทำบทเรียนครบแล้ว (ดัชนีเริ่ม 0) — เพิ่มเมื่อทำสัปดาห์ใหม่
 for (const pid of Object.keys(M.PRODUCTS)) {
   for (const st of [fakeState(), Object.assign(fakeState(), { sim: { plan: { bundle: 2 * M.PRODUCTS[pid].promo.price, sign: 30 } } })]) {
     M.WEEKS.forEach((W, w) => W.rounds.forEach((R, r) => {
-      if (!R.lesson) { if (w === 3) err(`${pid} ส.4 ร.${r + 1}: ต้องมีบทเรียนก่อนเล่น`); return; }
+      if (!R.lesson) { if (LESSON_WEEKS.includes(w)) err(`${pid} ส.${w + 1} ร.${r + 1}: ต้องมีบทเรียนก่อนเล่น`); return; }
       const tag = `${pid} ส.${w + 1} ร.${r + 1} บทเรียน`;
       let steps;
       try { steps = R.lesson({ product: M.PRODUCTS[pid], state: st, week: w, idx: r }); } catch (e) { return err(`${tag}: ${e.message}`); }
@@ -110,7 +111,7 @@ for (const pid of Object.keys(M.PRODUCTS)) {
           if (new Set(s.options).size !== s.options.length) err(`${t}: pick ตัวเลือกซ้ำ`);
         }
       });
-      if (w === 3 && !steps.some((s) => s.level === 'ง่าย') ) err(`${tag}: ต้องเริ่มจากตัวอย่างระดับง่าย`);
+      if (!steps.some((s) => s.level === 'ง่าย')) err(`${tag}: ต้องเริ่มจากตัวอย่างระดับง่าย`);
     }));
   }
 }
