@@ -28,7 +28,7 @@ for (const f of jsFiles) {
 const sandbox = { window: {}, console, Math, Date, JSON };
 sandbox.window = sandbox;
 vm.createContext(sandbox);
-for (const f of ['assets/audio/manifest.js', 'assets/sprites/manifest.js', 'js/util.js', 'js/curriculum.js', 'js/reading.js', 'js/lesson-kit.js', 'js/lessons-w1.js', 'js/lessons-w2.js', 'js/lessons-w4.js']) {
+for (const f of ['assets/audio/manifest.js', 'assets/sprites/manifest.js', 'js/util.js', 'js/curriculum.js', 'js/reading.js', 'js/lesson-kit.js', 'js/lessons-w1.js', 'js/lessons-w2.js', 'js/lessons-w3.js', 'js/lessons-w4.js', 'js/lessons-w5.js', 'js/lessons-w6.js', 'js/lessons-w7.js', 'js/lessons-w8.js']) {
   try { vm.runInContext(fs.readFileSync(path.join(GAME, f), 'utf8'), sandbox, { filename: f }); } catch (e) { err(`load ${f}: ${e.message}`); }
 }
 const M = sandbox.MTL;
@@ -89,9 +89,10 @@ for (const pid of Object.keys(M.PRODUCTS)) {
 
 // ---- 2b) บทเรียนก่อนเล่น: ทุกขั้นสร้างได้ เฉลยเป็นตัวเลข ตัวเลือกไม่ซ้ำ ----
 const LESSON_TYPES = ['say', 'reveal', 'try', 'pick'];
-const LESSON_WEEKS = [0, 1, 3]; // สัปดาห์ที่ทำบทเรียนครบแล้ว (ดัชนีเริ่ม 0) — เพิ่มเมื่อทำสัปดาห์ใหม่
+const LESSON_WEEKS = [0, 1, 2, 3, 4, 5, 6, 7]; // ครบทั้ง 8 สัปดาห์แล้ว ทุกรอบต้องมีบทเรียนและคำถามเช็กก่อนเล่น
 for (const pid of Object.keys(M.PRODUCTS)) {
-  for (const st of [fakeState(), Object.assign(fakeState(), { sim: { plan: { bundle: 2 * M.PRODUCTS[pid].promo.price, sign: 30 } } })]) {
+  for (const st of [fakeState(), Object.assign(fakeState(), { sim: { plan: { bundle: 2 * M.PRODUCTS[pid].promo.price, sign: 30 } } }),
+    Object.assign(fakeState(), { sim: { plan: { bundle: 23, sign: 30 }, run: { sets: 27, singles: 3, profit: -33, baseProfit: 136 } } })]) {
     M.WEEKS.forEach((W, w) => W.rounds.forEach((R, r) => {
       if (!R.lesson) { if (LESSON_WEEKS.includes(w)) err(`${pid} ส.${w + 1} ร.${r + 1}: ต้องมีบทเรียนก่อนเล่น`); return; }
       const tag = `${pid} ส.${w + 1} ร.${r + 1} บทเรียน`;
@@ -103,7 +104,7 @@ for (const pid of Object.keys(M.PRODUCTS)) {
         const t = `${tag} ขั้น ${k + 1}`;
         if (!LESSON_TYPES.includes(s.type)) err(`${t}: ชนิดขั้นไม่รู้จัก "${s.type}"`);
         if (!s.text) err(`${t}: ไม่มีข้อความ`);
-        if (/undefined|NaN/.test(String(s.text) + (s.visual || '') + (s.ask || ''))) err(`${t}: มี undefined/NaN ในเนื้อหา`);
+        if (/undefined|NaN/.test(String(s.text) + (s.visual || '') + (s.ask || '') + (s.say || '') + (s.explain || '') + (s.options || []).join('|'))) err(`${t}: มี undefined/NaN ในเนื้อหา`);
         if (s.type === 'reveal' && !(s.parts && s.parts.length && s.parts.every((p) => p.btn && p.html && !/undefined|NaN/.test(p.html)))) err(`${t}: reveal ต้องมี parts ที่มี btn และ html`);
         if (s.type === 'try' && (!Number.isFinite(s.answer) || !s.ask)) err(`${t}: try ต้องมี ask และ answer เป็นตัวเลข`);
         if (s.type === 'pick') {
@@ -161,6 +162,18 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
   const k0 = PM.simulatePair({ seed: 4005, P: 2000, C: 1200, B: 3600, K0: 0, K1: 0, event: 'none' });
   if (k0.normal.N !== 0 || k0.promo.N !== 0) err('สต็อกศูนย์ต้องขายได้ 0 ชิ้น');
   checks += 4;
+}
+
+// ---- 3c) index.html โหลดทุกไฟล์ใน game/js ด้วยเลขเวอร์ชันเดียวกัน (กันแคชเก่าปนใหม่) ----
+{
+  const html = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8');
+  const refs = [...html.matchAll(/(?:src|href)="((?:js|css|assets|vendor)\/[^"]+)"/g)].map((m) => m[1]);
+  const vers = new Set(refs.map((r) => (r.split('?v=')[1] || '(ไม่มี)')));
+  if (vers.size !== 1) err(`index.html: เลขเวอร์ชัน ?v= ไม่เท่ากันทุกไฟล์ (${[...vers].join(', ')})`);
+  for (const f of fs.readdirSync(path.join(GAME, 'js'))) {
+    checks++;
+    if (!refs.some((r) => r.split('?')[0] === `js/${f}`)) err(`index.html: ไม่ได้โหลด js/${f}`);
+  }
 }
 
 // ---- 4) manifest เสียง/ภาพ ----
