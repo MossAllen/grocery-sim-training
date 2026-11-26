@@ -28,7 +28,7 @@ for (const f of jsFiles) {
 const sandbox = { window: {}, console, Math, Date, JSON };
 sandbox.window = sandbox;
 vm.createContext(sandbox);
-for (const f of ['assets/audio/manifest.js', 'assets/sprites/manifest.js', 'js/util.js', 'js/curriculum.js']) {
+for (const f of ['assets/audio/manifest.js', 'assets/sprites/manifest.js', 'js/util.js', 'js/curriculum.js', 'js/reading.js']) {
   try { vm.runInContext(fs.readFileSync(path.join(GAME, f), 'utf8'), sandbox, { filename: f }); } catch (e) { err(`load ${f}: ${e.message}`); }
 }
 const M = sandbox.MTL;
@@ -47,6 +47,15 @@ for (const pid of Object.keys(M.PRODUCTS)) {
       if (!ENGINES.includes(R.engine)) err(`${tag}: engine ไม่รู้จัก "${R.engine}"`);
       if (!M.SKILLS[R.skill]) err(`${tag}: skill ไม่รู้จัก "${R.skill}"`);
       if (!R.title || !R.theory || !R.task) err(`${tag}: ขาด title/theory/task`);
+      if (R.check) {
+        checks++;
+        const c = R.check;
+        if (!c.q || !c.explain || !(c.answer >= 0 && c.answer < c.options.length)) err(`${tag}: คำถามเช็กก่อนเล่นไม่ครบหรือเฉลยผิด index`);
+        if (new Set(c.options).size !== c.options.length) err(`${tag}: ตัวเลือกเช็กก่อนเล่นซ้ำ`);
+      } else if (w === 3) err(`${tag}: สัปดาห์ 4 ต้องมีคำถามเช็กก่อนเล่น (GDD §4)`);
+      const rd = M.READING && M.READING[`${w}-${r}`];
+      if (!rd) err(`${tag}: ไม่มีรายการอ่านประกอบ (รัน node tools/build_reading.js)`);
+      else for (const x of [rd.clip, rd.official]) { checks++; if (x.status === 'ok' && !/^https:\/\//.test(x.url)) err(`${tag}: ลิงก์อ่านประกอบต้องเป็น https`); }
       for (let k = 0; k < 30; k++) {
         const ctx = { product: M.PRODUCTS[pid], state: fakeState(), week: w, idx: r };
         try {
@@ -82,6 +91,48 @@ for (const pid of Object.keys(M.PRODUCTS)) {
 const fin = M.FINAL.gen({}, true).fields.map((f) => f.answer).join('/');
 if (fin !== '8/3/50/9/28') err(`เฉลยท้ายแผนไม่ตรง docx: ได้ ${fin} ต้องเป็น 8/3/50/9/28`);
 for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if (!Number.isFinite(f.answer)) err('แบบทดสอบสุ่มได้ค่าไม่ใช่ตัวเลข'); });
+
+// ---- 3b) โมเดลโปรสัปดาห์ 4 ต้องได้ผลตรงตาราง GDD §5 (seed 4001–4040) ----
+{
+  const PM = require(path.join(GAME, 'js/promo-model.js'));
+  const expect = { // [ทำต่อที่ 5%, 10%, 15%] และส่วนลดลึก [ทำต่อ, ปรับ, หยุด]
+    water: { P: 2000, C: 1200, cont: [14, 24, 25], deep: [0, 25, 15] },
+    household: { P: 1500, C: 1000, cont: [12, 21, 14], deep: [0, 21, 19] },
+  };
+  for (const [pid, e] of Object.entries(expect)) {
+    const { F } = PM.defaults(e.P, e.C);
+    const tally = (B) => {
+      const t = { 'ทำต่อ': 0, 'ปรับ': 0, 'หยุด': 0 };
+      for (let s = 4001; s <= 4040; s++) {
+        const r = PM.simulatePair({ seed: s, P: e.P, C: e.C, B, slot: s % 2 ? 'am' : 'pm', event: 'none' });
+        t[PM.evaluate({ P: e.P, C: e.C, B, F, N0: r.normal.N, S: r.promo.S, U: r.promo.U }).decision]++;
+        checks++;
+      }
+      return t;
+    };
+    [0.05, 0.10, 0.15].forEach((d, k) => {
+      const got = tally(PM.round(2 * e.P * (1 - d)))['ทำต่อ'];
+      if (got !== e.cont[k]) err(`โมเดลโปร ${pid} ส่วนลด ${d * 100}%: ทำต่อ ${got}/40 แต่ GDD §5 ระบุ ${e.cont[k]}/40`);
+    });
+    const deep = tally(2 * e.C - 100), dv = [deep['ทำต่อ'], deep['ปรับ'], deep['หยุด']].join('/');
+    if (dv !== e.deep.join('/')) err(`โมเดลโปร ${pid} ส่วนลดลึก: ได้ ${dv} แต่ GDD §5 ระบุ ${e.deep.join('/')}`);
+  }
+  const ex = [[4002, 3600, '20/8/13/16000/17000/ทำต่อ'], [4001, 3600, '25/9/14/20000/19000/ปรับ'], [4012, 2300, '17/27/3/13600/-3300/หยุด']];
+  for (const [seed, B, want] of ex) {
+    const r = PM.simulatePair({ seed, P: 2000, C: 1200, B, slot: seed % 2 ? 'am' : 'pm', event: 'none' });
+    const v = PM.evaluate({ P: 2000, C: 1200, B, F: 3000, N0: r.normal.N, S: r.promo.S, U: r.promo.U });
+    const got = [r.normal.N, r.promo.S, r.promo.U, v.G0, v.G1, v.decision].join('/');
+    checks++;
+    if (got !== want) err(`ตัวอย่าง seed ${seed} ไม่ตรง GDD §5: ได้ ${got} ต้องเป็น ${want}`);
+  }
+  // กรณีขอบ: ราคาชุดเท่าซื้อแยก, ส่วนต่างต่อชุดเป็นศูนย์, สต็อกศูนย์, เป้าหมายเป็นศูนย์
+  const z = PM.simulatePair({ seed: 4003, P: 2000, C: 1200, B: 4000, event: 'none' });
+  if (z.d !== 0 || z.promo.S !== 0) err('ราคาชุด = 2P ต้องไม่มีส่วนลดและไม่นับชุด');
+  if (PM.setsNeeded(3000, 0) !== 'impossible' || PM.setsNeeded(0, 500) !== 0 || PM.setsNeeded(-100, -5) !== 0) err('setsNeeded กรณีขอบผิด');
+  const k0 = PM.simulatePair({ seed: 4005, P: 2000, C: 1200, B: 3600, K0: 0, K1: 0, event: 'none' });
+  if (k0.normal.N !== 0 || k0.promo.N !== 0) err('สต็อกศูนย์ต้องขายได้ 0 ชิ้น');
+  checks += 4;
+}
 
 // ---- 4) manifest เสียง/ภาพ ----
 const AUDIO_KEYS = ['click', 'correct', 'wrong', 'coin', 'star', 'door', 'levelup', 'tick', 'whoosh', 'note', 'bgm_store'];

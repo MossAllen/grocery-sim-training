@@ -159,3 +159,34 @@ p{margin:.4em 0 .8em}
   .round{grid-template-columns:36px 1fr}
   .round .stars{grid-column:2}
 }
+
+/* ---- v0.2: เช็กก่อนเล่น อ่านประกอบ และสัปดาห์ 4 ---- */
+.hidden{display:none!important}
+.card.check{border-left:5px solid var(--brand);margin-bottom:14px}
+.reading{padding-left:18px;line-height:1.7}
+.reading a{word-break:break-word}
+.todo{background:#fff3cd;border:1px solid #f1dfae;border-radius:6px;padding:1px 6px;font-size:14px}
+.src{display:inline-block;font-size:12px;font-weight:700;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle}
+.src.sim{background:#e8eefc;color:#2f4f9e}
+.src.plan{background:#fff0d6;color:#8a5a00}
+.src.calc{background:#eaf7ef;color:#1f7a45}
+.warn{color:#a24a00}
+.bad-t{color:var(--bad)}
+.field.w4{grid-template-columns:1fr 160px 60px 28px}
+.field.w4 .imp,.field.w4 .err{grid-column:1/-1;font-size:14px}
+.field.w4 .imp input{width:auto;margin:0 6px 0 0;vertical-align:-2px}
+.field.w4 .err{color:var(--bad)}
+.field.w4 .err:empty{display:none}
+.diag{margin:0 0 10px;padding-left:18px;color:#7a2f12}
+.hud .stat.ev b{font-size:15px}
+.chart{width:100%;max-width:640px;height:auto;display:block;margin:10px 0 4px}
+.chart .bar.a{fill:#9db4c0}
+.chart .bar.b{fill:#e76f51}
+.chart .v{font-size:12px;fill:#2a2622}
+.chart .l{font-size:13px;fill:#2a2622}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;margin-bottom:8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.legend i.a{background:#9db4c0}.legend i.b{background:#e76f51}
+.ws{display:block;margin-top:12px}
+.ws textarea{display:block;width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit}
+@media (max-width:600px){.field.w4{grid-template-columns:1fr 110px 44px 24px}.slider{grid-template-columns:1fr;}}

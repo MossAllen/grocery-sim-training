@@ -102,10 +102,18 @@
     const ctx = ctxFor(isFinal ? 8 : w, r);
     app.innerHTML = `<button class="btn ghost small" id="back">← ${isFinal ? 'แผนที่' : 'สัปดาห์ ' + (w + 1)}</button>
       <div class="play-head"><h2>${isFinal ? '📝 ' : `สัปดาห์ ${w + 1} · รอบ ${r + 1} — `}${esc(R.title)} <span class="tag">${M.SKILLS[R.skill]}</span></h2></div>
-      <div class="theory"><b>📖 ทฤษฎี</b> ${R.theory}</div>
-      <div class="task"><b>🛠️ ลงมือทำ</b> ${R.task}</div>
-      <div class="stage card"></div>`;
+      <div class="theory"><b>📖 ทฤษฎี</b> ${R.theory}${isFinal ? '' : ' <button class="btn small ghost rd">📚 อ่านประกอบ</button>'}</div>
+      <div class="precheck"></div>
+      <div class="task hidden"><b>🛠️ ลงมือทำ</b> ${R.task}</div>
+      <div class="stage card hidden"></div>`;
     $('#back').onclick = () => (isFinal ? mapScreen() : weekScreen(w));
+    if (!isFinal) $('.rd').onclick = () => readingPanel(w, r, R);
+    const begin = () => {
+      $('.task').classList.remove('hidden'); $('.stage').classList.remove('hidden');
+      runEngine();
+    };
+    if (R.check && !isFinal) precheck(R, w, r, begin); else begin();
+    function runEngine() {
     const engine = M.engines[R.engine];
     engine($('.stage'), R, ctx, (score, summary) => {
       leave();
@@ -130,6 +138,38 @@
       });
       if (weekNow) setTimeout(() => sfx.play('levelup'), 600);
     });
+    }
+  }
+
+  // ---------- คำถามเช็กก่อนเล่น (GDD §2, §4) — ใช้ทบทวน ไม่นับดาว ----------
+  function precheck(R, w, r, begin) {
+    const c = R.check, box = $('.precheck');
+    const order = M.R.shuffle(c.options.map((_, i) => i));
+    box.innerHTML = `<div class="card check"><div class="q-count">✔️ เช็กความเข้าใจก่อนเล่น <span class="muted">(ไม่นับดาว)</span></div>
+      <div class="q">${esc(c.q)}</div><div class="opts">${order.map((k) => `<button class="opt" data-k="${k}">${esc(c.options[k])}</button>`).join('')}</div><div class="feedback"></div></div>`;
+    $$('.opt', box).forEach((b) => (b.onclick = () => {
+      const ok = +b.dataset.k === c.answer;
+      sfx.play(ok ? 'correct' : 'wrong');
+      b.classList.add(ok ? 'right' : 'bad'); b.disabled = true;
+      if (ok) $$('.opt', box).forEach((x) => (x.disabled = true));
+      $('.feedback', box).innerHTML = `<div class="msg">${ok ? '✅ <b>ถูกต้อง</b>' : '❌ <b>ยังไม่ใช่</b> — ลองเลือกใหม่ได้'}<br>${esc(c.explain)}</div>
+        <div class="row"><button class="btn ${ok ? 'primary' : ''} go">${ok ? 'เริ่มลงมือ →' : 'ข้ามไปลงมือ →'}</button><button class="btn ghost rd2">📚 อ่านประกอบ</button></div>`;
+      const go = $('.go', box); if (go) go.onclick = () => { sfx.play('click'); $$('.opt', box).forEach((x) => (x.disabled = true)); go.remove(); begin(); };
+      $('.rd2', box).onclick = () => readingPanel(w, r, R);
+    }));
+  }
+
+  // ---------- 📚 อ่านประกอบ (GDD §10 → js/reading.js) ----------
+  function readingPanel(w, r, R) {
+    const it = (M.READING || {})[`${w}-${r}`];
+    const entry = (label, x) => !x ? '' : x.status === 'ok'
+      ? `<li><b>${label}</b> — ${esc(x.note)}<br><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(x.title)}</a></li>`
+      : `<li><b>${label}</b> — <span class="todo">⏳ ต้องค้นเพิ่ม</span> ${esc(x.note)}</li>`;
+    modal(`<h2>📚 อ่านประกอบ ${it ? esc(it.code) + ' · ' + esc(it.topic) : ''}</h2>
+      <div class="theory"><b>ทฤษฎีสั้น</b> ${R.theory}</div>
+      ${it ? `<ul class="reading">${entry('คลิป', it.clip)}${entry('แหล่งทางการ', it.official)}</ul>` : '<p class="muted">ยังไม่มีรายการอ่านประกอบของรอบนี้</p>'}
+      <p class="muted">ลิงก์เปิดในแท็บใหม่ รอบที่เล่นอยู่ยังค้างไว้ · รายการ “ต้องค้นเพิ่ม” รอผู้สอนตรวจแหล่งก่อนใส่ลิงก์</p>
+      <div class="row"><button class="btn primary" data-a="close">ปิด</button></div>`, null, true);
   }
 
   // ---------- แฟ้มผลงาน ----------
@@ -166,6 +206,7 @@
     $('#ul').onchange = (e) => { s.unlockAll = e.target.checked; State.save(); };
   }
 
+  M.nav = { play: playScreen, week: weekScreen };
   $('#homeBtn').onclick = () => (product() ? mapScreen() : titleScreen());
   $('#soundBtn').onclick = () => { State.data.settings.sound = !State.data.settings.sound; State.save(); header(); if (!State.data.settings.sound) sfx.stopBgm(); else sfx.play('click'); };
   $('#ttsBtn').onclick = () => { State.data.settings.tts = !State.data.settings.tts; State.save(); header(); M.speak('Hello!'); };
