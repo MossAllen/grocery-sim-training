@@ -256,15 +256,18 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
       for (const choice of ['a', 'b']) {
         const c = CM.createCounter(plan, { transactionId: 'test' });
         const item = plan.items.find((entry) => entry.id === choice);
-        checks += 9;
+        checks += 11;
         if (c.scan().accepted) err(`${tag}: สแกนได้ทั้งที่มือว่าง`);
         c.pick(choice === 'a' ? 'b' : 'a');
         if (!c.pick(choice).picked || c.hand() !== item) err(`${tag}: หยิบเปลี่ยนแพ็กไม่ได้`);
         if (c.pick(choice).picked) err(`${tag}: หยิบแพ็กเดิมซ้ำแล้วนับเป็นการหยิบใหม่`);
         if (c.scan().accepted) err(`${tag}: สแกนได้ก่อนกรอกราคาต่อหน่วย`);
+        c.setUnits([item.perSatang]);
+        if (c.scan().accepted) err(`${tag}: ต้องมีราคาต่อหน่วยครบทั้งสองชั้น`);
         c.setUnits(plan.items.map((entry) => entry.perSatang));
         const scan = c.scan();
-        if (!scan.accepted || scan.total !== item.price || c.lines.length !== 1) err(`${tag}: สแกนต้องเพิ่ม 1 รายการและยอดเท่าราคาป้าย`);
+        if (!scan.accepted || scan.total !== item.price || c.lines.length !== 1 || c.hand() !== null) err(`${tag}: สแกนต้องย้ายแพ็กจากมือเข้าใบเสร็จ 1 รายการตามราคาป้าย`);
+        if (c.setUnits([0, 0])) err(`${tag}: ต้องล็อกราคาต่อหน่วยเมื่อสแกนสำเร็จ`);
         if (c.scan().accepted || c.lines.length !== 1 || c.pick(choice === 'a' ? 'b' : 'a').picked) err(`${tag}: สแกนซ้ำหรือเปลี่ยนแพ็กหลังสแกนต้องถูกปฏิเสธ`);
         // จ่ายไม่พอ จ่ายเงินนอกกระเป๋า แล้วจ่ายจากธนบัตรใหญ่ลงมาจนพอ: เงินทอน = เงินที่จ่าย − ยอด
         const smallest = purse.length - 1;

@@ -136,7 +136,7 @@
     const walks = {
       '0-1': { scripts: observeWalkScripts, start: () => M.playObserveWalk, title: 'เดินสังเกตลูกค้าในร้าน',
         classicLabel: 'ใช้แบบรายการเดิม', replay: 'เล่นซ้ำได้ด้วยเหตุการณ์ชุดเดิมเพื่อทบทวน' },
-      '1-1': { scripts: shelfWalkScripts, start: () => M.playShelfWalk, title: 'เทียบราคาบนชั้นวาง',
+      '1-1': { scripts: shelfWalkScripts, start: () => M.CheckoutModel && M.playShelfWalk, title: 'เทียบราคาบนชั้นวาง',
         classicLabel: 'ฝึกคำนวณแบบเดิม', replay: 'เล่นซ้ำเพื่อเจอป้ายราคาชุดถัดไป' },
     };
     const walk = opts.classic || isFinal ? null : walks[`${w}-${r}`] || null;

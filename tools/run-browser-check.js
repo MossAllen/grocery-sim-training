@@ -205,6 +205,31 @@ async function lighthouse(url, cliPath, chromium) {
   return [`Lighthouse mobile performance below 80 (${scores.performance})`];
 }
 
+async function verifyCheckoutRetry(browser, url) {
+  const page = await browser.newPage();
+  try {
+    let requests = 0;
+    await page.route('**/checkout-model.js?*', (route) => {
+      requests++;
+      return requests === 1 ? route.abort() : route.continue();
+    });
+    await page.goto(`${url}#shelf-walk`);
+    await page.locator('[data-p="water"]').click();
+    await page.locator('#startBtn').click();
+    // Exercise retry when the model alone failed and the other walk scripts have already loaded.
+    await page.waitForFunction(() => {
+      const { playShelfWalk, ShelfWalkScene, WalkControls } = window.MTL;
+      return playShelfWalk && ShelfWalkScene && WalkControls;
+    }, null, { timeout: 5000 });
+    await page.locator('#retryLesson').click({ timeout: 5000 });
+    await page.locator('.shelf-walk canvas').waitFor({ timeout: 5000 });
+    if (requests !== 2) throw new Error(`Expected one checkout model retry, got ${requests} requests`);
+    console.log('W2R2 checkout model request retry: passed');
+  } finally {
+    await page.close();
+  }
+}
+
 async function phasedScenario(browser, url, file, phases) {
   const run = require(path.join(__dirname, file));
   const context = await browser.newContext();
@@ -247,6 +272,7 @@ async function main() {
     const browser = await chromium.launch({ args: chromeArgs });
     let checks;
     try {
+      await verifyCheckoutRetry(browser, url);
       checks = await verifyGame(browser, url, axeScript);
       checks.push(...await verifyShelfWalk(browser, url, axeScript));
       checks.push(...await verifyObserveWalk(browser, url, axeScript));

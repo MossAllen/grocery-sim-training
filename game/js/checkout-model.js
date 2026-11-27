@@ -45,7 +45,8 @@
     let hand = null, units = null, payment = null, changeAnswer = null, changeReceived = false;
     const item = (id) => plan.items.find((entry) => entry.id === id);
     const total = () => lines.reduce((sum, line) => sum + line.price, 0);
-    const unitsReady = () => !!units && units.every((value) => Number.isInteger(value) && value >= 0);
+    const unitsReady = () => units?.length === plan.items.length &&
+      units.every((value) => Number.isSafeInteger(value) && value >= 0);
 
     return {
       plan, purse, transactionId, lines,
@@ -68,18 +69,19 @@
       },
       // Unit prices typed at the counter, in satang. null means the field is empty or not a number.
       setUnits(values) {
-        if (payment) return false;
-        units = values.slice();
+        if (lines.length) return false;
+        units = [...values];
         return true;
       },
       unitsReady,
       // One accepted scan adds one receipt line. Rejected scans explain why and change nothing.
       scan() {
-        if (!hand) return { accepted: false, reason: 'ยังไม่มีสินค้าในมือ กลับไปหยิบจากชั้นก่อน' };
         if (lines.length) return { accepted: false, reason: 'สแกนแล้ว ภารกิจนี้ซื้อ 1 แพ็ก รายการไม่เพิ่มซ้ำ' };
+        if (!hand) return { accepted: false, reason: 'ยังไม่มีสินค้าในมือ กลับไปหยิบจากชั้นก่อน' };
         if (!unitsReady()) return { accepted: false, reason: 'กรอกราคาต่อหน่วยของทั้งสองชั้นก่อนสแกน' };
         const line = { id: hand.id, shelf: hand.shelf, name: hand.name, quantity: 1, price: hand.price };
         lines.push(line);
+        hand = null;
         return { accepted: true, line, total: total() };
       },
       // Pay with indexes into the purse, so two coins of the same value stay distinct.

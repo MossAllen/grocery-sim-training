@@ -125,13 +125,22 @@
       updateTarget();
     }
 
+    function reveal(target) {
+      const { top, bottom } = target.getBoundingClientRect();
+      const headerBottom = $('.topbar')?.getBoundingClientRect().bottom ?? 0;
+      if (top < headerBottom || bottom > window.innerHeight) {
+        target.scrollIntoView({ block: 'center', behavior: 'instant' });
+      }
+      target.focus({ preventScroll: true });
+    }
+
     function backToShelves() {
       checkingOut = false;
       checkout.classList.add('hidden');
       world.classList.remove('hidden');
       actionKey = undefined;
       updateTarget();
-      viewport.focus({ preventScroll: true });
+      reveal(viewport);
     }
 
     function openCheckout() {
@@ -141,9 +150,7 @@
       checkout.classList.remove('hidden');
       if (!$('.counter', checkout)) buildCounter();
       $('[data-counter-hand]', checkout).innerHTML = carried(counter.hand());
-      const heading = $('h3', checkout);
-      heading.focus({ preventScroll: true });
-      heading.scrollIntoView({ block: 'start' });
+      reveal($('h3', checkout));
     }
 
     function buildCounter() {
@@ -152,14 +159,14 @@
         items.map((item) => record(item, mission).replace('data-recorded=', 'data-checkout-item=')).join('') +
         '</ul><p class="walk-tip">' + esc(normalize) + ' · ราคา ÷ ปริมาณในแพ็ก' + (basis === 1 ? '' : ' × ' + basis) +
         ' = ' + esc(unit) + '<br>ปัดเป็นทศนิยม 2 ตำแหน่งเมื่อหารไม่ลงตัว</p>' +
-        '<form class="walk-checkout-form"><p class="counter-step">1. ราคาต่อหน่วยจากสมุด</p><div class="walk-calculations">' +
+        '<form id="counter-prices" class="walk-checkout-form" novalidate><p class="counter-step">1. ราคาต่อหน่วยจากสมุด</p><div class="walk-calculations">' +
         items.map((item) => '<label>ชั้น ' + item.shelf + ' · ' + esc(unit) +
           '<input name="unit-' + item.id + '" inputmode="decimal" required autocomplete="off"></label>').join('') + '</div></form>' +
         '<div class="counter"><p class="counter-step">2. วางสินค้าบนเครื่องสแกน</p>' +
-        '<p class="counter-hand"><b>ในมือ</b> <span data-counter-hand></span></p>' +
-        '<div class="row"><button type="button" class="btn primary" data-counter-scan>วางบนเครื่องสแกน</button>' +
+        '<p class="counter-hand"><b data-counter-position>ในมือ</b> <span data-counter-hand></span></p>' +
+        '<div class="row"><button type="submit" form="counter-prices" class="btn primary" data-counter-scan>วางบนเครื่องสแกน</button>' +
         '<button type="button" class="btn ghost walk-inspect-again">กลับไปเปลี่ยนสินค้า</button></div>' +
-        '<div class="counter-machine"><div class="counter-scanner" data-counter-scanner aria-hidden="true"><span></span></div>' +
+        '<div class="counter-machine"><div class="counter-scanner" data-counter-scanner aria-hidden="true"><span class="counter-pad"></span><div class="counter-on-pad" data-counter-on-pad></div></div>' +
         '<div class="counter-display"><small>TOTAL / THB</small><b data-counter-total>0.00</b></div></div>' +
         '<p class="counter-reason" data-counter-reason role="status"></p>' +
         '<div class="counter-paper"><b>ใบเสร็จ</b><ol class="counter-receipt" data-counter-receipt></ol></div></div>' +
@@ -176,11 +183,9 @@
 
       const form = $('.walk-checkout-form', checkout);
       const reason = $('[data-counter-reason]', checkout);
-      const scanButton = $('[data-counter-scan]', checkout);
       const inspect = $('.walk-inspect-again', checkout);
       inspect.onclick = backToShelves;
       form.onsubmit = (event) => { event.preventDefault(); scan(); };
-      scanButton.onclick = scan;
 
       function scan() {
         const values = items.map((item) => readDecimal(form.elements.namedItem('unit-' + item.id).value, 2));
@@ -203,6 +208,10 @@
         // One accepted scan: one cue, one flash, one receipt line, and the new total.
         sfx.play('scanner');
         const scanner = $('[data-counter-scanner]', checkout);
+        const scanned = items.find((item) => item.id === result.line.id);
+        $('[data-counter-on-pad]', scanner).innerHTML = picture(scanned);
+        $('[data-counter-position]', checkout).textContent = 'บนแท่นสแกน';
+        $('[data-counter-hand]', checkout).textContent = 'ชั้น ' + scanned.shelf + ' · ' + scanned.name + ' · ' + fmt(scanned.price) + ' บาท';
         scanner.classList.remove('is-flash');
         void scanner.offsetWidth;
         scanner.classList.add('is-flash');
@@ -215,7 +224,7 @@
         inspect.remove();
         const pay = $('[data-counter-pay-step]', checkout);
         pay.classList.remove('hidden');
-        $('[data-cash]', pay).focus({ preventScroll: true });
+        reveal($('[data-cash]', pay));
       }
 
       const tray = new Set();
@@ -242,7 +251,7 @@
         $('[data-counter-pay-reason]', checkout).textContent = 'พนักงานรับเงิน ' + fmt(result.amount) + ' บาท';
         const change = $('[data-counter-change-step]', checkout);
         change.classList.remove('hidden');
-        $('input', change).focus({ preventScroll: true });
+        reveal($('input', change));
       };
 
       const changeForm = $('.counter-change-form', checkout);
@@ -292,8 +301,8 @@
           ' บาท · ทอน ' + fmt(result.change) + ' บาท\nคุ้มต่อหน่วยที่สุดคือชั้น ' + best.shelf + ' (ข้อมูลจำลอง)');
         finish(result.score, 'ตอบถูก ' + points + ' จาก 3 ข้อ · ชั้น ' + best.shelf + ' คุ้มต่อหน่วยที่สุด');
       };
-      save.focus({ preventScroll: true });
-      $('.walk-receipt', feedback).scrollIntoView({ block: 'start' });
+      $('.walk-receipt', feedback).scrollIntoView({ block: 'start', behavior: 'instant' });
+      reveal(save);
     }
   };
 })();

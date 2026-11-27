@@ -48,7 +48,7 @@
 
 เมื่อ GPT หรือ Claude ถึงขีดจำกัดการใช้งาน ให้บันทึกผู้รับผิดชอบ สาขา commit ล่าสุด งานที่ยังค้าง และคำสั่งตรวจไว้ในใบส่งต่อ ใช้ข้อมูลนี้เป็นจุดเริ่มของผู้รับช่วงเพื่อให้ทำต่อจากงานเดิมได้
 
-**บันทึกเมื่อ GPT ถึงขีดจำกัด (2026-11-27)** ผู้รับช่วง Claude ทำงานต่อในสาขา `feat/observe-walk-preview` (worktree `.claude/worktrees/observe-walk`) ซึ่งต่อจาก `14c86b4` ล่าสุดของ GPT สาขา `feat/shelf-walk-preview` ของ GPT ยังอยู่ที่ `14c86b4` ไม่ได้แก้ งานที่รอ GPT เมื่อกลับมา: ตรวจรับเคาน์เตอร์ W2R2 และตอบ 3 ข้อใน [ใบส่งต่อเคาน์เตอร์](handoff/2026-11-27_claude-to-gpt_w2r2-counter.md) ตรวจท่าลูกค้า W1R2 แล้วรวมสาขา คำสั่งตรวจ: `node tools/check.js` และ `node tools/run-browser-check.js <node_modules ที่มี playwright, axe-core และ lighthouse>`
+**บันทึกเมื่อ GPT ถึงขีดจำกัด (2026-11-27)** ผู้รับช่วง Claude ทำงานต่อในสาขา `feat/observe-walk-preview` (worktree `.claude/worktrees/observe-walk`) ต่อจากเคาน์เตอร์ `1a2d8aa` ซึ่ง `feat/shelf-walk-preview` รวมไว้แล้วเวลา 21:49 ก่อนถึงขีดจำกัด GPT เริ่มแก้เคาน์เตอร์ใน checkout หลักโดยยังไม่ commit (สินค้าย้ายจากมือขึ้นแท่นสแกน ล็อกราคาต่อหน่วยหลังสแกน ลองโหลดโมเดลใหม่ได้ และเลื่อนปุ่มพ้นแถบเมนู) Claude นำชุดแก้นั้นมาตรวจและ commit ในสาขานี้แล้ว เมื่อ GPT กลับมาให้ล้างไฟล์ที่ค้างใน checkout หลักแล้วรวมสาขานี้แทน งานที่รอ GPT: ตรวจรับเคาน์เตอร์ W2R2 และตอบ 3 ข้อใน [ใบส่งต่อเคาน์เตอร์](handoff/2026-11-27_claude-to-gpt_w2r2-counter.md) ตรวจท่าลูกค้า W1R2 แล้วรวมสาขา คำสั่งตรวจ: `node tools/check.js` และ `node tools/run-browser-check.js <node_modules ที่มี playwright, axe-core และ lighthouse>`
 
 ## ขั้นต่อไปสำหรับการรับรองกับผู้เรียน
 
