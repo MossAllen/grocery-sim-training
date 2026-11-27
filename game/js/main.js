@@ -5,8 +5,10 @@
   const app = $('#app');
   const titleIntro = $('.hero', app);
   const lessonScripts = $$('script[src]', $('#lesson-scripts').content);
-  const weekLoads = new Map();
+  const shelfWalkScripts = $$('script[src]', $('#shelf-walk-scripts').content);
+  const scriptLoads = new Map();
   let currentScreen = 0;
+  const shelfWalkPreview = location.hash === '#shelf-walk';
   State.load();
 
   const product = () => M.PRODUCTS[State.data.product];
@@ -42,12 +44,16 @@
       <div class="product-pick">${Object.values(M.PRODUCTS).map((p) => `<button data-p="${p.id}" class="${State.data.product === p.id ? 'sel' : ''}"><span class="e">${p.icon}</span><b>${p.th}</b><br><small class="muted">${esc(p.small.name)} · ${esc(p.big.name)}</small></button>`).join('')}</div>
       <h2><label for="pname">2. ชื่อผู้ฝึก <small class="muted">(ไม่บังคับ ใช้ในแฟ้มผลงาน)</small></label></h2>
       <input id="pname" maxlength="40" value="${esc(State.data.player)}" style="padding:10px;border:1px solid var(--line);border-radius:10px;width:min(360px,100%)">
-      <div class="row"><button class="btn primary" id="startBtn" ${State.data.product ? '' : 'disabled'}>เริ่มฝึก →</button></div></div>`);
+      <div class="row"><button class="btn primary" id="startBtn" ${State.data.product ? '' : 'disabled'}>${shelfWalkPreview ? 'เข้าร้าน →' : 'เริ่มฝึก →'}</button></div></div>`);
     $$('.product-pick button').forEach((b) => (b.onclick = () => {
       sfx.play('click'); State.data.product = b.dataset.p; State.save();
       $$('.product-pick button').forEach((x) => x.classList.toggle('sel', x === b)); $('#startBtn').disabled = false; header();
     }));
-    $('#startBtn').onclick = () => { State.data.player = $('#pname').value.trim(); State.save(); sfx.play('door'); mapScreen(); };
+    $('#startBtn').onclick = () => {
+      State.data.player = $('#pname').value.trim(); State.save(); sfx.play('door');
+      if (shelfWalkPreview) playScreen(1, 1);
+      else mapScreen();
+    };
   }
 
   // ---------- แผนที่ 8 สัปดาห์ ----------
@@ -104,18 +110,19 @@
   }
 
   // ---------- หน้าเล่น ----------
-  function loadWeek(w) {
-    if (!weekLoads.has(w)) {
+  function loadScript(reference) {
+    const src = reference.getAttribute('src');
+    if (!scriptLoads.has(src)) {
       const pending = new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = lessonScripts[w].getAttribute('src');
+        script.src = src;
         script.onload = resolve;
         script.onerror = () => { script.remove(); reject(new Error('โหลดบทเรียนไม่ได้')); };
         document.head.appendChild(script);
-      }).catch((error) => { weekLoads.delete(w); throw error; });
-      weekLoads.set(w, pending);
+      }).catch((error) => { scriptLoads.delete(src); throw error; });
+      scriptLoads.set(src, pending);
     }
-    return weekLoads.get(w);
+    return scriptLoads.get(src);
   }
 
   async function playScreen(w, r, opts = {}) {
@@ -123,22 +130,38 @@
     const screen = currentScreen;
     const isFinal = w === 'final';
     const R = isFinal ? M.FINAL : M.WEEKS[w].rounds[r];
-    if (!isFinal && !R.lesson) {
+    const walking = w === 1 && r === 1 && !opts.classic;
+    const toClassic = () => playScreen(w, r, { classic: true });
+    if (walking ? !M.playShelfWalk || !M.ShelfWalkScene : !isFinal && !R.lesson) {
       app.innerHTML = `<button class="btn ghost small" id="back">← สัปดาห์ ${w + 1}</button>
-        <p class="muted" role="status">กำลังเปิดบทเรียน…</p>`;
+        <p class="muted" role="status">${walking ? 'กำลังเปิดฉากร้าน…' : 'กำลังเปิดบทเรียน…'}</p>`;
       $('#back').onclick = () => weekScreen(w);
-      try { await loadWeek(w); }
+      try {
+        if (walking) await Promise.all(shelfWalkScripts.map(loadScript));
+        else await loadScript(lessonScripts[w]);
+      }
       catch (error) {
         if (screen === currentScreen) {
-          $('[role="status"]', app).textContent = 'โหลดบทเรียนไม่ได้ ลองอีกครั้ง';
+          $('[role="status"]', app).textContent = walking ? 'โหลดฉากร้านไม่ได้ ลองอีกครั้ง' : 'โหลดบทเรียนไม่ได้ ลองอีกครั้ง';
           app.insertAdjacentHTML('beforeend', '<button class="btn primary" id="retryLesson">ลองอีกครั้ง</button>');
           $('#retryLesson').onclick = () => playScreen(w, r, opts);
+          if (walking) {
+            app.insertAdjacentHTML('beforeend', ' <button class="btn ghost" data-walk-classic>ฝึกคำนวณแบบเดิม</button>');
+            $('[data-walk-classic]', app).onclick = toClassic;
+          }
         }
         return;
       }
       if (screen !== currentScreen) return;
     }
     const ctx = ctxFor(isFinal ? 8 : w, r);
+    if (walking) {
+      app.innerHTML = `<button class="btn ghost small" id="back">← สัปดาห์ 2</button>
+        <div class="play-head"><h2>เทียบราคาบนชั้นวาง</h2></div><div class="stage card walk-stage"></div>`;
+      $('#back').onclick = () => weekScreen(w);
+      M.playShelfWalk($('.stage'), ctx, finish, toClassic);
+      return;
+    }
     app.innerHTML = `<button class="btn ghost small" id="back">← ${isFinal ? 'แผนที่' : 'สัปดาห์ ' + (w + 1)}</button>
       <div class="play-head"><h2>${isFinal ? '📝 ' : `สัปดาห์ ${w + 1} · รอบ ${r + 1} — `}${esc(R.title)} <span class="tag">${M.SKILLS[R.skill]}</span></h2></div>
       <div class="theory"><b>📖 ทฤษฎี</b> ${R.theory}${isFinal ? '' : ' <button class="btn small ghost rd">📚 อ่านประกอบ</button>'}</div>
@@ -150,14 +173,15 @@
     if (!isFinal) $('.rd').onclick = () => readingPanel(w, r, R);
     const begin = () => {
       $('.task').classList.remove('hidden'); $('.stage').classList.remove('hidden');
-      runEngine();
+      const stage = $('.stage');
+      if (!M.RealWorksheets.run(stage, R, ctx, finish)) M.engines[R.engine](stage, R, ctx, finish);
     };
     const afterLesson = () => { if (R.check && !isFinal) precheck(R, w, r, begin); else begin(); };
     // บทเรียนก่อนเล่น: ครั้งแรกเปิดเอง · เรียนแล้วย่อเป็นแถบให้กดทบทวน
     const lkey = `${w}-${r}`, seen = !!(State.data.lessons || {})[lkey];
     const lessonBar = () => {
       $('.lesson-wrap').innerHTML = `<div class="lesson-bar">📖 <b>บทเรียนก่อนเล่น</b> <span class="muted">เรียนแล้ว ✓</span> <button class="btn small ghost relesson">ทบทวนบทเรียน</button></div>`;
-      $('.relesson').onclick = () => { sfx.play('click'); playScreen(w, r, { lesson: true }); };
+      $('.relesson').onclick = () => { sfx.play('click'); playScreen(w, r, { ...opts, lesson: true }); };
     };
     if (R.lesson && !isFinal && (!seen || opts.lesson)) {
       M.playLesson($('.lesson-wrap'), R.lesson(ctx), () => {
@@ -169,9 +193,7 @@
       if (R.lesson && !isFinal) lessonBar();
       afterLesson();
     }
-    function runEngine() {
-    const stage = $('.stage');
-    const finish = (score, summary) => {
+    function finish(score, summary) {
       leave();
       const stars = score >= 0.999 ? 3 : score >= 0.66 ? 2 : score > 0 ? 1 : 0;
       const wasDone = isFinal ? false : weekDone(w);
@@ -183,18 +205,16 @@
       modal(`<div class="bigstars" style="color:var(--gold)">${starStr(stars)}</div>
         <h2>${stars === 3 ? 'ยอดเยี่ยม!' : stars === 2 ? 'ดีมาก' : stars === 1 ? 'ผ่าน — ฝึกซ้ำได้' : 'ลองอีกครั้ง'}</h2>
         <p>${esc(summary)}</p>${weekNow ? `<p>🎉 <b>จบสัปดาห์ ${w + 1}!</b> ${w < 7 ? 'ปลดล็อกสัปดาห์ถัดไปแล้ว' : 'ปลดล็อกครบทุกสัปดาห์ ลองทำแบบทดสอบท้ายแผน'}</p>` : ''}
-        <p class="muted">เก็บคะแนนที่ดีที่สุดไว้ เล่นซ้ำได้เสมอ (โจทย์ตัวเลขจะสุ่มใหม่)</p>
+        <p class="muted">เก็บคะแนนที่ดีที่สุดไว้ ${walking ? 'เล่นซ้ำเพื่อเจอป้ายราคาชุดถัดไป' : 'เล่นซ้ำได้เสมอ (โจทย์ตัวเลขจะสุ่มใหม่)'}</p>
         <div class="row" style="justify-content:center">
           <button class="btn" data-a="again">↻ เล่นซ้ำ</button>
           ${hasNext ? '<button class="btn primary" data-a="next">รอบต่อไป →</button>' : `<button class="btn primary" data-a="back">${isFinal ? 'กลับแผนที่' : 'กลับหน้าสัปดาห์'}</button>`}
         </div>`, (a) => {
-        if (a === 'again') playScreen(w, r);
+        if (a === 'again') playScreen(w, r, { classic: opts.classic });
         else if (a === 'next') playScreen(w, r + 1);
         else isFinal ? mapScreen() : weekScreen(w);
       });
       if (weekNow) setTimeout(() => sfx.play('levelup'), 600);
-    };
-    if (!M.RealWorksheets.run(stage, R, ctx, finish)) M.engines[R.engine](stage, R, ctx, finish);
     }
   }
 
@@ -282,5 +302,5 @@
   if ('speechSynthesis' in window) speechSynthesis.getVoices();
 
   header();
-  product() ? mapScreen() : titleScreen();
+  product() && !shelfWalkPreview ? mapScreen() : titleScreen();
 })();

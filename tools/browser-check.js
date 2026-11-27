@@ -57,6 +57,10 @@ module.exports = async ({ week, idx, playRound, stopAtNumericLesson }) => {
     else {
       click(`.week[data-w="${week}"]`);
       click(`.round[data-r="${idx}"]`);
+      if (week === 1 && idx === 1) {
+        await waitFor(() => get('[data-walk-classic]'), 'classic practice choice');
+        click('[data-walk-classic]');
+      }
       await waitFor(() => typeof round.lesson === 'function' && get('.lesson'), 'lesson to load');
       for (const [i, step] of round.lesson(ctx).entries()) {
         healthy('.lesson');
