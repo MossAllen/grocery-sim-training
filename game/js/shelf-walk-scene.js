@@ -267,6 +267,7 @@
       }
       for (const [row, level] of [0.2, 0.75, 1.31, 1.87].entries()) {
         box(x - 1.13, x + 1.12, level, level + 0.076, front, back, wood);
+        box(x - 1.13, x + 1.12, level + 0.058, level + 0.076, front - 0.012, front + 0.03, ['#d9ab7a', '#68492f', '#d9ab7a']);
         if (row === 3) continue;
         for (let col = 0; col < 5; col++) {
           const itemX = x - 0.88 + col * 0.44;
@@ -284,6 +285,10 @@
         }
       }
       box(x - 1.23, x + 1.23, 1.96, 2.34, front, front + 0.12, frame);
+      // ทรง stud (สกิล stud-model-style): ปุ่มสี่เหลี่ยมห่าง ๆ บนหัวป้าย ขอบบนสว่างแทนมุมลบ และฐานสีเข้ม
+      studRow(x - 1.0, x + 1.0, 2.34, front + 0.06, 0.5, [color, '#51382a', light]);
+      box(x - 1.23, x + 1.23, 2.31, 2.34, front - 0.012, front + 0.12, [light, '#51382a', light]);
+      box(x - 1.27, x + 1.27, 0, 0.07, front - 0.03, back + 0.02, ['#3e2a1d', '#2e1f15', '#4e3524']);
       billboard(x, 2.16, front - 0.03, 1.50, 0.30, (sx, sy, bw, bh) => {
         ctx.fillStyle = '#fff6e7';
         ctx.font = '700 ' + Math.min(45, Math.round(bh * 0.83)) + 'px Sarabun, Tahoma, sans-serif';
@@ -306,11 +311,21 @@
         ctx.fillText(station.sizeText || '', sx, sy + bh * 0.25, bw * 0.93);
       });
     }
+    // ปุ่ม stud สี่เหลี่ยมแถวเดียวบนผิวบน (ห่าง ๆ เพื่อประหยัดจำนวนหน้า)
+    function studRow(x1, x2, top, zc, pitch, colours) {
+      for (let sx = x1; sx <= x2 + 1e-6; sx += pitch) {
+        box(sx - 0.085, sx + 0.085, top, top + 0.06, zc - 0.05, zc + 0.05, colours);
+      }
+    }
+
     function checkout(display) {
       const { x, z, label, color } = display;
       const front = z - 0.53;
       box(x - 1.22, x + 1.22, 0.03, 0.95, front, z + 0.41, [color, '#274858', '#568093']);
       box(x - 1.27, x + 1.27, 0.95, 1.08, front - 0.04, z + 0.45, ['#77583e', '#49392c', '#ba946b']);
+      box(x - 1.27, x + 1.27, 1.06, 1.08, front - 0.052, front, ['#d8b487', '#49392c', '#d8b487']);
+      studRow(x - 1.0, x + 0.1, 1.08, front + 0.12, 0.45, ['#a98258', '#49392c', '#d2ad80']);
+      box(x - 1.25, x + 1.25, 0, 0.07, front - 0.03, z + 0.43, ['#1f3a47', '#162a33', '#2b4c5c']);
       box(x + 0.42, x + 0.87, 1.08, 1.27, front + 0.19, front + 0.72, ['#353837', '#252b2b', '#636764']);
       box(x + 0.50, x + 0.87, 1.23, 1.47, front + 0.51, front + 0.64, ['#164453', '#243436', '#4e6e75']);
       queueFace(quadXY(x + 0.53, 1.29, x + 0.84, 1.42, front + 0.505), '#9fca8e');
