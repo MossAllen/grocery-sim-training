@@ -8,6 +8,8 @@
   const START = { x: 0, z: 2.3, yaw: 0 };
   const EVENING = 'rgba(122, 58, 24, .17)';
   const RING = 'rgba(255, 214, 90, .2)';
+  const WALK_SPEED = 2.4;     // เมตรต่อวินาที ลูกค้าที่เดินเข้ามาที่เคาน์เตอร์
+  const STRIDE = 0.3;         // วินาทีต่อเฟรมก้าว สลับท่ายืนกับท่าก้าว
 
   // คิวเสียงตาม docs/AUDIO_SPEC.md: เล่นคีย์ใหม่เมื่อมีใน manifest แล้ว ระหว่างรอไฟล์ใช้เสียงเดิมหรือภาพแทน
   const lastCue = {};
@@ -27,7 +29,10 @@
     const { product } = ctx;
     const { periods, timeLabel } = session;
     const sprites = window.MTL_SPRITE_MANIFEST || {};
-    let periodIndex = 0, clock = periods[0].start, captionKey = '', focus = null;
+    let periodIndex = 0, clock = periods[0].start, captionKey = '', focus = null, walker = 0;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // ลูกค้าเริ่มด้วยท่ายืน เมื่อผู้เล่นเห็นหรือได้ยินครั้งแรกจึงเปลี่ยนเป็นท่ากระทำของเหตุการณ์และคงท่านั้นไว้
+    const performed = new Set();
 
     el.innerHTML = `<section class="observe-walk" aria-label="ภารกิจเดินสังเกตลูกค้า">
       <div class="walk-brief"><p><strong>ภารกิจ</strong> คุณเป็นผู้ช่วยร้าน เดินเข้าใกล้ลูกค้า ฟังคำถามหรือดูสิ่งที่ทำ แล้วจดลงสมุดพร้อมเวลา
@@ -61,9 +66,17 @@
     const recordButton = $('[data-ow-record]', el), replayButton = $('[data-ow-replay]', el), next = $('.ow-next', el);
     $('[data-walk-classic]', el).onclick = classic;
 
-    const actorFor = (event) => ({ id: event.id, x: event.spot.x, z: event.spot.z, sprite: sprites[event.sprite],
-      bubble: session.isRecorded(event.id) ? '✓' : '!', bubbleColor: session.isRecorded(event.id) ? '#cdeccf' : '#ffde59',
-      ring: session.isRecorded(event.id) ? 0 : OM.SENSE.hear, ringColor: RING });
+    const spriteOf = (event) => sprites[performed.has(event.id) && sprites[event.pose] ? event.pose : event.sprite];
+    const actorFor = (event) => {
+      const arriving = !!event.enter && !reducedMotion && !session.isRecorded(event.id);
+      const from = arriving ? event.enter[0] : event.spot;
+      return { id: event.id, x: from.x, z: from.z, sprite: spriteOf(event), arriving,
+        path: arriving ? [...event.enter.slice(1), event.spot] : [],
+        bubble: session.isRecorded(event.id) ? '✓' : '!', bubbleColor: session.isRecorded(event.id) ? '#cdeccf' : '#ffde59',
+        ring: session.isRecorded(event.id) || arriving ? 0 : OM.SENSE.hear, ringColor: RING };
+    };
+    const actorOf = (id) => scene.actors.find((actor) => actor.id === id);
+    const arriving = (id) => !!actorOf(id)?.arriving;
     const stations = [
       { id: 'a', price: product.small.price, sizeText: product.small.name, icon: product.emoji.small, sprite: sprites[`item_${product.id}_small`] },
       { id: 'b', price: product.big.price, sizeText: product.big.name, icon: product.emoji.big, sprite: sprites[`item_${product.id}_big`] },
@@ -78,6 +91,7 @@
 
     const controls = M.WalkControls.attach({ root: el, viewport, scene, onMove: sense, onInteract: interact });
     M.onLeave = () => {
+      cancelAnimationFrame(walker);
       controls.destroy();
       M.stopSpeaking();
     };
@@ -91,7 +105,10 @@
     function sense() {
       const pose = scene.pose();
       const rank = { ready: 3, heard: 2, seen: 1, none: 0 };
-      const sensed = events().map((event) => ({ event, sense: OM.perceive(pose, event) }));
+      // ลูกค้าที่ยังเดินไม่ถึงจุดยังเห็นและได้ยินไม่ได้
+      const sensed = events().filter((event) => !arriving(event.id)).map((event) => ({ event, sense: OM.perceive(pose, event) }));
+      for (const { event, sense } of sensed) if (sense.seen || sense.heard) performed.add(event.id);
+      showPoses();
       sensed.sort((a, b) => rank[level(b.sense)] - rank[level(a.sense)] || a.sense.distance - b.sense.distance);
       const best = sensed[0] && level(sensed[0].sense) !== 'none' ? sensed[0] : null;
       const previouslyHeard = focus?.sense.heard ? focus.event.id : '';
@@ -138,8 +155,59 @@
       replayButton.disabled = !focus?.sense.heard;
     }
 
+    // ท่ายืน ท่าก้าว หรือท่ากระทำของลูกค้าแต่ละคน · data-poses ใช้ตรวจในชุดทดสอบ
+    function showPoses() {
+      let changed = false;
+      for (const actor of scene.actors) {
+        if (actor.arriving) continue;
+        const sprite = spriteOf(session.get(actor.id));
+        if (actor.sprite !== sprite) { actor.sprite = sprite; changed = true; }
+      }
+      viewport.dataset.poses = scene.actors.map((actor) =>
+        `${actor.id}:${actor.arriving ? 'walk' : performed.has(actor.id) ? 'action' : 'idle'}`).join(' ');
+      if (changed) scene.draw();
+    }
+
+    function arrive(actor) {
+      const event = session.get(actor.id);
+      Object.assign(actor, { x: event.spot.x, z: event.spot.z, arriving: false, path: [], sprite: spriteOf(event),
+        ring: session.isRecorded(event.id) ? 0 : OM.SENSE.hear });
+    }
+
+    // ลูกค้าที่มีจุดเริ่ม enter เดินผ่านจุดแวะทีละจุดจนถึงจุดของเหตุการณ์ สลับท่ายืนกับท่าก้าว
+    function walkIn() {
+      cancelAnimationFrame(walker);
+      if (!scene.actors.some((actor) => actor.arriving)) return;
+      let last = 0, elapsed = 0;
+      const frame = (now) => {
+        const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
+        last = now;
+        elapsed += dt;
+        for (const actor of scene.actors.filter((entry) => entry.arriving)) {
+          const event = session.get(actor.id), [goal] = actor.path;
+          const dx = goal.x - actor.x, dz = goal.z - actor.z, distance = Math.hypot(dx, dz);
+          if (distance <= WALK_SPEED * dt) {
+            if (actor.path.length > 1) Object.assign(actor, actor.path.shift());
+            else arrive(actor);
+          } else {
+            actor.x += dx / distance * WALK_SPEED * dt;
+            actor.z += dz / distance * WALK_SPEED * dt;
+            actor.sprite = sprites[Math.floor(elapsed / STRIDE) % 2 && sprites[event.walk] ? event.walk : event.sprite];
+          }
+        }
+        scene.draw();
+        sense();
+        if (scene.actors.some((actor) => actor.arriving)) walker = requestAnimationFrame(frame);
+      };
+      walker = requestAnimationFrame(frame);
+    }
+
     function updateHint(sensed) {
       const waiting = sensed.filter(({ event }) => !session.isRecorded(event.id)).sort((a, b) => a.sense.distance - b.sense.distance);
+      if (!waiting.length && scene.actors.some((actor) => actor.arriving)) {
+        hint.textContent = 'ลูกค้าอีกคนกำลังเดินไปที่เคาน์เตอร์ รอให้ถึงก่อนจึงฟังได้';
+        return;
+      }
       if (!waiting.length) {
         hint.textContent = periodIndex === 0 ? 'จดช่วงเช้าครบ 3 คนแล้ว กด “ไปช่วงเย็น”' : 'จดครบ 5 เหตุการณ์แล้ว กด “ไปวิเคราะห์ในสมุด”';
         return;
@@ -199,6 +267,8 @@
 
     // ทางเลือกแบบรายการภายในฉาก: พาไปยืนหน้าลูกค้าและหันเข้าหา แล้วให้ผู้เล่นกดจดเอง
     function goTo(event) {
+      const walking = actorOf(event.id);
+      if (walking?.arriving) arrive(walking);
       const front = OM.approachPose(event);
       const placed = [0, 0.35, -0.35, 0.7, -0.7].some((offset) => scene.place({ ...front, x: front.x + offset,
         yaw: Math.atan2(event.spot.x - front.x - offset, event.spot.z - front.z) }));
@@ -234,6 +304,7 @@
       scene.ambience.tint = periodIndex ? EVENING : null;
       scene.place(START);
       scene.draw();
+      walkIn();
       fillNotebook();
       fillList();
       updateProgress();
@@ -252,6 +323,7 @@
         viewport.focus({ preventScroll: true });
         return;
       }
+      cancelAnimationFrame(walker);
       controls.destroy();
       M.onLeave = null;
       done();

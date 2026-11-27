@@ -4,6 +4,7 @@ generate_store_assets.py — สร้างภาพสไปรต์ร้า
 วิธีรัน (จากโฟลเดอร์ marketing-training-lab):
     blender -b -P blender/generate_store_assets.py
     blender -b -P blender/generate_store_assets.py -- --walking-only
+    blender -b -P blender/generate_store_assets.py -- --poses-only
 
 ผลลัพธ์:
     game/assets/sprites/<key>.png        ภาพ PNG พื้นหลังโปร่งใส
@@ -28,6 +29,7 @@ SIZES = {
     "shelf": (260, 180),
     "counter": (320, 160),
     "customer": (88, 132),
+    "customer_pose": (176, 264),   # ท่ากระทำใน W1R2 ใช้กรอบเดียวกับ customer แต่ละเอียด 2 เท่า
     "item": (48, 56),
 }
 
@@ -168,7 +170,61 @@ def build_walking_legs(scale, pants):
 #   customer_3 นักเรียน: เสื้อขาว กางเกงกรมท่า เป้ใหญ่ ตัวเตี้ยกว่า
 #   customer_4 เทียบราคา: แว่นตา ถือสินค้ายกขึ้นอ่านป้าย
 #   customer_5 ลูกค้าทั่วไป
-def build_customer(i, walking=False):
+# ท่ากระทำที่ผู้เล่นต้องเห็นใน W1R2 (GDD §9): หยิบ ดูป้าย และจ่ายที่เคาน์เตอร์
+POSES = [(0, "pick"), (3, "look"), (1, "look"), (2, "pay"), (4, "pay")]
+
+
+def tagged_pack(loc, scale, body_rgb, name):
+    """แพ็กสินค้าทั่วไปพร้อมแถบป้ายราคาด้านหน้า (ใช้ได้กับทุกกลุ่มสินค้า)"""
+    cube(loc, scale, mat(name, body_rgb))
+    cube((loc[0], loc[1] - scale[1] - 0.005, loc[2] - scale[2] * 0.45), (scale[0] * 0.8, 0.005, scale[2] * 0.22),
+         mat(name + "_tag", (1.0, 0.87, 0.35)))
+
+
+def build_pose(i, pose, s, sh, shirt):
+    """แขนและของถือของแต่ละท่า (แทนแขนท่ายืนเดิม)"""
+    if (i, pose) == (0, "pick"):  # หยิบแพ็กเล็กเหนือกระเป๋าสะพาย
+        bag = mat("bag", (0.18, 0.16, 0.14))
+        cube((0.42, -0.05, 1.0 * s), (0.12, 0.2, 0.2), bag)
+        limb((-0.22, -0.2, sh), (0.42, -0.1, 1.15 * s), 0.035, bag)
+        limb((0.33, -0.1, sh), (0.16, -0.42, 1.34 * s), 0.08, shirt)
+        tagged_pack((0.16, -0.54, 1.40 * s), (0.09, 0.06, 0.13), (0.25, 0.7, 0.75), "small")
+        limb((-0.33, -0.1, sh), (-0.38, -0.05, 0.95 * s), 0.08, shirt)
+    elif (i, pose) == (3, "look"):  # แว่น + ถือสองขนาดเทียบป้าย
+        frame = mat("glasses", (0.05, 0.05, 0.05))
+        for x in (-0.11, 0.11):
+            ring((x, -0.27, 1.82), 0.075, 0.014, frame)
+        limb((-0.04, -0.28, 1.82), (0.04, -0.28, 1.82), 0.015, frame)
+        limb((-0.33, -0.1, sh), (-0.24, -0.45, 1.48), 0.08, shirt)
+        limb((0.33, -0.1, sh), (0.26, -0.45, 1.48), 0.08, shirt)
+        tagged_pack((-0.26, -0.55, 1.52), (0.07, 0.05, 0.11), (0.25, 0.7, 0.75), "small")
+        tagged_pack((0.28, -0.55, 1.55), (0.11, 0.06, 0.17), (0.2, 0.45, 0.85), "big")
+    elif (i, pose) == (1, "look"):  # ตะกร้าห้อยแขนซ้าย ยกแพ็กใหญ่ดู
+        basket = mat("basket", (0.78, 0.25, 0.2))
+        limb((-0.38, -0.1, sh), (-0.46, -0.18, 1.0 * s), 0.09, shirt)
+        cube((-0.46, -0.22, 0.82 * s), (0.22, 0.16, 0.14), basket)
+        limb((-0.62, -0.22, 0.98 * s), (-0.30, -0.22, 0.98 * s), 0.025, basket)
+        limb((0.38, -0.1, sh), (0.22, -0.48, 1.5 * s), 0.09, shirt)
+        tagged_pack((0.18, -0.60, 1.58 * s), (0.17, 0.09, 0.14), (0.95, 0.95, 0.93), "big")
+    elif (i, pose) == (2, "pay"):  # นักเรียนยื่นสินค้าและธนบัตรที่เคาน์เตอร์
+        pack = mat("pack", (0.2, 0.45, 0.85))
+        cube((0, 0.38, 1.25 * s), (0.27, 0.15, 0.3), pack)
+        for x in (-0.18, 0.18):
+            limb((x, 0.25, sh), (x, -0.27, 1.05 * s), 0.03, pack)
+        limb((0.3, 0, sh), (0.17, -0.45, 1.34 * s), 0.07, shirt)
+        tagged_pack((0.17, -0.57, 1.40 * s), (0.09, 0.06, 0.13), (0.25, 0.7, 0.75), "small")
+        limb((-0.3, 0, sh), (-0.19, -0.45, 1.26 * s), 0.07, shirt)
+        cube((-0.19, -0.53, 1.30 * s), (0.13, 0.01, 0.07), mat("note", (0.35, 0.62, 0.38)))
+    elif (i, pose) == (4, "pay"):  # อุ้มแพ็กใหญ่ซ้อน 3 ชิ้นมาที่เคาน์เตอร์
+        for k, z in enumerate((1.02, 1.24, 1.46)):
+            tagged_pack((0, -0.5, z), (0.2, 0.12, 0.1), (0.95, 0.95, 0.93), f"stack{k}")
+        limb((0.33, 0, sh), (0.22, -0.45, 1.05), 0.08, shirt)
+        limb((-0.33, 0, sh), (-0.22, -0.45, 1.05), 0.08, shirt)
+    else:
+        raise ValueError(f"no pose {pose} for customer {i + 1}")
+
+
+def build_customer(i, walking=False, pose=None):
     skin = mat("skin", (0.96, 0.78, 0.6))
     shirt = mat("shirt", SHIRTS[i] if i != 2 else (0.96, 0.96, 0.96))
     pants = mat("pants", (0.08, 0.12, 0.32) if i == 2 else (0.2, 0.22, 0.3))
@@ -184,9 +240,13 @@ def build_customer(i, walking=False):
     torso = cyl((0, -lean / 2, 1.2 * s), body_r * s, 0.7 * s, shirt)
     torso.rotation_euler = (-lean, 0, 0)
     hy = -lean * 1.6
-    sphere((0, hy, 1.8 * s), 0.28 * s, skin)
-    sphere((0, hy + 0.02, 1.95 * s), 0.27 * s, hair)
+    hx, hz = (0.06, -0.03) if pose == "pick" else (0.0, 0.0)  # ก้มมองกระเป๋าตอนหยิบ
+    sphere((hx, hy, 1.8 * s + hz), 0.28 * s, skin)
+    sphere((hx, hy + 0.02, 1.95 * s + hz), 0.27 * s, hair)
     sh = 1.45 * s  # ระดับไหล่
+    if pose:
+        build_pose(i, pose, s, sh, shirt)
+        return 2.2 * s
     if i == 0:  # กระเป๋าสะพายข้าง + สาย
         bag = mat("bag", (0.18, 0.16, 0.14))
         cube((0.42, -0.05, 1.0 * s), (0.12, 0.2, 0.2), bag)
@@ -252,10 +312,22 @@ def build_item(product, size):
 
 
 # ---------- main ----------
-def main(walking_only=False):
+def main(walking_only=False, poses_only=False):
     items = [(product, size) for product in ("water", "snack", "household") for size in ("small", "big")]
     base_keys = ["shelf", "counter", *(f"customer_{i}" for i in range(1, 6))]
     base_keys.extend(f"item_{product}_{size}" for product, size in items)
+    walk_keys = [f"customer_{i + 1}_walk" for i in range(4)]
+    pose_keys = [f"customer_{i + 1}_{pose}" for i, pose in POSES]
+    if poses_only:
+        # เรนเดอร์เฉพาะท่ากระทำ ไม่แตะไฟล์ภาพเดิม แล้วเขียน manifest ให้ครบทุกคีย์
+        missing = [key for key in base_keys + walk_keys if not os.path.isfile(os.path.join(OUT, f"{key}.png"))]
+        if missing:
+            raise RuntimeError(f"Run the full render first; missing sprites: {', '.join(missing)}")
+        for (i, pose), key in zip(POSES, pose_keys):
+            scn = reset_scene(); build_customer(i, pose=pose); camera_and_light(scn, 2.2, "customer_pose", 1.25)
+            render(scn, key)
+        write_manifest(base_keys + walk_keys + pose_keys)
+        return
     if walking_only:
         missing = [key for key in base_keys if not os.path.isfile(os.path.join(OUT, f"{key}.png"))]
         if missing:
@@ -275,19 +347,21 @@ def main(walking_only=False):
             scn = reset_scene(); h = build_item(product, size); camera_and_light(scn, h, "item", 1.0)
             render(scn, f"item_{product}_{size}")
 
-    manifest = {key: f"assets/sprites/{key}.png" for key in base_keys}
     for i in range(4):
         scn = reset_scene()
         build_customer(i, walking=True)
         camera_and_light(scn, 2.2, "customer", 1.25)  # ใช้กรอบเดียวกับท่ายืน
-        key = f"customer_{i + 1}_walk"
-        manifest[key] = render(scn, key)
+        render(scn, walk_keys[i])
+    # ท่ากระทำเรนเดอร์แยกด้วย --poses-only และรวมใน manifest เมื่อมีไฟล์อยู่แล้ว
+    write_manifest(base_keys + walk_keys + [key for key in pose_keys if os.path.isfile(os.path.join(OUT, f"{key}.png"))])
 
-    lines = ",\n".join(f'  {k}: "{v}"' for k, v in manifest.items())
-    with open(os.path.join(OUT, "manifest.js"), "w", encoding="utf-8") as f:
+
+def write_manifest(keys):
+    lines = ",\n".join(f'  {key}: "assets/sprites/{key}.png"' for key in keys)
+    with open(os.path.join(OUT, "manifest.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("/* สร้างอัตโนมัติโดย blender/generate_store_assets.py — ดู docs/ART_SPEC.md */\n")
         f.write("window.MTL_SPRITE_MANIFEST = {\n" + lines + "\n};\n")
-    print("manifest written:", len(manifest), "sprites")
+    print("manifest written:", len(keys), "sprites")
 
 
-main(walking_only="--walking-only" in sys.argv)
+main(walking_only="--walking-only" in sys.argv, poses_only="--poses-only" in sys.argv)

@@ -16,5 +16,10 @@ window.MTL_SPRITE_MANIFEST = {
   customer_1_walk: "assets/sprites/customer_1_walk.png",
   customer_2_walk: "assets/sprites/customer_2_walk.png",
   customer_3_walk: "assets/sprites/customer_3_walk.png",
-  customer_4_walk: "assets/sprites/customer_4_walk.png"
+  customer_4_walk: "assets/sprites/customer_4_walk.png",
+  customer_1_pick: "assets/sprites/customer_1_pick.png",
+  customer_4_look: "assets/sprites/customer_4_look.png",
+  customer_2_look: "assets/sprites/customer_2_look.png",
+  customer_3_pay: "assets/sprites/customer_3_pay.png",
+  customer_5_pay: "assets/sprites/customer_5_pay.png"
 };

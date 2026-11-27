@@ -112,6 +112,10 @@ async function verifyObserveWalk(browser, url, axeScript) {
       assert.equal(await page.locator('.ow-tag').innerText(), 'จำลอง');
       assert.equal(await page.locator('.ow-clock').innerText(), '07:00');
       assert.equal(await page.locator('.ow-muted').count(), seed.settings.sound ? 0 : 1, product + ': muted notice');
+      const poses = () => page.locator('.walk-viewport').getAttribute('data-poses');
+      // Reduced motion: nobody walks in, and customers out of sight stay in the standing pose.
+      assert.match(await poses(), /am-carry:idle/, product + ': unseen customer should stand idle');
+      assert.match(await poses(), /am-fast:idle/, product + ': reduced motion must skip the walk to the counter');
 
       if (product === 'water') {
         // Arrow keys and WASD move the camera.
@@ -182,6 +186,7 @@ async function verifyObserveWalk(browser, url, axeScript) {
         await viaList(['am-fast']);
         assert.ok(await page.locator('.ow-next').isDisabled());
         await goTo('am-carry');
+        assert.match(await poses(), /am-carry:action/, 'a seen customer must switch to the pick pose');
         assert.equal(await page.locator('.ow-caption b').first().innerText(), 'เห็น');
         await walk('turn-right', 6);
         await focusIs('am-carry', 'ready');
@@ -274,6 +279,47 @@ async function verifyObserveWalk(browser, url, axeScript) {
     } finally {
       await context.close();
     }
+  }
+  // Motion on: the student walks to the counter, can be heard only after arriving, and the list route snaps them there.
+  const context = await browser.newContext({ viewport: { width: 1280, height: 880 }, reducedMotion: 'no-preference' });
+  await context.addInitScript((state) => localStorage.setItem('mtl-save-v1', JSON.stringify(state)), save('water'));
+  try {
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    const poses = () => page.locator('.walk-viewport').getAttribute('data-poses');
+    const open = async () => {
+      await page.locator('#homeBtn').click();
+      await page.locator('.week[data-w="0"]').click();
+      await page.locator('.round[data-r="1"]').click();
+      await page.locator('.observe-walk canvas').waitFor();
+    };
+    await page.goto(url);
+    await open();
+    assert.match(await poses(), /am-fast:walk/, 'the student should walk in when motion is allowed');
+    // Sample the view during the walk: the student must cross the picture before arriving.
+    const canvas = page.locator('.observe-walk canvas');
+    const before = await canvas.screenshot();
+    let crossed = false;
+    for (let i = 0; i < 30 && /am-fast:walk/.test(await poses()); i++) {
+      await page.waitForTimeout(250);
+      crossed ||= !before.equals(await canvas.screenshot());
+    }
+    assert.ok(crossed, 'the walking customer never appeared in view');
+    await page.waitForFunction(() => !/am-fast:walk/.test(document.querySelector('.walk-viewport').dataset.poses), null, { timeout: 8000 });
+    await page.locator('[data-ow-go="am-fast"]').click();
+    await page.locator('.walk-viewport[data-focus="am-fast"][data-level="ready"]').waitFor({ timeout: 5000 });
+    assert.match(await poses(), /am-fast:action/, 'an arrived customer must switch to the pay pose when heard');
+    await page.reload();
+    await open();
+    assert.match(await poses(), /am-fast:walk/);
+    await page.locator('[data-ow-go="am-fast"]').click();
+    await page.locator('.walk-viewport[data-focus="am-fast"][data-level="ready"]').waitFor({ timeout: 5000 });
+    assert.match(await poses(), /am-fast:action/, 'the list route must bring a walking customer to the counter');
+    assert.deepEqual(errors, [], 'walk-in: Chromium runtime errors');
+    console.log('W1R2 observe-walk walk-in @ 1280px motion on: passed');
+  } finally {
+    await context.close();
   }
   return problems;
 }

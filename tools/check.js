@@ -311,6 +311,7 @@ const AUDIO_KEYS = ['click', 'correct', 'wrong', 'coin', 'star', 'door', 'levelu
   'step_shop', 'shelf_pick', 'notebook', 'scanner', 'cash_change'];
 const SPRITE_KEYS = ['shelf', 'counter', 'customer_1', 'customer_2', 'customer_3', 'customer_4', 'customer_5',
   'customer_1_walk', 'customer_2_walk', 'customer_3_walk', 'customer_4_walk',
+  'customer_1_pick', 'customer_4_look', 'customer_2_look', 'customer_3_pay', 'customer_5_pay',
   'item_water_small', 'item_water_big', 'item_snack_small', 'item_snack_big', 'item_household_small', 'item_household_big'];
 const checkManifest = (name, man, keys) => {
   if (!man) return err(`ไม่พบ ${name}`);
@@ -329,6 +330,14 @@ const checkManifest = (name, man, keys) => {
 };
 checkManifest('audio/manifest.js', sandbox.MTL_AUDIO_MANIFEST, AUDIO_KEYS);
 checkManifest('sprites/manifest.js', sandbox.MTL_SPRITE_MANIFEST, SPRITE_KEYS);
+// ท่ากระทำ W1R2 ต้องเป็น PNG โปร่งใส 176×264 (2 เท่าของท่ายืน) ตาม ART_SPEC
+for (const key of SPRITE_KEYS.filter((k) => /_(?:pick|look|pay)$/.test(k))) {
+  const file = path.join(GAME, 'assets/sprites', `${key}.png`);
+  checks++;
+  if (!fs.existsSync(file)) continue;
+  const head = fs.readFileSync(file).subarray(0, 26);
+  if (head.toString('latin1', 1, 4) !== 'PNG' || head.readUInt32BE(16) !== 176 || head.readUInt32BE(20) !== 264 || head[25] !== 6) err(`sprites: ${key} ต้องเป็น PNG RGBA 176×264`);
+}
 
 const voiceIds = sandbox.MTL_VOICE_IDS || new Set();
 const voiceDoc = fs.readFileSync(path.join(ROOT, 'docs/VOICE_LINES.md'), 'utf8');
