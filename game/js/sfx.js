@@ -10,8 +10,45 @@
   const M = (window.MTL = window.MTL || {});
   const manifest = window.MTL_AUDIO_MANIFEST || {};
   const cache = {};
+  const immersive = {
+    step_shop: { cooldown: 420 },
+    shelf_pick: { cooldown: 200, fallback: 'click' },
+    notebook: { cooldown: 200, fallback: 'note' },
+    scanner: { cooldown: 250, fallback: 'click' },
+    cash_change: { cooldown: 500, fallback: 'coin' },
+  };
+  const lastCue = new Map();
+  const activeCues = new Set();
   let ctx = null;
   let bgm = null;
+  let speechActive = false;
+
+  function playImmersive(key, cue) {
+    if (key === 'step_shop' && speechActive) return;
+    const now = performance.now();
+    if (now - (lastCue.get(key) ?? -Infinity) < cue.cooldown) return;
+    lastCue.set(key, now);
+    let active;
+    let failed = false;
+    const fallback = () => {
+      if (failed) return;
+      failed = true;
+      if (active) activeCues.delete(active);
+      if (cue.fallback && !speechActive) M.sfx.play(cue.fallback);
+    };
+    const url = manifest[key];
+    if (typeof url !== 'string' || !url) { fallback(); return; }
+    try {
+      const original = cache[key] ||= new Audio(url);
+      const clip = original.cloneNode();
+      clip.volume = speechActive ? 0.35 : 0.7;
+      active = { key, clip };
+      activeCues.add(active);
+      clip.addEventListener('ended', () => activeCues.delete(active), { once: true });
+      clip.addEventListener('error', fallback, { once: true });
+      clip.play().catch(fallback);
+    } catch (error) { fallback(); }
+  }
 
   function ac() {
     if (!ctx) { const C = window.AudioContext || window.webkitAudioContext; if (C) ctx = new C(); }
@@ -61,6 +98,7 @@
   M.sfx = {
     play(key) {
       if (!M.State || !M.State.data.settings.sound) return;
+      if (Object.hasOwn(immersive, key)) { playImmersive(key, immersive[key]); return; }
       const url = manifest[key];
       if (Array.isArray(url) && typeof zzfx === 'function') {
         try { zzfx(...url); return; } catch (e) { /* ใช้เสียงสำรองด้านล่าง */ }
@@ -76,9 +114,20 @@
     },
     startBgm() {
       if (!M.State || !M.State.data.settings.sound || typeof manifest.bgm_store !== 'string') return;
-      if (!bgm) { bgm = new Audio(manifest.bgm_store); bgm.loop = true; bgm.volume = 0.25; }
+      if (!bgm) { bgm = new Audio(manifest.bgm_store); bgm.loop = true; }
+      bgm.volume = speechActive ? 0.125 : 0.25;
       bgm.play().catch(() => {});
     },
     stopBgm() { if (bgm) bgm.pause(); },
+    setSpeechActive(active) {
+      speechActive = active;
+      if (bgm) bgm.volume = active ? 0.125 : 0.25;
+      for (const cue of activeCues) {
+        if (active && cue.key === 'step_shop') {
+          cue.clip.pause();
+          activeCues.delete(cue);
+        } else cue.clip.volume = active ? 0.35 : 0.7;
+      }
+    },
   };
 })();

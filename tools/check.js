@@ -179,7 +179,8 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
 }
 
 // ---- 4) manifest เสียง/ภาพ ----
-const AUDIO_KEYS = ['click', 'correct', 'wrong', 'coin', 'star', 'door', 'levelup', 'tick', 'whoosh', 'note', 'bgm_store', 'rain', 'lesson_step'];
+const AUDIO_KEYS = ['click', 'correct', 'wrong', 'coin', 'star', 'door', 'levelup', 'tick', 'whoosh', 'note', 'bgm_store', 'rain', 'lesson_step',
+  'step_shop', 'shelf_pick', 'notebook', 'scanner', 'cash_change'];
 const SPRITE_KEYS = ['shelf', 'counter', 'customer_1', 'customer_2', 'customer_3', 'customer_4', 'customer_5',
   'customer_1_walk', 'customer_2_walk', 'customer_3_walk', 'customer_4_walk',
   'item_water_small', 'item_water_big', 'item_snack_small', 'item_snack_big', 'item_household_small', 'item_household_big'];

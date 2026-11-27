@@ -69,12 +69,14 @@
       const stop = () => {
         if (stopVoice !== stop) return;
         stopVoice = null;
+        M.sfx?.setSpeechActive?.(false);
         clearTimeout(timer);
         clip?.pause();
         if (utterance) speech.cancel();
         resolve();
       };
       stopVoice = stop;
+      M.sfx?.setSpeechActive?.(true);
       const fallback = () => {
         if (stopVoice !== stop || fallbackStarted) return;
         fallbackStarted = true;
