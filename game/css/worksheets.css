@@ -1,0 +1,16 @@
+.worksheet-controls{margin:0 0 16px}
+.worksheet-form fieldset{min-width:0;margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:10px}
+.worksheet-form legend{font-weight:700}
+.worksheet-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px}
+.worksheet-fields label{display:grid;align-content:start;gap:4px}
+.worksheet-fields input,.worksheet-fields select{max-width:100%;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:inherit}
+.worksheet-table{overflow-x:auto;margin:10px 0}
+.worksheet-table th{white-space:nowrap}
+.worksheet-evidence{margin-bottom:14px}
+.real-field{grid-template-columns:minmax(0,1fr);gap:4px}
+.real-field label{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.real-field label span{flex:1 1 14rem}
+.real-field input:not([type=checkbox]),.real-field select{flex:1 1 12rem;min-width:0}
+.real-field input[type=checkbox]{width:auto}
+.real-field .err{color:var(--bad)}
+.real-field .err:empty{display:none}

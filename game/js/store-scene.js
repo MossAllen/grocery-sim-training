@@ -5,6 +5,8 @@
 (function () {
   const M = (window.MTL = window.MTL || {});
   const W = 800, H = 380;
+  const WALK_FRAME_DISTANCE = 18;
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   const spriteCache = {};
   function sprite(key) {
     const url = (window.MTL_SPRITE_MANIFEST || {})[key];
@@ -42,9 +44,9 @@
     spawn(data = {}) {
       const i = this.id++ % FACES.length;
       const cust = {
-        id: this.id, x: 40, y: 330, face: data.face || FACES[i], shirt: SHIRTS[i], sprite: `customer_${i + 1}`,
+        id: this.id, x: 40, y: 330, face: data.face || FACES[i], shirt: SHIRTS[i], sprite: data.sprite || `customer_${i + 1}`,
         path: [{ x: 120, y: 250 }, { x: 160 + Math.random() * 380, y: 190 }, { x: 650, y: 260 }, { x: 760, y: 340 }],
-        step: 0, wait: 0, speed: 120 + Math.random() * 50, data, bubble: data.bubble || null, done: false,
+        step: 0, wait: 0, stride: 0, speed: 120 + Math.random() * 50, data, bubble: data.bubble || null, done: false,
       };
       cust.path[1].wait = data.shelfWait ?? 1.6;
       cust.path[2].wait = data.counterWait ?? 0.7;
@@ -56,11 +58,12 @@
     update(dt) {
       this.clock += dt * this.minutesPerSec;
       for (const c of this.customers) {
-        if (c.wait > 0) { c.wait -= dt; continue; }
+        if (c.wait > 0) { c.wait -= dt; c.stride = 0; continue; }
         const p = c.path[c.step];
         if (!p) { c.done = true; continue; }
         const dx = p.x - c.x, dy = p.y - c.y, d = Math.hypot(dx, dy);
         const v = c.speed * dt * (this.opts.speedMul || 1);
+        c.stride = (c.stride + Math.min(d, v)) % (2 * WALK_FRAME_DISTANCE);
         if (d <= v) {
           c.x = p.x; c.y = p.y; c.wait = p.wait || 0;
           if (this.opts.onArrive) this.opts.onArrive(c, c.step);
@@ -131,7 +134,8 @@
       // ลูกค้า
       const sorted = this.customers.slice().sort((a, b) => a.y - b.y);
       for (const c of sorted) {
-        const img = sprite(c.sprite);
+        const walking = !reducedMotion?.matches && c.wait <= 0 && c.stride >= WALK_FRAME_DISTANCE;
+        const img = (walking && sprite(`${c.sprite}_walk`)) || sprite(c.sprite);
         g.fillStyle = 'rgba(0,0,0,.15)'; g.beginPath(); g.ellipse(c.x, c.y + 4, 16, 5, 0, 0, Math.PI * 2); g.fill();
         if (img) g.drawImage(img, c.x - 28, c.y - 80, 56, 84);
         else {

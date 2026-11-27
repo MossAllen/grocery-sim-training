@@ -67,6 +67,13 @@
     { see: `ลูกค้ารีบหยิบ ${P.small.name} แล้วจ่ายเงินในไม่ถึง 30 วินาที`, good: 'รีบเดินทาง ต้องการซื้อเร็ว', P: 'Product' },
     { see: 'ลูกค้าอ่านป้าย "ซื้อ 2 คุ้มกว่า" แล้วหยิบเพิ่มอีก 1 ชิ้น', good: 'ป้ายโปรมีผลต่อการตัดสินใจ', P: 'Promotion' },
     { see: `ลูกค้าซื้อ ${P.big.name} ครั้งละ 3 ${P.unit} ไปใช้ที่บ้าน`, good: 'ซื้อไปใช้ที่บ้าน สนใจความคุ้ม', P: 'Product' },
+    // เพิ่มจาก Gemini Neo (Antigravity CLI) 2026-11-26
+    { see: 'ลูกค้าพลิกดูฉลากด้านหลังสินค้าอยู่ครู่หนึ่งแล้ววางกลับเข้าชั้น', good: 'ลูกค้าอาจกำลังตรวจสอบส่วนผสม ปริมาณ หรือข้อมูลการใช้งานของสินค้าก่อนตัดสินใจ', P: 'Product' },
+    { see: 'ลูกค้าหยิบสินค้าขนาดเล็กและขนาดใหญ่มาเทียบกันแล้วกดเครื่องคิดเลขในมือถือ', good: 'ลูกค้าอาจกำลังคำนวณราคาต่อหน่วยเพื่อเทียบความคุ้มค่าระหว่างสองขนาด', P: 'Price' },
+    { see: 'ลูกค้ามองไปที่แถวรอจ่ายเงินที่ยาวถึงกลางร้าน แล้ววางสินค้าลงก่อนเดินออกจากร้าน', good: 'ขั้นตอนหรือพื้นที่รอชำระเงินอาจทำให้ลูกค้ารู้สึกใช้เวลานานจนเปลี่ยนใจไม่ซื้อ', P: 'Place' },
+    { see: 'ลูกค้าถามว่าช่วงนี้มีสิทธิ์สะสมแต้มหรือคูปองส่วนลดสำหรับลูกค้าประจำไหม', good: 'แรงจูงใจอย่างระบบสะสมแต้มหรือคูปองอาจช่วยให้ลูกค้ากลับมาซื้อซ้ำบ่อยขึ้น', P: 'Promotion' },
+    { see: 'ลูกค้าถามว่าสินค้าที่มีหลายแบบวางอยู่ตรงหน้าต่างกันอย่างไร', good: 'ลูกค้าอาจยังไม่เห็นความแตกต่างของคุณสมบัติสินค้าแต่ละแบบอย่างชัดเจน', P: 'Product' },
+    { see: 'ลูกค้าหยุดอ่านป้ายแนะนำสินค้าใหม่หน้าร้านแล้วชวนคนที่เดินมาด้วยกันเข้ามาดู', good: 'สื่อประชาสัมพันธ์หน้าร้านที่เห็นชัดช่วยดึงความสนใจและชักชวนให้คนเข้าร้านเพิ่มได้', P: 'Promotion' },
   ];
   M.badReasons = ['ลูกค้าเป็นคนขี้เหนียว', 'ลูกค้าไม่ชอบร้านเรา', 'ลูกค้าคงอารมณ์ไม่ดี', 'ลูกค้าจะไม่กลับมาซื้ออีก'];
 
@@ -97,8 +104,9 @@
         },
         {
           title: 'สังเกตพฤติกรรมลูกค้า', skill: 'evid', engine: 'observe',
+          variant: 'timeCompare',
           theory: 'ข้อสังเกตคือสิ่งที่เห็นหรือได้ยิน เช่น ลูกค้าถามราคาขวดเล็ก ส่วนการตีความคือเหตุผลที่เราเสนอจากสิ่งนั้น',
-          task: 'คลิกลูกค้าที่มีเครื่องหมาย ! เพื่อจดเหตุการณ์ 5 ครั้ง แล้วเลือกเหตุผลที่เป็นไปได้ของแต่ละเหตุการณ์ (เรียกว่า "ลูกค้า" แทนชื่อ)',
+          task: 'เลือกสังเกตแบบเดิมหรือเทียบเช้ากับเย็น จดเหตุการณ์ 5 ครั้ง แล้วเลือกเหตุผลที่หลักฐานรองรับ',
           need: 5,
         },
         {
@@ -410,27 +418,32 @@
           check: { q: '“... in total” บอกตัวเลขใด', options: ['ยอดที่ลูกค้าต้องจ่ายรวม', 'ราคาต่อชิ้น', 'ส่วนลดต่อชิ้น', 'ต้นทุนของร้าน'], answer: 0,
             explain: 'in total ชี้ยอดจ่ายรวม คิดตามกติกาโปรแล้วพูดทั้งจำนวนและยอดรวม' },
           script: (ctx) => {
-            const P = ctx.product, E = P.en, p = P.promo.price;
-            const B = (ctx.state.sim.plan && ctx.state.sim.plan.bundle) || Math.round(0.9 * 2 * p);
+            const P = ctx.product, E = P.en;
+            const prices = M.RealW4?.pricing(ctx);
+            const p = prices?.P ?? Math.round(P.promo.price * 100);
+            const B = prices?.B ?? Math.round((ctx.state.sim.plan?.bundle ?? Math.round(0.9 * 2 * P.promo.price)) * 100);
+            const sayPrice = M.RealW4?.sayPrice || ((satang) => baht(satang / 100));
+            const showPrice = (satang) => M.fmt(satang / 100);
             const uniq = (choices) => choices.filter((c, i) => c.ok || (c.en !== choices.find((x) => x.ok).en && choices.findIndex((x) => x.en === c.en) === i));
             return [
               { them: `Can I have one ${E.unit}, please?`, th: 'ขอ 1 ชิ้น' },
               { choices: uniq([
-                { en: `One ${E.unit} is ${baht(p)}.`, ok: true },
-                { en: `One ${E.unit} is ${baht(B)}.`, ok: false, why: `${B} บาทคือราคาโปร 2 ชิ้น` },
-                { en: `One ${E.units} are ${baht(p)}.`, ok: false, why: 'หนึ่งชิ้นใช้เอกพจน์ is' },
+                { en: `One ${E.unit} is ${sayPrice(p)}.`, ok: true },
+                { en: `One ${E.unit} is ${sayPrice(B)}.`, ok: false, why: `${showPrice(B)} บาทคือราคาโปร 2 ชิ้น` },
+                { en: `One ${E.units} are ${sayPrice(p)}.`, ok: false, why: 'หนึ่งชิ้นใช้เอกพจน์ is' },
               ]) },
               { them: `Actually, I'll take two ${E.units}.`, th: 'เอา 2 ชิ้นดีกว่า' },
               { choices: uniq([
-                { en: `Two ${E.units} are ${baht(B)} in total.`, ok: true },
-                { en: `Two ${E.units} are ${baht(2 * p)} in total.`, ok: false, why: `ลืมราคาโปร 2 ชิ้น ${B} บาท` },
-                { en: `Two ${E.unit} is ${baht(B)} in total.`, ok: false, why: 'สองชิ้นใช้พหูพจน์ are' },
+                { en: `Two ${E.units} are ${sayPrice(B)} in total.`, ok: true },
+                { en: `Two ${E.units} are ${sayPrice(2 * p)} in total.`, ok: false, why: `ลืมราคาโปร 2 ชิ้น ${showPrice(B)} บาท` },
+                { en: `Two ${E.unit} is ${sayPrice(B)} in total.`, ok: false, why: 'สองชิ้นใช้พหูพจน์ are' },
               ]) },
               { them: `And my friend wants four ${E.units}.`, th: 'เพื่อนเอา 4 ชิ้น' },
               { choices: uniq([
-                { en: `Four ${E.units} are ${baht(2 * B)} in total.`, ok: true },
-                { en: `Four ${E.units} are ${baht(4 * p)} in total.`, ok: false, why: `4 ชิ้น = โปร 2 ชุด = 2 × ${B} = ${2 * B} บาท` },
-                { en: `Four ${E.units} are ${baht(B + 2 * p)} in total.`, ok: false, why: `คิดโปรแค่ชุดเดียว 4 ชิ้นได้ 2 ชุด = ${2 * B} บาท` },
+                { en: `Four ${E.units} are ${sayPrice(2 * B)} in total.`, ok: true },
+                { en: `Four ${E.units} are ${sayPrice(4 * p)} in total.`, ok: false, why: `4 ชิ้น = โปร 2 ชุด = 2 × ${showPrice(B)} = ${showPrice(2 * B)} บาท` },
+                { en: `Four ${E.units} are ${sayPrice(B + 2 * p)} in total.`, ok: false, why: `คิดโปรแค่ชุดเดียว 4 ชิ้นได้ 2 ชุด = ${showPrice(2 * B)} บาท` },
+                { en: `Four ${E.unit} is ${sayPrice(2 * B)} in total.`, ok: false, why: 'สี่ชิ้นใช้พหูพจน์ are' },
               ]) },
             ];
           },

@@ -39,6 +39,29 @@
 | ETF พื้นฐาน | [Investor.gov — Investor Bulletin: ETFs](https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins-24) · [กองทุนรวมเทียบ ETF](https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/characteristics-mutual-funds-exchange-traded-funds) · [ค่าธรรมเนียม](https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins/mutual-fund-and-etf-fees-and-expenses-investor-bulletin) | ส.8 ร.5 |
 | แบบ W-8BEN | [IRS — Instructions for Form W-8BEN](https://www.irs.gov/instructions/iw8ben) | ส.7 ร.5 |
 
+
+### แหล่งเพิ่มสำหรับตารางอ่านประกอบ GDD §10
+
+| แหล่งจากผู้เผยแพร่ | ใช้กับ |
+|---|---|
+| [OpenStax — ส่วนประสมการตลาด 4P](https://openstax.org/books/principles-marketing/pages/1-2-the-marketing-mix-and-the-4ps-of-marketing) | W1R1, W1R3 |
+| [OpenStax — ขั้นตอนการวิจัยตลาด](https://openstax.org/books/principles-marketing/pages/6-3-steps-in-a-successful-marketing-research-plan) | W1R2, W4R1 |
+| [British Council — ถามขนาดและราคา (เสียงและบทถอดความ)](https://learnenglish.britishcouncil.org/free-resources/listening/a1/shopping-clothes) | W1R4, W2R4, W3R4, W4R4, W7R4 |
+| [OpenStax — การแบ่งกลุ่มตลาด](https://openstax.org/books/principles-marketing/pages/5-1-market-segmentation-and-consumer-markets) | W2R1 |
+| [ACCC — การเทียบราคาต่อหน่วย](https://www.accc.gov.au/business/pricing/unit-pricing) | W2R2 |
+| [กรมการค้าภายใน — ประกาศการแสดงราคาสินค้าและค่าบริการ (PDF)](https://www.dit.go.th/media/cejpahs1/20260707163750_4880.pdf) | W7R1 |
+| [OpenStax — จุดยืนสินค้า](https://openstax.org/books/principles-marketing/pages/5-6-product-positioning) | W2R3 |
+| [OpenStax — ส่วนต่างและจุดคุ้มทุน](https://openstax.org/books/principles-managerial-accounting/pages/3-2-calculate-a-break-even-point-in-units-and-dollars) | W3R1, W4R2 |
+| [OpenStax — การจัดการสินค้าคงเหลือ](https://openstax.org/books/principles-finance/pages/19-5-inventory-management) | W3R3 |
+| [Strategyzer — ใบออกแบบการทดลอง](https://www.strategyzer.com/library/validate-your-ideas-with-the-test-card) | W4R3, W6R3 |
+| [OpenStax — ตัวชี้วัดการตลาดออนไลน์](https://openstax.org/books/principles-marketing/pages/16-3-metrics-used-to-evaluate-the-success-of-online-marketing) | W5R3, W8R2 |
+| [British Council — บทบาทสมมติบริการหน้าร้าน](https://www.teachingenglish.org.uk/teaching-resources/teaching-adults/activities/pre-intermediate-a2/shop-service-role-play) | W5R4, W7R2, W7R3 |
+| [Strategyzer — Business Model Canvas](https://www.strategyzer.com/library/the-business-model-canvas) | W6R1, W6R2 |
+| [Strategyzer — ข้อเสนอคุณค่า](https://www.strategyzer.com/value-proposition) | W6R4 |
+| [OpenStax — โครงสร้างแผนการตลาด](https://openstax.org/books/principles-marketing/pages/2-3-purpose-and-structure-of-the-marketing-plan) | W8R1 |
+| [TED Masterclass — หลักการจัดสไลด์ให้อ่านง่าย](https://masterclass.ted.com/blog/visual-presentations-series-less-is-more) | W8R3 |
+| [OpenStax — ออกแบบคำเสนอให้เหมาะกับผู้ฟัง](https://openstax.org/books/entrepreneurship/pages/7-3-developing-pitches-for-various-audiences-and-goals) | W8R4 |
+
 ## 2. คลิปและสื่อการสอน
 
 ### การตลาด (ส.1–2, ส.6)
@@ -83,6 +106,33 @@
 | [Kenney — Must-see videos for indie developers](https://kenney.nl/learn/must-see-videos-for-indie-developers) | รวมคลิปสำคัญ รวมถึง "Juice it or lose it" และ "The art of screenshake" |
 | [Game feel (Wikipedia)](https://en.wikipedia.org/wiki/Game_feel) | นิยามและแหล่งอ้างอิงต่อ |
 | [Making a game feel juicy with simple effects (itch.io)](https://itch.io/blog/1059831/making-a-game-feel-juicy-with-simple-effects) | เทคนิคเล็ก ๆ ที่ทำได้ทันที |
+
+
+### แหล่งเพิ่มสำหรับตารางอ่านประกอบ GDD §10
+
+| แหล่งจากผู้เผยแพร่ | ใช้กับ |
+|---|---|
+| [Strategyzer — บันทึกวิดีโอการสัมภาษณ์ลูกค้า](https://www.strategyzer.com/library/how-to-talk-to-customers) | W1R2 |
+| [British Council — วิดีโอ At the Shop](https://learnenglishteens.britishcouncil.org/skills/speaking/a1-speaking/shop) | W1R4, W2R4, W3R4, W4R4, W7R4 |
+| [Khan Academy — วิดีโอจัดงบให้สมดุล](https://www.khanacademy.org/college-careers-more/financial-literacy/xa6995ea67a8e9fdd%3Abudgeting-and-saving/xa6995ea67a8e9fdd%3Abudgeting/v/balancing-a-budget-fin-lit) | W1R5 |
+| [Strategyzer — วิดีโอข้อเสนอคุณค่า 3 นาที](https://www.strategyzer.com/value-proposition) | W6R4 |
+| [VRU Startup — STP Marketing](https://www.youtube.com/watch?v=VcYZDVRSg64) | W2R1 |
+| [ACCC — Unit pricing explained](https://www.youtube.com/watch?v=_8_RMaCwS-k) | W2R2 |
+| [Khan Academy — วิดีโอค่างวดกับยอดจ่ายรวม](https://www.khanacademy.org/economics-finance-domain/economics-personal-finance-va/x3ed8f3aede624754%3Acar-buying/x3ed8f3aede624754%3Acar-loans/v/monthly-payment-versus-total-cost) | W2R5 |
+| [Khan Academy — วิดีโอแยกยอดขาย ต้นทุน และกำไร](https://www.khanacademy.org/v/introduction-to-the-income-statement?topic=valuation-and-investing) | W3R1, W3R2 |
+| [Khan Academy — วิดีโอแยกกำไรกับกระแสเงินสด](https://www.khanacademy.org/economics-finance-domain/core-finance/accounting-and-financial-stateme/financial-statements-tutorial/v/basic-cash-flow-statement) | W3R3, W3R5 |
+| [กรมสรรพากร — เอกสารประกอบการลงบัญชี ตอน 2](https://www.youtube.com/watch?v=NR3QOBE9Km4) | W4R5 |
+| [University of Kansas — Public companies](https://opentext.ku.edu/becredible/chapter/public-companies/) | W6R5 |
+| [Strategyzer — วิดีโอออกแบบการทดลองด้วย Test Card](https://www.youtube.com/watch?v=cW46ySJmLD8) | W4R1, W6R3, W8R2 |
+| [Google Career Certificates — เส้นทางลูกค้าและกรวยการตลาด](https://www.youtube.com/watch?v=VT7brk804Ow) | W5R1 |
+| [Khan Academy — วิดีโอตัวตั้ง ตัวหาร และร้อยละ](https://www.khanacademy.org/v/percent-word-problems) | W5R3 |
+| [British Council — วิดีโอ Checking Understanding](https://learnenglish.britishcouncil.org/free-resources/speaking/a1/checking-understanding) | W5R4 |
+| [British Council — วิดีโอ Making Suggestions](https://learnenglish.britishcouncil.org/free-resources/speaking/a1/making-suggestions) | W7R2, W7R3 |
+| [SET in the City — วิดีโอหุ้นปันผล](https://www.youtube.com/watch?v=hNsmP4LxqO4) | W7R5 |
+| [Strategyzer — Learning Card พร้อมวิดีโอ](https://www.strategyzer.com/library/capture-customer-insights-and-actions-with-the-learning-card) | W8R1 |
+| [TED-Ed — วิดีโอใช้ภาพประกอบการนำเสนอ](https://ed.ted.com/lessons/how-to-effectively-use-visuals-in-your-presentation) | W8R3 |
+| [British Council — วิดีโอนำเสนอผลและข้อจำกัด](https://learnenglish.britishcouncil.org/free-resources/business/youre-hired/episode-06) | W8R4 |
+| [SET Thailand — ความเสี่ยงเรื่องค่าเงิน](https://www.youtube.com/watch?v=1iNIBu5CiVg) | W8R5 |
 
 ## 3. GitHub: เขียนโค้ดเกม
 

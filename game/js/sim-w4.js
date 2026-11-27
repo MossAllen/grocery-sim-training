@@ -8,6 +8,8 @@
   const { esc, fmt, $, $$, sfx, State } = M;
   const PM = M.PromoModel;
   const T = 30, K = 60;
+  // กลุ่มลูกค้าในโมเดล §5 → ภาพ Blender (docs/ART_SPEC.md)
+  const GROUP_SPRITE = { rush: 'customer_1', home: 'customer_2', student: 'customer_3', compare: 'customer_4' };
 
   // ---------- ตัวช่วยเงิน (สตางค์) ----------
   const bt = (s) => fmt(s / 100, 2);                       // สตางค์ → "18.75"
@@ -24,7 +26,7 @@
   };
 
   // ---------- กราฟแท่งเทียบสองช่วง (สเกลเดียวกัน แสดงค่าติดลบได้) ----------
-  function chart(rows) {
+  function chart(rows, normalName = 'ช่วงปกติ', promoName = 'ช่วงโปร', sources) {
     // rows: [{label, a, b}] สตางค์ · a = ช่วงปกติ, b = ช่วงโปร
     const vals = rows.flatMap((r) => [r.a, r.b]);
     const max = Math.max(0, ...vals), min = Math.min(0, ...vals), span = max - min || 1;
@@ -43,7 +45,7 @@
       });
       s += `<text x="${cx}" y="${H - bot + 34}" text-anchor="middle" class="l">${esc(r.label)}</text>`;
     });
-    s += `</svg><div class="legend"><span><i class="a"></i>ช่วงปกติ</span><span><i class="b"></i>ช่วงโปร</span><span class="muted">หน่วย: บาท · ${LBL.sim} ค่าจากเกม</span></div>`;
+    s += `</svg><div class="legend"><span><i class="a"></i>${esc(normalName)}</span><span><i class="b"></i>${esc(promoName)}</span><span class="muted">หน่วย: บาท · ${sources ? esc(sources) : `${LBL.sim} ค่าจากเกม`}</span></div>`;
     return s;
   }
 
@@ -51,13 +53,13 @@
   // field: { key, label, unit, kind:'money'|'int'|'sets'|'choice', answer, options?, diagnose?(value)->string }
   function form(el, fields, onDone) {
     el.innerHTML = `<form class="calc-form" autocomplete="off" novalidate>${fields.map((f) => `
-      <div class="field w4"><span>${f.label}</span>
+      <div class="field w4"><label for="w4-${f.key}">${f.label}</label>
         ${f.kind === 'choice'
-          ? `<select name="${f.key}"><option value="">— เลือก —</option>${f.options.map((o) => `<option>${esc(o)}</option>`).join('')}</select><em></em>`
-          : `<input name="${f.key}" inputmode="decimal" placeholder="0"><em>${f.unit || ''}</em>`}
+          ? `<select name="${f.key}" id="w4-${f.key}" aria-describedby="w4-${f.key}-error"><option value="">— เลือก —</option>${f.options.map((o) => `<option>${esc(o)}</option>`).join('')}</select><em></em>`
+          : `<input name="${f.key}" id="w4-${f.key}" aria-describedby="w4-${f.key}-error" inputmode="${f.kind === 'money' ? 'decimal' : 'numeric'}" placeholder="0"><em>${f.unit || ''}</em>`}
         <b class="mark"></b>
         ${f.kind === 'sets' ? `<label class="imp"><input type="checkbox" name="${f.key}_imp"> ทำไม่ได้ด้วยยอดชุดอย่างเดียว</label>` : ''}
-        <small class="err"></small></div>`).join('')}
+        <small class="err" id="w4-${f.key}-error" aria-live="polite"></small></div>`).join('')}
       <div class="row"><button class="btn primary chk">ตรวจคำตอบ</button></div></form><div class="solution hidden"></div>`;
     const fm = $('form', el);
     fm.onsubmit = (e) => {
@@ -152,12 +154,13 @@
     };
     M.onLeave = () => { finished = true; scene.stop(); clearInterval(timer); M.sfx.stopBgm(); };
     $('.go', el).onclick = (e) => {
-      e.target.disabled = true; $('.skip', el).disabled = false; sfx.play('click'); scene.start(); M.sfx.startBgm();
+      e.target.disabled = true; $('.skip', el).disabled = false; sfx.play(pair.event === 'rain' ? 'rain' : 'click'); scene.start(); M.sfx.startBgm();
       const msPerMin = 600;
       timer = setInterval(() => {
         scene.clock = start + minute; scene.sign = signText();
         while (idx < run.sales.length && run.sales[idx].minute <= minute) {
-          scene.spawn({ r: run.sales[idx++], shelfWait: 0.4, counterWait: 0.3 }); entered++; paint();
+          const rec = run.sales[idx++];
+          scene.spawn({ r: rec, sprite: GROUP_SPRITE[rec.group], shelfWait: 0.4, counterWait: 0.3 }); entered++; paint();
         }
         minute++;
         if (minute > T && scene.customers.length === 0) end();
@@ -217,7 +220,10 @@
             N0: r.N, R0, COGS0, G0, customers: r.customers, lostEvent: r.lostEvent, note: getWs(), at: Date.now() };
           if (store.baseline || store.plan || store.run) store.history.push({ baseline: store.baseline, plan: store.plan, run: store.run });
           store.baseline = rec; store.plan = null; store.run = null;
+          // ข้อมูลกำกับของฐานจริงอยู่ในประวัติผ่าน rec เดิมแล้ว
+          for (const key of ['id', 'period', 'inputs', 'sourceByField', 'seed']) delete store[key];
           ctx.state.sim.baseline = { units: r.N, sales: R0 / 100, rain: pair.event === 'rain' }; // สำหรับรอบเดิม
+          ctx.state.sim.plan = null; ctx.state.sim.run = null;
           State.addPortfolio('w4-baseline', 4, 'ยอดขายช่วงปกติ',
             `[จำลอง] ${pair.slot === 'am' ? '09:00' : '17:00'} · ${T} นาที · ${pm.p.name} ราคา ${bt(pm.P)} ทุน ${bt(pm.C)} บาท\nขาย ${r.N} ชิ้น · ยอดขาย ${bt(R0)} · ต้นทุนขาย ${bt(COGS0)} · กำไรขั้นต้น ${bt(G0)} บาท\nปัจจัยอื่น: ${factorText(pair, r)}${rec.note ? `\nบันทึก: ${rec.note}` : ''}\nรหัสอ้างอิง ${rec.id} · seed ${seed}`);
           State.save();
@@ -292,6 +298,7 @@
           const rec = { id: State.newId('plan'), baselineId: b.id, practiceBase: practice, B, F, M: Mx, cover: pl.cover, match: pl.match, at: Date.now() };
           store.plan = rec; store.run = null;
           ctx.state.sim.plan = { bundle: B / 100, sign: F / 100, margin: Mx / 100, breakeven: pl.cover, target: pl.match };
+          ctx.state.sim.run = null;
           State.addPortfolio('w4-plan', 4, 'แผนโปรโมชัน',
             `[แผน] โปร 2 ชิ้น ${bt(B)} บาท (ส่วนลด ${fmt(((2 * pm.P - B) / (2 * pm.P)) * 100, 1)}%) · ค่าทำโปร ${bt(F)} บาท\nส่วนต่าง/ชุด ${bt(Mx)} · คุ้มค่าป้าย ${show(pl.cover)} · เท่าช่วงปกติ ${show(pl.match)}\nอ้างฐาน ${b.id}${practice ? ' (โจทย์ฝึก)' : ''} · รหัสแผน ${rec.id}`);
           State.save();
@@ -367,10 +374,18 @@
     });
   }
 
+  function chooseMode(el, round, ctx, finish) {
+    el.innerHTML = `<div class="calc-intro"><b>เลือกแหล่งข้อมูลยอดปกติ</b><br>เริ่มจากฉากจำลองได้ทันที หรือใช้ยอดที่สังเกตจากร้านเพื่อเทียบกับช่วงโปรในรอบถัดไป</div>
+      <div class="row"><button class="btn primary use-sim">เล่นแบบจำลอง</button><button class="btn use-real">ใช้ข้อมูลร้าน</button></div>`;
+    $('.use-sim', el).onclick = () => baseline(el, round, ctx, finish);
+    $('.use-real', el).onclick = () => M.RealW4.baseline(el, ctx, finish, () => chooseMode(el, round, ctx, finish));
+  }
+
   M.engines.sim = (el, round, ctx, finish) => {
-    if (round.mode === 'baseline') return baseline(el, round, ctx, finish);
-    if (round.mode === 'plan') return plan(el, round, ctx, finish);
-    return runRound(el, round, ctx, finish);
+    if (round.mode === 'baseline') return chooseMode(el, round, ctx, finish);
+    const real = State.promo(ctx.product.id).baseline?.source === M.RealW4.real;
+    if (round.mode === 'plan') return real ? M.RealW4.plan(el, ctx, finish) : plan(el, round, ctx, finish);
+    return real ? M.RealW4.run(el, ctx, finish) : runRound(el, round, ctx, finish);
   };
-  M.W4 = { chart, parseMoney, parseInt0 };
+  M.W4 = { chart, form, parseMoney, parseInt0 };
 })();

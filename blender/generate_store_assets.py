@@ -3,18 +3,21 @@ generate_store_assets.py — สร้างภาพสไปรต์ร้า
 
 วิธีรัน (จากโฟลเดอร์ marketing-training-lab):
     blender -b -P blender/generate_store_assets.py
+    blender -b -P blender/generate_store_assets.py -- --walking-only
 
 ผลลัพธ์:
     game/assets/sprites/<key>.png        ภาพ PNG พื้นหลังโปร่งใส
     game/assets/sprites/manifest.js      เขียนทับให้เกมโหลดภาพเหล่านี้อัตโนมัติ
 
 คีย์และขนาดต้องตรงกับ docs/ART_SPEC.md (ห้ามเปลี่ยนชื่อคีย์)
-ทดสอบกับ Blender 3.6 และ 4.x — ถ้าต้องการโมเดลละเอียดขึ้น ให้แก้ฟังก์ชัน build_* แต่คงชื่อคีย์เดิม
+ทดสอบกับ Blender 3.6, 4.x และ 5.3 — ถ้าต้องการโมเดลละเอียดขึ้น ให้แก้ฟังก์ชัน build_* แต่คงชื่อคีย์เดิม
 """
 import math
 import os
+import sys
 
 import bpy
+from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "game", "assets", "sprites"))
@@ -126,13 +129,97 @@ def build_counter():
     return 1.6
 
 
-def build_customer(i):
-    skin, shirt, pants = mat("skin", (0.96, 0.78, 0.6)), mat("shirt", SHIRTS[i]), mat("pants", (0.2, 0.22, 0.3))
-    cyl((0, 0, 0.45), 0.22, 0.9, pants)
-    cyl((0, 0, 1.2), 0.3, 0.7, shirt)
-    sphere((0, 0, 1.8), 0.28, skin)
-    sphere((0, 0.02, 1.95), 0.27, mat("hair", (0.15 + 0.1 * i, 0.1, 0.05)))
-    return 2.2
+def limb(a, b, r, material):
+    """ทรงกระบอกจากจุด a ไปจุด b (ใช้ทำแขนและสายกระเป๋า)"""
+    va, vb = Vector(a), Vector(b)
+    d = vb - va
+    bpy.ops.mesh.primitive_cylinder_add(vertices=10, radius=r, depth=d.length, location=(va + vb) / 2)
+    o = bpy.context.active_object
+    o.rotation_euler = d.to_track_quat("Z", "Y").to_euler()
+    o.data.materials.append(material)
+    return o
+
+
+def ring(loc, r, thick, material):
+    """วงแหวนหันเข้าหากล้อง (กรอบแว่น)"""
+    bpy.ops.mesh.primitive_torus_add(major_radius=r, minor_radius=thick, location=loc, rotation=(math.pi / 2, 0, 0), major_segments=16, minor_segments=6)
+    o = bpy.context.active_object
+    o.data.materials.append(material)
+    return o
+
+
+def build_walking_legs(scale, pants):
+    shoes = mat("shoes", (0.10, 0.09, 0.08))
+    for side in (-1, 1):
+        hip = (side * 0.10 * scale, 0, 0.88 * scale)
+        knee = (side * 0.15 * scale, -side * 0.19 * scale, 0.47 * scale)
+        ankle_height = 0.09 if side == 1 else 0.19
+        ankle = (side * 0.23 * scale, -side * 0.32 * scale, ankle_height * scale)
+        limb(hip, knee, 0.107 * scale, pants)
+        sphere(knee, 0.106 * scale, pants)
+        limb(knee, ankle, 0.104 * scale, pants)
+        cube((ankle[0], ankle[1] - 0.07 * scale, ankle[2] - 0.04 * scale),
+             (0.107 * scale, 0.15 * scale, 0.05 * scale), shoes)
+
+
+# ลูกค้า 4 กลุ่มตาม GDD §5 (+ ลูกค้าทั่วไป) — ต้องแยกออกด้วยรูปทรง ไม่ใช่แค่สีเสื้อ
+#   customer_1 รีบเดินทาง: กระเป๋าสะพายข้าง ตัวเอนไปข้างหน้า
+#   customer_2 ซื้อเข้าบ้าน: ตัวกว้าง ถือตะกร้า
+#   customer_3 นักเรียน: เสื้อขาว กางเกงกรมท่า เป้ใหญ่ ตัวเตี้ยกว่า
+#   customer_4 เทียบราคา: แว่นตา ถือสินค้ายกขึ้นอ่านป้าย
+#   customer_5 ลูกค้าทั่วไป
+def build_customer(i, walking=False):
+    skin = mat("skin", (0.96, 0.78, 0.6))
+    shirt = mat("shirt", SHIRTS[i] if i != 2 else (0.96, 0.96, 0.96))
+    pants = mat("pants", (0.08, 0.12, 0.32) if i == 2 else (0.2, 0.22, 0.3))
+    hair = mat("hair", (0.12 + 0.06 * i, 0.08, 0.05))
+    s = 0.88 if i == 2 else 1.0          # นักเรียนตัวเตี้ยกว่า
+    body_r = 0.36 if i == 1 else 0.3     # ซื้อเข้าบ้านตัวกว้าง
+    lean = 0.12 if i == 0 else 0.0       # รีบเดินทางเอนไปข้างหน้า (เข้าหากล้อง)
+    arm_swing = 0.18 * s if walking else 0.0
+    if walking:
+        build_walking_legs(s, pants)
+    else:
+        cyl((0, 0, 0.45 * s), 0.22 * s / 0.88 if i == 1 else 0.22 * s, 0.9 * s, pants)
+    torso = cyl((0, -lean / 2, 1.2 * s), body_r * s, 0.7 * s, shirt)
+    torso.rotation_euler = (-lean, 0, 0)
+    hy = -lean * 1.6
+    sphere((0, hy, 1.8 * s), 0.28 * s, skin)
+    sphere((0, hy + 0.02, 1.95 * s), 0.27 * s, hair)
+    sh = 1.45 * s  # ระดับไหล่
+    if i == 0:  # กระเป๋าสะพายข้าง + สาย
+        bag = mat("bag", (0.18, 0.16, 0.14))
+        cube((0.42, -0.05, 1.0 * s), (0.12, 0.2, 0.2), bag)
+        limb((-0.22, -0.2, sh), (0.42, -0.1, 1.15 * s), 0.035, bag)
+        limb((0.33, -0.1, sh), (0.4, -0.25, 1.0 * s), 0.08, shirt)
+        limb((-0.33, -0.1, sh), (-0.38, -0.05 - arm_swing, 0.95 * s), 0.08, shirt)
+    elif i == 1:  # ตะกร้าด้านหน้า
+        basket = mat("basket", (0.78, 0.25, 0.2))
+        cube((0, -0.55, 0.95 * s), (0.36, 0.2, 0.17), basket)
+        cube((0, -0.55, 1.13 * s), (0.34, 0.18, 0.02), mat("goods", (0.4, 0.75, 0.95)))
+        limb((-0.3, -0.55, 1.12 * s), (0.3, -0.55, 1.12 * s), 0.03, basket)
+        limb((0.38, -0.1, sh), (0.3, -0.5, 1.15 * s), 0.09, shirt)
+        limb((-0.38, -0.1, sh), (-0.3, -0.5, 1.15 * s), 0.09, shirt)
+    elif i == 2:  # เป้ใหญ่ด้านหลัง + สายเป้
+        pack = mat("pack", (0.2, 0.45, 0.85))
+        cube((0, 0.38, 1.25 * s), (0.27, 0.15, 0.3), pack)
+        for x in (-0.18, 0.18):
+            limb((x, 0.25, sh), (x, -0.27, 1.05 * s), 0.03, pack)
+        limb((0.3, 0, sh), (0.36, -0.05 + arm_swing, 0.95 * s), 0.07, shirt)
+        limb((-0.3, 0, sh), (-0.36, -0.05 - arm_swing, 0.95 * s), 0.07, shirt)
+    elif i == 3:  # แว่น + ถือสินค้ายกขึ้นอ่าน
+        frame = mat("glasses", (0.05, 0.05, 0.05))
+        for x in (-0.11, 0.11):
+            ring((x, -0.27, 1.82), 0.075, 0.014, frame)
+        limb((-0.04, -0.28, 1.82), (0.04, -0.28, 1.82), 0.015, frame)
+        cube((0.2, -0.5, 1.55), (0.1, 0.05, 0.16), mat("item", (0.9, 0.2, 0.25)))
+        cube((0.2, -0.56, 1.55), (0.07, 0.01, 0.05), mat("tag", (1.0, 0.87, 0.35)))
+        limb((0.33, -0.1, sh), (0.24, -0.45, 1.5), 0.08, shirt)
+        limb((-0.33, -0.1, sh), (-0.36, -0.05 - arm_swing, 0.95), 0.08, shirt)
+    else:  # ลูกค้าทั่วไป
+        limb((0.33, 0, sh), (0.38, -0.05, 0.95), 0.08, shirt)
+        limb((-0.33, 0, sh), (-0.38, -0.05, 0.95), 0.08, shirt)
+    return 2.2 * s
 
 
 def build_item(product, size):
@@ -141,7 +228,7 @@ def build_item(product, size):
         body = mat("water", (0.55, 0.8, 0.95), rough=0.1, alpha=0.6)
         h = 1.4 if big else 0.9
         cyl((0, 0, h / 2), 0.28 if big else 0.2, h, body)
-        cyl((0, 0, h + 0.08), 0.09, 0.16, mat("cap", (0.1, 0.4, 0.85)))
+        cyl((0, 0, h + 0.08), 0.09, 0.16, mat("cap", (0.1, 0.4, 0.85) if big else (0.15, 0.7, 0.3)))
         cyl((0, 0, h * 0.55), (0.29 if big else 0.21), h * 0.3, mat("label", (0.95, 0.95, 0.98)))
         return h + 0.2
     if product == "snack":
@@ -165,24 +252,36 @@ def build_item(product, size):
 
 
 # ---------- main ----------
-def main():
-    manifest = {}
+def main(walking_only=False):
+    items = [(product, size) for product in ("water", "snack", "household") for size in ("small", "big")]
+    base_keys = ["shelf", "counter", *(f"customer_{i}" for i in range(1, 6))]
+    base_keys.extend(f"item_{product}_{size}" for product, size in items)
+    if walking_only:
+        missing = [key for key in base_keys if not os.path.isfile(os.path.join(OUT, f"{key}.png"))]
+        if missing:
+            raise RuntimeError(f"Run the full render first; missing sprites: {', '.join(missing)}")
+    else:
+        scn = reset_scene(); h = build_shelf(); camera_and_light(scn, h, "shelf", 3.2)
+        render(scn, "shelf")
 
-    scn = reset_scene(); h = build_shelf(); camera_and_light(scn, h, "shelf", 3.2)
-    manifest["shelf"] = render(scn, "shelf")
+        scn = reset_scene(); h = build_counter(); camera_and_light(scn, h, "counter", 4.2)
+        render(scn, "counter")
 
-    scn = reset_scene(); h = build_counter(); camera_and_light(scn, h, "counter", 4.2)
-    manifest["counter"] = render(scn, "counter")
+        for i in range(5):
+            scn = reset_scene(); build_customer(i); camera_and_light(scn, 2.2, "customer", 1.25)
+            render(scn, f"customer_{i + 1}")
 
-    for i in range(5):
-        scn = reset_scene(); h = build_customer(i); camera_and_light(scn, h, "customer", 0.8)
-        manifest[f"customer_{i + 1}"] = render(scn, f"customer_{i + 1}")
-
-    for product in ("water", "snack", "household"):
-        for size in ("small", "big"):
+        for product, size in items:
             scn = reset_scene(); h = build_item(product, size); camera_and_light(scn, h, "item", 1.0)
-            key = f"item_{product}_{size}"
-            manifest[key] = render(scn, key)
+            render(scn, f"item_{product}_{size}")
+
+    manifest = {key: f"assets/sprites/{key}.png" for key in base_keys}
+    for i in range(4):
+        scn = reset_scene()
+        build_customer(i, walking=True)
+        camera_and_light(scn, 2.2, "customer", 1.25)  # ใช้กรอบเดียวกับท่ายืน
+        key = f"customer_{i + 1}_walk"
+        manifest[key] = render(scn, key)
 
     lines = ",\n".join(f'  {k}: "{v}"' for k, v in manifest.items())
     with open(os.path.join(OUT, "manifest.js"), "w", encoding="utf-8") as f:
@@ -191,4 +290,4 @@ def main():
     print("manifest written:", len(manifest), "sprites")
 
 
-main()
+main(walking_only="--walking-only" in sys.argv)

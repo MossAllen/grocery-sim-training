@@ -43,10 +43,10 @@
               ? `<select name="f${i}"><option value="">— เลือก —</option>${f.options.map((o) => `<option>${esc(o)}</option>`).join('')}</select><em></em>`
               : `<input name="f${i}" inputmode="decimal" placeholder="0"><em>${f.unit || ''}</em>`
           }<b class="mark"></b></label>`).join('')}
-          <div class="row"><button class="btn primary chk">ตรวจคำตอบ</button><button type="button" class="btn ghost new">🎲 สุ่มโจทย์ใหม่</button></div>
+          <div class="row"><button class="btn primary chk">ตรวจคำตอบ</button>${g.fixed ? '' : '<button type="button" class="btn ghost new">🎲 สุ่มโจทย์ใหม่</button>'}</div>
         </form><div class="solution hidden"></div>`;
       const form = $('form', el);
-      $('.new', el).onclick = () => { sfx.play('whoosh'); setup(); };
+      if (!g.fixed) $('.new', el).onclick = () => { sfx.play('whoosh'); setup(); };
       form.onsubmit = (e) => {
         e.preventDefault();
         let ok = 0;
@@ -55,8 +55,8 @@
           let good;
           if (f.options) good = v === f.answer;
           else {
-            const n = parseFloat(v.replace(/,/g, '').replace('−', '-'));
-            good = v !== '' && isFinite(n) && Math.abs(n - f.answer) <= (f.tol ?? 0.01) + 1e-9;
+            const n = M.readDecimal(v.replace(/,/g, '').replace('−', '-'), 6);
+            good = n !== null && Math.abs(n / 1e6 - f.answer) <= (f.tol ?? 0.01) + 1e-9;
           }
           if (good) ok++;
           inp.disabled = true;
@@ -66,9 +66,9 @@
         sfx.play(frac === 1 ? 'correct' : frac > 0 ? 'note' : 'wrong');
         const sol = $('.solution', el);
         sol.classList.remove('hidden');
-        sol.innerHTML = `<b>วิธีคิด</b><br>${g.solution}<div class="row"><button class="btn primary sv">บันทึกผล (${ok}/${g.fields.length})</button><button class="btn ghost again">🎲 ลองโจทย์ใหม่</button></div>`;
+        sol.innerHTML = `<b>วิธีคิด</b><br>${g.solution}<div class="row"><button class="btn primary sv">บันทึกผล (${ok}/${g.fields.length})</button>${g.fixed ? '' : '<button class="btn ghost again">🎲 ลองโจทย์ใหม่</button>'}</div>`;
         $('.chk', el).disabled = true;
-        $('.again', el).onclick = () => { sfx.play('whoosh'); setup(); };
+        if (!g.fixed) $('.again', el).onclick = () => { sfx.play('whoosh'); setup(); };
         $('.sv', el).onclick = () => {
           if (g.portfolio) M.State.addPortfolio(g.portfolio.id, ctx.week + 1, g.portfolio.title, g.portfolio.text);
           if (g.onSave) g.onSave(frac);
@@ -125,14 +125,36 @@
   E.dialogue = (el, round, ctx, finish) => {
     const steps = round.script(ctx);
     let i = 0, tries = 0, wrong = 0;
+    let active = true, timer, pendingVoice, earliest;
+    M.onLeave = () => { active = false; clearTimeout(timer); };
     el.innerHTML = `<div class="chat"></div><div class="choices"></div><div class="feedback"></div>`;
     const chat = $('.chat', el), box = $('.choices', el);
     const add = (cls, en, th, speakText) => {
       const d = document.createElement('div');
       d.className = `bubble ${cls}`;
       d.innerHTML = `${esc(en)}${cls !== 'sys' ? `<button class="say" title="ฟังอีกครั้ง">🔊</button>` : ''}${th ? `<span class="th">${esc(th)}</span>` : ''}`;
-      const say = d.querySelector('.say'); if (say) say.onclick = () => M.speak(speakText || en);
+      const say = d.querySelector('.say');
+      if (say) say.onclick = () => {
+        const spoken = speakText || en;
+        if (pendingVoice) waitForVoice(spoken);
+        else M.speak(spoken);
+      };
       chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+    };
+    const waitForVoice = (text) => {
+      clearTimeout(timer);
+      const voice = pendingVoice = Promise.resolve(M.speak(text));
+      voice.then(() => {
+        if (active && pendingVoice === voice) timer = setTimeout(() => {
+          pendingVoice = null;
+          next();
+        }, Math.max(0, earliest - performance.now()));
+      });
+    };
+    const advanceAfterVoice = (text, delay) => {
+      i++;
+      earliest = performance.now() + delay;
+      waitForVoice(text);
     };
     const next = () => {
       box.innerHTML = '';
@@ -145,9 +167,10 @@
       }
       const s = steps[i];
       if (s.them) {
-        add('them', s.them, s.th, s.speakText);
-        M.speak(s.speakText || s.them.replace(/\(.*?\)/g, ''));
-        i++; setTimeout(next, 450); return;
+        const spoken = (s.speakText || s.them).replace(/\(.*?\)/g, '').trim();
+        add('them', s.them, s.th, spoken);
+        advanceAfterVoice(spoken, 450);
+        return;
       }
       if (s.listen) {
         box.innerHTML = `<div class="q">🎧 ${esc(s.listen)}</div>` + s.options.map((o) => `<button class="opt">${esc(o)}</button>`).join('');
@@ -166,7 +189,10 @@
         $$('.opt', box).forEach((b) => (b.onclick = () => {
           const c = opts[+b.dataset.k];
           if (c.ok) {
-            sfx.play('correct'); add('me', c.en, c.th); M.speak(c.en); i++; setTimeout(next, 500);
+            $$('.opt', box).forEach((option) => { option.disabled = true; });
+            sfx.play('correct');
+            add('me', c.en, c.th);
+            advanceAfterVoice(c.en, 500);
           } else {
             sfx.play('wrong'); b.classList.add('bad'); b.disabled = true;
             add('sys', `✗ ${c.why || 'ยังไม่ถูก'}`);
@@ -180,6 +206,16 @@
 
   // ---------- OBSERVE (ฉากร้าน: สังเกตลูกค้า) ----------
   E.observe = (el, round, ctx, finish) => {
+    if (round.variant === 'timeCompare') {
+      el.innerHTML = `<div class="q">เลือกวิธีสังเกตลูกค้า</div><div class="opts">
+        <button class="opt observe-standard">สังเกตลูกค้าในร้าน</button>
+        <button class="opt observe-compare">เทียบช่วงเช้ากับช่วงเย็น</button></div>`;
+      $('.observe-standard', el).onclick = () => observeCustomers(el, round, ctx, finish);
+      $('.observe-compare', el).onclick = () => M.playTimeCompare(el, ctx, finish);
+    } else observeCustomers(el, round, ctx, finish);
+  };
+
+  function observeCustomers(el, round, ctx, finish) {
     const need = round.need || 5;
     const pool = R.shuffle(M.behaviors(ctx.product));
     const notes = [];
@@ -245,7 +281,7 @@
       };
       ask();
     };
-  };
+  }
 
   // ---------- SIM: ย้ายไป js/sim-w4.js (ต้นแบบสัปดาห์ 4 ตาม GDD v0.2) ----------
 
@@ -274,7 +310,7 @@
       const q = Math.max(0, Math.min(1, good / 6 - bad * 0.2));
       const views = R.int(150, 320), messages = Math.max(1, Math.round(views * (0.01 + 0.07 * q) * (0.8 + Math.random() * 0.4)));
       const orders = Math.max(0, Math.min(messages, Math.round(messages * (0.15 + 0.45 * q))));
-      ctx.state.sim.post = { views, messages, orders, q }; M.State.save();
+      ctx.state.sim.post = { views, messages, orders, q, productId: ctx.product.id }; M.State.save();
       e.target.disabled = true; $$('input[type=checkbox]', el).forEach((c) => (c.disabled = true));
       sfx.play('levelup');
       const miss = parts.filter((p) => p.good && !on.has(p.k)).map((p) => p.t.split(':')[0]);

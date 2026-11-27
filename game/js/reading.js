@@ -12,20 +12,26 @@
    "url": "https://www.youtube.com/watch?v=OuOCx7Tc250"
   },
   "official": {
-   "status": "todo",
-   "note": "4P สำหรับร้านค้าปลีก"
+   "status": "ok",
+   "note": "4P สำหรับร้านค้าปลีก",
+   "title": "OpenStax — ส่วนประสมการตลาด 4P",
+   "url": "https://openstax.org/books/principles-marketing/pages/1-2-the-marketing-mix-and-the-4ps-of-marketing"
   }
  },
  "0-1": {
   "code": "W1R2",
   "topic": "สังเกตลูกค้า",
   "clip": {
-   "status": "todo",
-   "note": "วิธีจดพฤติกรรมที่เห็น"
+   "status": "ok",
+   "note": "วิธีจดพฤติกรรมที่เห็น",
+   "title": "Strategyzer — บันทึกวิดีโอการสัมภาษณ์ลูกค้า",
+   "url": "https://www.strategyzer.com/library/how-to-talk-to-customers"
   },
   "official": {
-   "status": "todo",
-   "note": "การสังเกตหน้าร้าน"
+   "status": "ok",
+   "note": "การสังเกตหน้าร้าน",
+   "title": "OpenStax — ขั้นตอนการวิจัยตลาด",
+   "url": "https://openstax.org/books/principles-marketing/pages/6-3-steps-in-a-successful-marketing-research-plan"
   }
  },
  "0-2": {
@@ -38,28 +44,36 @@
    "url": "https://www.youtube.com/watch?v=OuOCx7Tc250"
   },
   "official": {
-   "status": "todo",
-   "note": "ใช้ข้อมูลลูกค้าปรับ 4P"
+   "status": "ok",
+   "note": "ใช้ข้อมูลลูกค้าปรับ 4P",
+   "title": "OpenStax — ส่วนประสมการตลาด 4P",
+   "url": "https://openstax.org/books/principles-marketing/pages/1-2-the-marketing-mix-and-the-4ps-of-marketing"
   }
  },
  "0-3": {
   "code": "W1R4",
   "topic": "ทักและถามความต้องการ",
   "clip": {
-   "status": "todo",
-   "note": "วิดีโอทักลูกค้า"
+   "status": "ok",
+   "note": "วิดีโอทักลูกค้า",
+   "title": "British Council — วิดีโอ At the Shop",
+   "url": "https://learnenglishteens.britishcouncil.org/skills/speaking/a1-speaking/shop"
   },
   "official": {
-   "status": "todo",
-   "note": "บทสนทนาทักลูกค้า"
+   "status": "ok",
+   "note": "บทสนทนาทักลูกค้า",
+   "title": "British Council — ถามขนาดและราคา (เสียงและบทถอดความ)",
+   "url": "https://learnenglish.britishcouncil.org/free-resources/listening/a1/shopping-clothes"
   }
  },
  "0-4": {
   "code": "W1R5",
   "topic": "งบรายเดือน",
   "clip": {
-   "status": "todo",
-   "note": "กันเงินและทำงบรายเดือน"
+   "status": "ok",
+   "note": "กันเงินและทำงบรายเดือน",
+   "title": "Khan Academy — วิดีโอจัดงบให้สมดุล",
+   "url": "https://www.khanacademy.org/college-careers-more/financial-literacy/xa6995ea67a8e9fdd%3Abudgeting-and-saving/xa6995ea67a8e9fdd%3Abudgeting/v/balancing-a-budget-fin-lit"
   },
   "official": {
    "status": "ok",
@@ -72,24 +86,32 @@
   "code": "W2R1",
   "topic": "แบ่งกลุ่มลูกค้า",
   "clip": {
-   "status": "todo",
-   "note": "แบ่งกลุ่มจากพฤติกรรม"
+   "status": "ok",
+   "note": "ฟังส่วนการแบ่งกลุ่มแล้วโยงกับพฤติกรรมที่จด",
+   "title": "VRU Startup — STP Marketing",
+   "url": "https://www.youtube.com/watch?v=VcYZDVRSg64"
   },
   "official": {
-   "status": "todo",
-   "note": "การแบ่งกลุ่มลูกค้า"
+   "status": "ok",
+   "note": "การแบ่งกลุ่มลูกค้า",
+   "title": "OpenStax — การแบ่งกลุ่มตลาด",
+   "url": "https://openstax.org/books/principles-marketing/pages/5-1-market-segmentation-and-consumer-markets"
   }
  },
  "1-1": {
   "code": "W2R2",
   "topic": "เทียบราคาต่อหน่วย",
   "clip": {
-   "status": "todo",
-   "note": "เทียบขนาดและราคา"
+   "status": "ok",
+   "note": "เทียบขนาดและราคาสินค้าจากป้าย",
+   "title": "ACCC — Unit pricing explained",
+   "url": "https://www.youtube.com/watch?v=_8_RMaCwS-k"
   },
   "official": {
-   "status": "todo",
-   "note": "ใช้หน่วยเดียวกันเทียบราคา"
+   "status": "ok",
+   "note": "ใช้หน่วยเดียวกันเทียบราคา",
+   "title": "ACCC — การเทียบราคาต่อหน่วย",
+   "url": "https://www.accc.gov.au/business/pricing/unit-pricing"
   }
  },
  "1-2": {
@@ -102,28 +124,36 @@
    "url": "https://www.youtube.com/watch?v=LyUxZHQA8oQ"
   },
   "official": {
-   "status": "todo",
-   "note": "การกำหนดจุดยืนและเหตุผลสนับสนุน"
+   "status": "ok",
+   "note": "การกำหนดจุดยืนและเหตุผลสนับสนุน",
+   "title": "OpenStax — จุดยืนสินค้า",
+   "url": "https://openstax.org/books/principles-marketing/pages/5-6-product-positioning"
   }
  },
  "1-3": {
   "code": "W2R4",
   "topic": "แนะนำขนาดและประโยชน์",
   "clip": {
-   "status": "todo",
-   "note": "วิดีโอแนะนำขนาดสินค้า"
+   "status": "ok",
+   "note": "วิดีโอแนะนำขนาดสินค้า",
+   "title": "British Council — วิดีโอ At the Shop",
+   "url": "https://learnenglishteens.britishcouncil.org/skills/speaking/a1-speaking/shop"
   },
   "official": {
-   "status": "todo",
-   "note": "ภาษาแนะนำขนาดและประโยชน์"
+   "status": "ok",
+   "note": "ภาษาแนะนำขนาดและประโยชน์",
+   "title": "British Council — ถามขนาดและราคา (เสียงและบทถอดความ)",
+   "url": "https://learnenglish.britishcouncil.org/free-resources/listening/a1/shopping-clothes"
   }
  },
  "1-4": {
   "code": "W2R5",
   "topic": "ซื้อสดเทียบผ่อน",
   "clip": {
-   "status": "todo",
-   "note": "เทียบยอดจ่ายรวมและค่างวด"
+   "status": "ok",
+   "note": "เทียบยอดจ่ายรวมและค่างวด",
+   "title": "Khan Academy — วิดีโอค่างวดกับยอดจ่ายรวม",
+   "url": "https://www.khanacademy.org/economics-finance-domain/economics-personal-finance-va/x3ed8f3aede624754%3Acar-buying/x3ed8f3aede624754%3Acar-loans/v/monthly-payment-versus-total-cost"
   },
   "official": {
    "status": "ok",
@@ -136,20 +166,26 @@
   "code": "W3R1",
   "topic": "ส่วนต่างต่อชิ้น",
   "clip": {
-   "status": "todo",
-   "note": "คำนวณราคาขายหักต้นทุนต่อชิ้น"
+   "status": "ok",
+   "note": "คำนวณราคาขายหักต้นทุนต่อชิ้น",
+   "title": "Khan Academy — วิดีโอแยกยอดขาย ต้นทุน และกำไร",
+   "url": "https://www.khanacademy.org/v/introduction-to-the-income-statement?topic=valuation-and-investing"
   },
   "official": {
-   "status": "todo",
-   "note": "ส่วนต่างต่อหน่วยของร้านค้าปลีก"
+   "status": "ok",
+   "note": "ส่วนต่างต่อหน่วยของร้านค้าปลีก",
+   "title": "OpenStax — ส่วนต่างและจุดคุ้มทุน",
+   "url": "https://openstax.org/books/principles-managerial-accounting/pages/3-2-calculate-a-break-even-point-in-units-and-dollars"
   }
  },
  "2-1": {
   "code": "W3R2",
   "topic": "ยอดขายและกำไรขั้นต้น",
   "clip": {
-   "status": "todo",
-   "note": "รายได้ ต้นทุนขาย และกำไรขั้นต้น"
+   "status": "ok",
+   "note": "รายได้ ต้นทุนขาย และกำไรขั้นต้น",
+   "title": "Khan Academy — วิดีโอแยกยอดขาย ต้นทุน และกำไร",
+   "url": "https://www.khanacademy.org/v/introduction-to-the-income-statement?topic=valuation-and-investing"
   },
   "official": {
    "status": "ok",
@@ -162,32 +198,42 @@
   "code": "W3R3",
   "topic": "สต็อกและเงินสด",
   "clip": {
-   "status": "todo",
-   "note": "ผลของการซื้อสต็อกต่อเงินสด"
+   "status": "ok",
+   "note": "ผลของการซื้อสต็อกต่อเงินสด",
+   "title": "Khan Academy — วิดีโอแยกกำไรกับกระแสเงินสด",
+   "url": "https://www.khanacademy.org/economics-finance-domain/core-finance/accounting-and-financial-stateme/financial-statements-tutorial/v/basic-cash-flow-statement"
   },
   "official": {
-   "status": "todo",
-   "note": "สต็อกคงเหลือและกระแสเงินสด"
+   "status": "ok",
+   "note": "สต็อกคงเหลือและกระแสเงินสด",
+   "title": "OpenStax — การจัดการสินค้าคงเหลือ",
+   "url": "https://openstax.org/books/principles-finance/pages/19-5-inventory-management"
   }
  },
  "2-3": {
   "code": "W3R4",
   "topic": "ฟังต้นทุนและราคาขาย",
   "clip": {
-   "status": "todo",
-   "note": "ฟังราคาขายเทียบต้นทุน"
+   "status": "ok",
+   "note": "ฟังราคาขายเทียบต้นทุน",
+   "title": "British Council — วิดีโอ At the Shop",
+   "url": "https://learnenglishteens.britishcouncil.org/skills/speaking/a1-speaking/shop"
   },
   "official": {
-   "status": "todo",
-   "note": "ภาษาอังกฤษสำหรับต้นทุนและราคาขาย"
+   "status": "ok",
+   "note": "ภาษาอังกฤษสำหรับต้นทุนและราคาขาย",
+   "title": "British Council — ถามขนาดและราคา (เสียงและบทถอดความ)",
+   "url": "https://learnenglish.britishcouncil.org/free-resources/listening/a1/shopping-clothes"
   }
  },
  "2-4": {
   "code": "W3R5",
   "topic": "ลงบัญชี",
   "clip": {
-   "status": "todo",
-   "note": "บัญชีรับ–จ่ายจากเหตุการณ์ร้าน"
+   "status": "ok",
+   "note": "บัญชีรับ–จ่ายจากเหตุการณ์ร้าน",
+   "title": "Khan Academy — วิดีโอแยกกำไรกับกระแสเงินสด",
+   "url": "https://www.khanacademy.org/economics-finance-domain/core-finance/accounting-and-financial-stateme/financial-statements-tutorial/v/basic-cash-flow-statement"
   },
   "official": {
    "status": "ok",
@@ -200,12 +246,16 @@
   "code": "W4R1",
   "topic": "เก็บยอดปกติ",
   "clip": {
-   "status": "todo",
-   "note": "ตั้งตัวเลขฐานและช่วงวัด"
+   "status": "ok",
+   "note": "ตั้งตัวเลขฐานและช่วงวัด",
+   "title": "Strategyzer — วิดีโอออกแบบการทดลองด้วย Test Card",
+   "url": "https://www.youtube.com/watch?v=cW46ySJmLD8"
   },
   "official": {
-   "status": "todo",
-   "note": "การเก็บยอดฐานหน้าร้าน"
+   "status": "ok",
+   "note": "การเก็บยอดฐานหน้าร้าน",
+   "title": "OpenStax — ขั้นตอนการวิจัยตลาด",
+   "url": "https://openstax.org/books/principles-marketing/pages/6-3-steps-in-a-successful-marketing-research-plan"
   }
  },
  "3-1": {
@@ -218,8 +268,10 @@
    "url": "https://www.youtube.com/watch?v=LyUxZHQA8oQ"
   },
   "official": {
-   "status": "todo",
-   "note": "ส่วนต่างต่อชุดและจุดคุ้มค่าป้าย"
+   "status": "ok",
+   "note": "ส่วนต่างต่อชุดและจุดคุ้มค่าป้าย",
+   "title": "OpenStax — ส่วนต่างและจุดคุ้มทุน",
+   "url": "https://openstax.org/books/principles-managerial-accounting/pages/3-2-calculate-a-break-even-point-in-units-and-dollars"
   }
  },
  "3-2": {
@@ -232,28 +284,36 @@
    "url": "https://www.youtube.com/watch?v=LyUxZHQA8oQ"
   },
   "official": {
-   "status": "todo",
-   "note": "เทียบช่วงโปรกับช่วงฐานและจดปัจจัยอื่น"
+   "status": "ok",
+   "note": "เทียบช่วงโปรกับช่วงฐานและจดปัจจัยอื่น",
+   "title": "Strategyzer — ใบออกแบบการทดลอง",
+   "url": "https://www.strategyzer.com/library/validate-your-ideas-with-the-test-card"
   }
  },
  "3-3": {
   "code": "W4R4",
   "topic": "แจ้งราคารวม",
   "clip": {
-   "status": "todo",
-   "note": "วิดีโอทวนราคาและราคารวม"
+   "status": "ok",
+   "note": "วิดีโอทวนราคาและราคารวม",
+   "title": "British Council — วิดีโอ At the Shop",
+   "url": "https://learnenglishteens.britishcouncil.org/skills/speaking/a1-speaking/shop"
   },
   "official": {
-   "status": "todo",
-   "note": "ภาษาสำหรับทวนยอดรวม"
+   "status": "ok",
+   "note": "ภาษาสำหรับทวนยอดรวม",
+   "title": "British Council — ถามขนาดและราคา (เสียงและบทถอดความ)",
+   "url": "https://learnenglish.britishcouncil.org/free-resources/listening/a1/shopping-clothes"
   }
  },
  "3-4": {
   "code": "W4R5",
   "topic": "หลักฐานภาษี",
   "clip": {
-   "status": "todo",
-   "note": "หลักฐานรับเงินและจ่ายเงินของร้าน"
+   "status": "ok",
+   "note": "เลือกช่วงตัวอย่างหลักฐานจากสัมมนาปี 2559 ตรวจเกณฑ์ปัจจุบันในคู่มือ",
+   "title": "กรมสรรพากร — เอกสารประกอบการลงบัญชี ตอน 2",
+   "url": "https://www.youtube.com/watch?v=NR3QOBE9Km4"
   },
   "official": {
    "status": "ok",
@@ -266,8 +326,10 @@
   "code": "W5R1",
   "topic": "เส้นทางลูกค้า",
   "clip": {
-   "status": "todo",
-   "note": "จากเห็นสินค้าไปสู่สั่งซื้อ"
+   "status": "ok",
+   "note": "จากเห็นสินค้าไปสู่สั่งซื้อ",
+   "title": "Google Career Certificates — เส้นทางลูกค้าและกรวยการตลาด",
+   "url": "https://www.youtube.com/watch?v=VT7brk804Ow"
   },
   "official": {
    "status": "ok",
@@ -296,24 +358,32 @@
   "code": "W5R3",
   "topic": "คำนวณอัตราทัก",
   "clip": {
-   "status": "todo",
-   "note": "อัตราทักและอัตราสั่งซื้อต่อผู้ทัก"
+   "status": "ok",
+   "note": "อัตราทักและอัตราสั่งซื้อต่อผู้ทัก",
+   "title": "Khan Academy — วิดีโอตัวตั้ง ตัวหาร และร้อยละ",
+   "url": "https://www.khanacademy.org/v/percent-word-problems"
   },
   "official": {
-   "status": "todo",
-   "note": "นิยามตัวตั้งและตัวหารของแต่ละอัตรา"
+   "status": "ok",
+   "note": "นิยามตัวตั้งและตัวหารของแต่ละอัตรา",
+   "title": "OpenStax — ตัวชี้วัดการตลาดออนไลน์",
+   "url": "https://openstax.org/books/principles-marketing/pages/16-3-metrics-used-to-evaluate-the-success-of-online-marketing"
   }
  },
  "4-3": {
   "code": "W5R4",
   "topic": "ตอบแชตลูกค้า",
   "clip": {
-   "status": "todo",
-   "note": "วิดีโอทวนคำสั่งซื้อทางแชต"
+   "status": "ok",
+   "note": "นำรูปประโยคทวนความเข้าใจมาซ้อมทวนออเดอร์",
+   "title": "British Council — วิดีโอ Checking Understanding",
+   "url": "https://learnenglish.britishcouncil.org/free-resources/speaking/a1/checking-understanding"
   },
   "official": {
-   "status": "todo",
-   "note": "ภาษาอังกฤษสำหรับตอบคำถามทางแชต"
+   "status": "ok",
+   "note": "ซ้อมภาษาบริการก่อนนำไปใช้ทางแชต",
+   "title": "British Council — บทบาทสมมติบริการหน้าร้าน",
+   "url": "https://www.teachingenglish.org.uk/teaching-resources/teaching-adults/activities/pre-intermediate-a2/shop-service-role-play"
   }
  },
  "4-4": {
@@ -342,8 +412,10 @@
    "url": "https://www.youtube.com/watch?v=b3cE2fMgCBU"
   },
   "official": {
-   "status": "todo",
-   "note": "BMC ด้านลูกค้า"
+   "status": "ok",
+   "note": "BMC ด้านลูกค้า",
+   "title": "Strategyzer — Business Model Canvas",
+   "url": "https://www.strategyzer.com/library/the-business-model-canvas"
   }
  },
  "5-1": {
@@ -356,40 +428,52 @@
    "url": "https://www.youtube.com/watch?v=b3cE2fMgCBU"
   },
   "official": {
-   "status": "todo",
-   "note": "BMC ด้านปฏิบัติการ"
+   "status": "ok",
+   "note": "BMC ด้านปฏิบัติการ",
+   "title": "Strategyzer — Business Model Canvas",
+   "url": "https://www.strategyzer.com/library/the-business-model-canvas"
   }
  },
  "5-2": {
   "code": "W6R3",
   "topic": "สมมติฐานและวิธีทดสอบ",
   "clip": {
-   "status": "todo",
-   "note": "ตั้งสมมติฐานและเกณฑ์ตรวจ"
+   "status": "ok",
+   "note": "ตั้งสมมติฐานและเกณฑ์ตรวจ",
+   "title": "Strategyzer — วิดีโอออกแบบการทดลองด้วย Test Card",
+   "url": "https://www.youtube.com/watch?v=cW46ySJmLD8"
   },
   "official": {
-   "status": "todo",
-   "note": "การทดลองสมมติฐานทางธุรกิจ"
+   "status": "ok",
+   "note": "การทดลองสมมติฐานทางธุรกิจ",
+   "title": "Strategyzer — ใบออกแบบการทดลอง",
+   "url": "https://www.strategyzer.com/library/validate-your-ideas-with-the-test-card"
   }
  },
  "5-3": {
   "code": "W6R4",
   "topic": "อธิบายคุณค่าเป็นภาษาอังกฤษ",
   "clip": {
-   "status": "todo",
-   "note": "พูดว่าเราช่วยลูกค้ากลุ่มไหนอย่างไร"
+   "status": "ok",
+   "note": "พูดว่าเราช่วยลูกค้ากลุ่มไหนอย่างไร",
+   "title": "Strategyzer — วิดีโอข้อเสนอคุณค่า 3 นาที",
+   "url": "https://www.strategyzer.com/value-proposition"
   },
   "official": {
-   "status": "todo",
-   "note": "ภาษาอังกฤษสำหรับข้อเสนอคุณค่า"
+   "status": "ok",
+   "note": "ภาษาอังกฤษสำหรับข้อเสนอคุณค่า",
+   "title": "Strategyzer — ข้อเสนอคุณค่า",
+   "url": "https://www.strategyzer.com/value-proposition"
   }
  },
  "5-4": {
   "code": "W6R5",
   "topic": "แบบ 56-1 One Report และ 10-K",
   "clip": {
-   "status": "todo",
-   "note": "วิธีหาและอ่านรายงานประจำปี"
+   "status": "ok",
+   "note": "คลิปสองตอนสำหรับค้น EDGAR และอ่าน 10-K",
+   "title": "University of Kansas — Public companies",
+   "url": "https://opentext.ku.edu/becredible/chapter/public-companies/"
   },
   "official": {
    "status": "ok",
@@ -408,52 +492,68 @@
    "url": "https://www.youtube.com/watch?v=OuOCx7Tc250"
   },
   "official": {
-   "status": "todo",
-   "note": "การแสดงราคาและเงื่อนไขบนป้าย"
+   "status": "ok",
+   "note": "ตัวอย่างหลักเกณฑ์ไทยสำหรับป้ายราคา",
+   "title": "กรมการค้าภายใน — ประกาศการแสดงราคาสินค้าและค่าบริการ (PDF)",
+   "url": "https://www.dit.go.th/media/cejpahs1/20260707163750_4880.pdf"
   }
  },
  "6-1": {
   "code": "W7R2",
   "topic": "แจ้งของหมด",
   "clip": {
-   "status": "todo",
-   "note": "วิดีโอแจ้งของหมดและเสนอทางเลือก"
+   "status": "ok",
+   "note": "นำรูปประโยคเสนอทางเลือกมาซ้อมกับฉากของหมด",
+   "title": "British Council — วิดีโอ Making Suggestions",
+   "url": "https://learnenglish.britishcouncil.org/free-resources/speaking/a1/making-suggestions"
   },
   "official": {
-   "status": "todo",
-   "note": "ภาษาสำหรับแจ้งของหมด"
+   "status": "ok",
+   "note": "ซ้อมภาษารับมือเมื่อลูกค้าต้องการความช่วยเหลือ",
+   "title": "British Council — บทบาทสมมติบริการหน้าร้าน",
+   "url": "https://www.teachingenglish.org.uk/teaching-resources/teaching-adults/activities/pre-intermediate-a2/shop-service-role-play"
   }
  },
  "6-2": {
   "code": "W7R3",
   "topic": "อธิบายราคาและเสนอของทดแทน",
   "clip": {
-   "status": "todo",
-   "note": "วิดีโออธิบายราคาและทวนตัวเลือก"
+   "status": "ok",
+   "note": "นำรูปประโยคเสนอทางเลือกมาซ้อมแนะนำสินค้าแทน",
+   "title": "British Council — วิดีโอ Making Suggestions",
+   "url": "https://learnenglish.britishcouncil.org/free-resources/speaking/a1/making-suggestions"
   },
   "official": {
-   "status": "todo",
-   "note": "ภาษาสำหรับร้องขอและเสนอทางเลือกอย่างสุภาพ"
+   "status": "ok",
+   "note": "ภาษาสำหรับร้องขอและเสนอทางเลือกอย่างสุภาพ",
+   "title": "British Council — บทบาทสมมติบริการหน้าร้าน",
+   "url": "https://www.teachingenglish.org.uk/teaching-resources/teaching-adults/activities/pre-intermediate-a2/shop-service-role-play"
   }
  },
  "6-3": {
   "code": "W7R4",
   "topic": "สนทนาและทอนเงิน",
   "clip": {
-   "status": "todo",
-   "note": "วิดีโอฟังยอดชำระและทอนเงิน"
+   "status": "ok",
+   "note": "วิดีโอฟังยอดชำระและทอนเงิน",
+   "title": "British Council — วิดีโอ At the Shop",
+   "url": "https://learnenglishteens.britishcouncil.org/skills/speaking/a1-speaking/shop"
   },
   "official": {
-   "status": "todo",
-   "note": "ภาษาสำหรับรับชำระและแจ้งเงินทอน"
+   "status": "ok",
+   "note": "ภาษาสำหรับรับชำระและแจ้งเงินทอน",
+   "title": "British Council — ถามขนาดและราคา (เสียงและบทถอดความ)",
+   "url": "https://learnenglish.britishcouncil.org/free-resources/listening/a1/shopping-clothes"
   }
  },
  "6-4": {
   "code": "W7R5",
   "topic": "บันทึกธุรกรรมลงทุน",
   "clip": {
-   "status": "todo",
-   "note": "ต้นทุนซื้อ เงินปันผล และผลหลังค่าธรรมเนียม"
+   "status": "ok",
+   "note": "ต้นทุนซื้อ เงินปันผล และผลหลังค่าธรรมเนียม",
+   "title": "SET in the City — วิดีโอหุ้นปันผล",
+   "url": "https://www.youtube.com/watch?v=hNsmP4LxqO4"
   },
   "official": {
    "status": "ok",
@@ -466,56 +566,74 @@
   "code": "W8R1",
   "topic": "สรุปแผนหน้าเดียว",
   "clip": {
-   "status": "todo",
-   "note": "สรุปการทดลองและข้อเสนอหน้าเดียว"
+   "status": "ok",
+   "note": "ใช้ผลทดลองเลือกสิ่งที่จะทำต่อ",
+   "title": "Strategyzer — Learning Card พร้อมวิดีโอ",
+   "url": "https://www.strategyzer.com/library/capture-customer-insights-and-actions-with-the-learning-card"
   },
   "official": {
-   "status": "todo",
-   "note": "แผนการตลาดโยงกับหลักฐาน"
+   "status": "ok",
+   "note": "แผนการตลาดโยงกับหลักฐาน",
+   "title": "OpenStax — โครงสร้างแผนการตลาด",
+   "url": "https://openstax.org/books/principles-marketing/pages/2-3-purpose-and-structure-of-the-marketing-plan"
   }
  },
  "7-1": {
   "code": "W8R2",
   "topic": "ย้อนคำนวณจากหลักฐาน",
   "clip": {
-   "status": "todo",
-   "note": "ตรวจช่วงเวลา หน่วย และตัวหาร"
+   "status": "ok",
+   "note": "ตรวจช่วงเวลา หน่วย และตัวหาร",
+   "title": "Strategyzer — วิดีโอออกแบบการทดลองด้วย Test Card",
+   "url": "https://www.youtube.com/watch?v=cW46ySJmLD8"
   },
   "official": {
-   "status": "todo",
-   "note": "การตรวจสอบย้อนกลับของตัวชี้วัด"
+   "status": "ok",
+   "note": "การตรวจสอบย้อนกลับของตัวชี้วัด",
+   "title": "OpenStax — ตัวชี้วัดการตลาดออนไลน์",
+   "url": "https://openstax.org/books/principles-marketing/pages/16-3-metrics-used-to-evaluate-the-success-of-online-marketing"
   }
  },
  "7-2": {
   "code": "W8R3",
   "topic": "จัดสไลด์สามหน้า",
   "clip": {
-   "status": "todo",
-   "note": "เรียงปัญหา วิธีทดลอง และผล"
+   "status": "ok",
+   "note": "เรียงปัญหา วิธีทดลอง และผล",
+   "title": "TED-Ed — วิดีโอใช้ภาพประกอบการนำเสนอ",
+   "url": "https://ed.ted.com/lessons/how-to-effectively-use-visuals-in-your-presentation"
   },
   "official": {
-   "status": "todo",
-   "note": "การสรุปหลักฐานในสไลด์"
+   "status": "ok",
+   "note": "การสรุปหลักฐานในสไลด์",
+   "title": "TED Masterclass — หลักการจัดสไลด์ให้อ่านง่าย",
+   "url": "https://masterclass.ted.com/blog/visual-presentations-series-less-is-more"
   }
  },
  "7-3": {
   "code": "W8R4",
   "topic": "นำเสนอภาษาอังกฤษ",
   "clip": {
-   "status": "todo",
-   "note": "นำเสนอผลทดลองภาษาอังกฤษแบบสั้น"
+   "status": "ok",
+   "note": "นำเสนอผลทดลองภาษาอังกฤษแบบสั้น",
+   "title": "British Council — วิดีโอนำเสนอผลและข้อจำกัด",
+   "url": "https://learnenglish.britishcouncil.org/free-resources/business/youre-hired/episode-06"
   },
   "official": {
-   "status": "todo",
-   "note": "การอธิบายผลและขั้นต่อไปเป็นภาษาอังกฤษ"
+   "status": "ok",
+   "note": "การอธิบายผลและขั้นต่อไปเป็นภาษาอังกฤษ",
+   "title": "OpenStax — ออกแบบคำเสนอให้เหมาะกับผู้ฟัง",
+   "url": "https://openstax.org/books/entrepreneurship/pages/7-3-developing-pitches-for-various-audiences-and-goals"
   }
  },
  "7-4": {
   "code": "W8R5",
   "topic": "ค่าเงินกับผลตอบแทนและ ETF",
   "clip": {
-   "status": "todo",
-   "note": "ตัวอย่างผลตอบแทนเมื่อค่าเงินเปลี่ยน"
+   "status": "ok",
+   "note": "ผลของการเปลี่ยนค่าเงินเมื่อลงทุนต่างประเทศ",
+   "title": "SET Thailand — ความเสี่ยงเรื่องค่าเงิน",
+   "url": "https://www.youtube.com/watch?v=1iNIBu5CiVg"
   },
   "official": {
    "status": "ok",

@@ -1,0 +1,231 @@
+// Run isolated mobile browser playthroughs, axe checks, and a desktop Chrome Lighthouse audit in mobile mode.
+const { spawn } = require('node:child_process');
+const { createReadStream, mkdtempSync, readFileSync, realpathSync, rmSync, statSync } = require('node:fs');
+const http = require('node:http');
+const os = require('node:os');
+const path = require('node:path');
+const { once } = require('node:events');
+const { gzipSync } = require('node:zlib');
+const scenario = require('./browser-check.js');
+
+const game = path.resolve(__dirname, '..', 'game');
+const products = ['water', 'snack', 'household'];
+const chromeArgs = ['--disable-crashpad-for-testing'];
+const types = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
+  '.png': 'image/png', '.ogg': 'audio/ogg', '.ttf': 'font/ttf', '.woff2': 'font/woff2',
+};
+const gzipCache = new Map();
+
+function respond(req, res) {
+  const url = new URL(req.url, 'http://localhost');
+  const file = path.resolve(game, `.${decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname)}`);
+  const stat = file.startsWith(game + path.sep) && statSync(file, { throwIfNoEntry: false });
+  if (!stat || !stat.isFile()) {
+    res.writeHead(404).end();
+    return;
+  }
+  const type = types[path.extname(file)] || 'application/octet-stream';
+  const headers = { 'Content-Type': type };
+  if (type.startsWith('text/')) {
+    // GitHub Pages compresses these resources. Use the same transfer shape for Lighthouse on localhost.
+    headers.Vary = 'Accept-Encoding';
+    if (req.headers['accept-encoding']?.split(',').some((encoding) => encoding.trim() === 'gzip')) {
+      let entry = gzipCache.get(file);
+      if (!entry || entry.mtime !== stat.mtimeMs || entry.size !== stat.size) {
+        entry = { mtime: stat.mtimeMs, size: stat.size, bytes: gzipSync(readFileSync(file)) };
+        gzipCache.set(file, entry);
+      }
+      res.writeHead(200, { ...headers, 'Content-Encoding': 'gzip', 'Content-Length': entry.bytes.length }).end(entry.bytes);
+      return;
+    }
+  }
+  res.writeHead(200, { ...headers, 'Content-Length': stat.size });
+  createReadStream(file).pipe(res);
+}
+
+async function axe(page, script, screen) {
+  if (!await page.evaluate(() => !!window.axe)) await page.addScriptTag({ path: script });
+  const { violations } = await page.evaluate(() => window.axe.run({ runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] }));
+  console.log(`axe ${screen}: ${violations.length} WCAG violations`);
+  const severe = violations.filter((issue) => ['serious', 'critical'].includes(issue.impact))
+    .map((issue) => `${screen}: ${issue.id} (${issue.impact}) ${issue.nodes.map((node) => node.target.join(' ')).join(', ')}`);
+  if (severe.length) console.log(severe.join('\n'));
+  return severe;
+}
+
+async function verifyGame(browser, url, axeScript) {
+  const problems = [];
+  for (const product of products) {
+    for (const playRound of [true, false]) {
+      const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true,
+        hasTouch: true, reducedMotion: 'reduce' });
+      try {
+        if (!playRound) {
+          // Reopen a previously losing save, with no access to a live user profile.
+          await context.addInitScript((state) => localStorage.setItem('mtl-save-v1', JSON.stringify(state)), {
+            version: 1, product, rounds: {}, portfolio: {},
+            sim: { plan: { bundle: 36 }, run: { sets: 2, singles: 1, units: 5, sales: 90, profit: -33, baseProfit: 150, rain: false } },
+            settings: { sound: false, tts: false, unlockAll: true },
+          });
+        }
+        const page = await context.newPage();
+        const errors = [];
+        page.on('pageerror', (error) => errors.push(error.message));
+        page.on('response', (response) => {
+          if (response.url().startsWith(url) && response.status() >= 400 && !response.url().endsWith('/favicon.ico')) {
+            errors.push(`${response.status()} ${response.url()}`);
+          }
+        });
+        await page.goto(url);
+        await page.evaluate(() => {
+          window.MTL.speak = (text) => {
+            if (typeof text !== 'string' || /\b(?:undefined|NaN)\b/.test(text)) throw new Error(`Invalid speech text: ${text}`);
+          };
+        });
+        if (playRound) {
+          if (axeScript && product === products[0]) problems.push(...await axe(page, axeScript, 'start'));
+          await page.locator(`.product-pick [data-p="${product}"]`).click();
+          await page.locator('#startBtn').click();
+          await page.locator('#soundBtn').click();
+          await page.locator('#menuBtn').click();
+          if (axeScript && product === products[0]) problems.push(...await axe(page, axeScript, 'settings'));
+          await page.locator('#ul').check();
+          await page.locator('#modal [data-a="close"]').click();
+          if (axeScript && product === products[0]) {
+            problems.push(...await axe(page, axeScript, 'map'));
+            await page.evaluate(scenario, { week: 0, idx: 4, stopAtNumericLesson: true });
+            problems.push(...await axe(page, axeScript, 'numeric lesson'));
+          }
+        }
+        const play = async (week, idx) => {
+          try { await page.evaluate(scenario, { week, idx, playRound }); }
+          catch (error) { throw new Error(`${product} ${week === 'final' ? week : `W${week + 1}R${idx + 1}`} (save=${playRound})`, { cause: error }); }
+        };
+        for (let week = 0; week < 8; week++) {
+          for (let idx = 0; idx < 5; idx++) {
+            await play(week, idx);
+            if (axeScript && !playRound && product === products[0] && week === 3 && idx === 0) {
+              problems.push(...await axe(page, axeScript, 'W4R1'));
+              await page.evaluate(() => {
+                document.querySelector('.use-sim').click();
+                document.querySelector('.stage .go').click();
+                document.querySelector('.stage .skip').click();
+              });
+              problems.push(...await axe(page, axeScript, 'W4R1 calculator'));
+            }
+          }
+          console.log(`${product} W${week + 1}: ${playRound ? '5 rounds saved' : '5 lessons and checks (loss save)'}`);
+        }
+        if (playRound) await play('final', 0);
+        if (errors.length) throw new Error(`${product}: ${errors.join(', ')}`);
+      } finally {
+        await context.close();
+      }
+    }
+  }
+  console.log('Playwright passed: 240 lessons and pre-checks, 120 round saves, and 3 final assessment saves.');
+  return problems;
+}
+
+async function lighthouse(url, cliPath, chromium) {
+  const temp = realpathSync(os.tmpdir());
+  const profilePrefix = 'grocery-lighthouse-';
+  const profile = mkdtempSync(path.join(temp, profilePrefix));
+  let context;
+  let report;
+  try {
+    // A dedicated profile lets Lighthouse attach directly, even when Chrome does not log its debug port.
+    context = await chromium.launchPersistentContext(profile, {
+      executablePath: process.env.CHROME_PATH || chromium.executablePath(),
+      args: [...chromeArgs, '--remote-debugging-port=0'],
+    });
+    const port = Number(readFileSync(path.join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0]);
+    if (!Number.isInteger(port) || port <= 0) throw new Error('Chrome did not expose its local debugging port');
+    const audit = spawn(process.execPath, [cliPath, url, `--port=${port}`, '--quiet', '--output=json',
+      '--output-path=stdout', '--only-categories=performance,accessibility'], { stdio: ['ignore', 'pipe', 'inherit'] });
+    let output = '';
+    audit.stdout.setEncoding('utf8').on('data', (chunk) => { output += chunk; });
+    const [exit] = await once(audit, 'close');
+    if (exit !== 0) throw new Error(`Lighthouse exited with code ${exit}`);
+    report = JSON.parse(output);
+  } finally {
+    if (context) await context.close();
+    if (path.dirname(profile) === temp && path.basename(profile).startsWith(profilePrefix)) {
+      rmSync(profile, { recursive: true, force: true, maxRetries: 3 });
+    }
+  }
+  const scores = Object.fromEntries(Object.entries(report.categories).map(([key, category]) => [key, Math.round(category.score * 100)]));
+  console.log('Lighthouse (mobile)', scores);
+  if (scores.performance >= 80) return [];
+  for (const metric of ['first-contentful-paint', 'largest-contentful-paint', 'speed-index', 'total-blocking-time', 'cumulative-layout-shift']) {
+    console.log(`${metric}: ${report.audits[metric].displayValue}`);
+  }
+  const lcp = report.audits['lcp-breakdown-insight']?.details?.items?.find((item) => item.type === 'node');
+  if (lcp) console.log(`LCP element: ${lcp.selector || lcp.snippet || lcp.nodeLabel}`);
+  for (const task of report.audits['long-tasks']?.details?.items?.slice(0, 5) || []) {
+    console.log(`long task ${Math.round(task.duration)}ms: ${task.url}`);
+  }
+  for (const entry of report.audits['bootup-time']?.details?.items?.slice(0, 5) || []) {
+    console.log(`startup ${Math.round(entry.total)}ms (${Math.round(entry.scripting)}ms JS): ${entry.url}`);
+  }
+  for (const audit of Object.values(report.audits)) {
+    if (audit.score === 0 && audit.displayValue) console.log(`${audit.id}: ${audit.displayValue}`);
+  }
+  return [`Lighthouse mobile performance below 80 (${scores.performance})`];
+}
+
+async function phasedScenario(browser, url, file, phases) {
+  const run = require(path.join(__dirname, file));
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.goto(url);
+    for (const [index, phase] of phases.entries()) {
+      if (index) await page.reload();
+      try { await page.evaluate(run, phase); }
+      catch (error) { throw new Error(`${file} ${phase}`, { cause: error }); }
+    }
+    if (errors.length) throw new Error(`${file}: ${errors.join(', ')}`);
+    console.log(`${file}: ${phases.join(' → ')} passed`);
+  } finally {
+    await context.close();
+  }
+}
+
+async function withGameServer(run) {
+  const server = http.createServer(respond);
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  try { return await run(`http://127.0.0.1:${server.address().port}/`); }
+  finally { server.close(); }
+}
+
+async function main() {
+  const [modules, mode] = process.argv.slice(2);
+  if (!modules || (mode && mode !== '--play-only')) {
+    throw new Error('Usage: node tools/run-browser-check.js <node_modules path> [--play-only]');
+  }
+  const modulesPath = path.resolve(modules);
+  const dependency = (entry) => path.join(modulesPath, entry);
+  const { chromium } = require(dependency('playwright'));
+  process.chdir(os.tmpdir());
+  const problems = await withGameServer(async (url) => {
+    const browser = await chromium.launch({ args: chromeArgs });
+    let checks;
+    try {
+      checks = await verifyGame(browser, url, mode ? null : dependency('axe-core/axe.min.js'));
+      await phasedScenario(browser, url, 'browser-check-w4.js', ['seed', 'exercise', 'reload']);
+      await phasedScenario(browser, url, 'browser-check-worksheets.js', ['exercise', 'reload']);
+    }
+    finally { await browser.close(); }
+    if (!mode) checks.push(...await lighthouse(url, dependency('lighthouse/cli/index.js'), chromium));
+    return checks;
+  });
+  if (problems.length) throw new Error(problems.join('\n'));
+}
+
+if (require.main === module) main().catch((error) => { console.error(error); process.exitCode = 1; });
+module.exports = { axe, lighthouse, withGameServer };
