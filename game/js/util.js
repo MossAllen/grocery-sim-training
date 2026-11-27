@@ -18,6 +18,13 @@
   };
 
   M.round2 = (n) => Math.round(n * 100) / 100;
+  M.readDecimal = (value, precision = 0) => {
+    const text = String(value).trim().replace(/[๐-๙]/g, (digit) => String(digit.charCodeAt(0) - 0x0e50));
+    const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(text);
+    if (!match || (match[3] || '').length > precision) return null;
+    const scaled = Number(match[2] + (match[3] || '').padEnd(precision, '0'));
+    return Number.isSafeInteger(scaled) ? (match[1] ? -scaled : scaled) : null;
+  };
   M.fmt = (n, d = 2) => {
     const r = Math.round(n * 10 ** d) / 10 ** d;
     return r.toLocaleString('th-TH', { maximumFractionDigits: d });
@@ -41,18 +48,65 @@
   };
   M.baht = (n) => `${M.words(n)} baht`;
 
-  // เสียงพูดภาษาอังกฤษด้วย Web Speech API
+  // รหัสเดียวกับรายการเสียงใน tools/voice_lines.js
+  M.voiceId = (text) => {
+    let hash = 2166136261;
+    for (const char of text.trim()) hash = Math.imul(hash ^ char.codePointAt(0), 16777619);
+    return (hash >>> 0).toString(36);
+  };
+
+  let stopVoice;
+  M.stopSpeaking = () => { if (stopVoice) stopVoice(); };
+
+  // ใช้ไฟล์ในเกมก่อน แล้วใช้ Web Speech API เมื่อไม่มีไฟล์หรือเล่นไม่ได้
   M.speak = (text, lang = 'en-US') => {
-    if (!M.State || !M.State.data.settings.tts) return;
-    if (!('speechSynthesis' in window)) return;
-    try {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang; u.rate = 0.92;
-      const v = speechSynthesis.getVoices().find((x) => x.lang && x.lang.startsWith(lang.slice(0, 2)));
-      if (v) u.voice = v;
-      speechSynthesis.speak(u);
-    } catch (e) { /* ไม่มีเสียงพูดก็เล่นต่อได้ */ }
+    if (!M.State?.data.settings.tts || typeof text !== 'string' || !text.trim()) return Promise.resolve();
+    M.stopSpeaking();
+    return new Promise((resolve) => {
+      const speech = window.speechSynthesis;
+      const limit = Math.max(4000, text.length * 145);
+      let timer, clip, utterance, fallbackStarted = false;
+      const stop = () => {
+        if (stopVoice !== stop) return;
+        stopVoice = null;
+        clearTimeout(timer);
+        clip?.pause();
+        if (utterance) speech.cancel();
+        resolve();
+      };
+      stopVoice = stop;
+      const fallback = () => {
+        if (stopVoice !== stop || fallbackStarted) return;
+        fallbackStarted = true;
+        clearTimeout(timer);
+        clip?.pause();
+        if (!speech || typeof SpeechSynthesisUtterance !== 'function') { stop(); return; }
+        try {
+          utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = lang; utterance.rate = 0.92;
+          const voice = speech.getVoices().find((candidate) => candidate.lang?.startsWith(lang.slice(0, 2)));
+          if (voice) utterance.voice = voice;
+          utterance.onend = utterance.onerror = stop;
+          timer = setTimeout(stop, limit);
+          speech.speak(utterance);
+        } catch (error) { stop(); }
+      };
+
+      const id = M.voiceId(text);
+      if (lang !== 'en-US' || !window.MTL_VOICE_IDS?.has(id)) { fallback(); return; }
+      try {
+        clip = new Audio(`assets/voice/${id}.ogg`);
+        clip.addEventListener('ended', () => { if (!fallbackStarted) stop(); }, { once: true });
+        clip.addEventListener('error', fallback, { once: true });
+        clip.addEventListener('playing', () => {
+          if (stopVoice !== stop || fallbackStarted) return;
+          clearTimeout(timer);
+          timer = setTimeout(stop, limit);
+        }, { once: true });
+        timer = setTimeout(fallback, 2500);
+        clip.play().catch(fallback);
+      } catch (error) { fallback(); }
+    });
   };
 
   M.download = (filename, text) => {

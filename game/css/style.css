@@ -1,12 +1,12 @@
 /* ฟอนต์ไทยฝังในเกม (SIL OFL 1.1 — ดูไฟล์ OFL.txt ในโฟลเดอร์ฟอนต์แต่ละตัว) */
-@font-face{font-family:"Sarabun";src:url(../assets/fonts/sarabun/Sarabun-Regular.ttf) format("truetype");font-weight:400;font-display:swap}
-@font-face{font-family:"Sarabun";src:url(../assets/fonts/sarabun/Sarabun-SemiBold.ttf) format("truetype");font-weight:600;font-display:swap}
-@font-face{font-family:"Sarabun";src:url(../assets/fonts/sarabun/Sarabun-Bold.ttf) format("truetype");font-weight:700;font-display:swap}
-@font-face{font-family:"Kanit";src:url(../assets/fonts/kanit/Kanit-SemiBold.ttf) format("truetype");font-weight:600;font-display:swap}
+@font-face{font-family:"Sarabun";src:url(../assets/fonts/sarabun/Sarabun-Regular.woff2) format("woff2"),url(../assets/fonts/sarabun/Sarabun-Regular.ttf) format("truetype");font-weight:400;font-display:swap}
+@font-face{font-family:"Sarabun";src:url(../assets/fonts/sarabun/Sarabun-SemiBold.woff2) format("woff2"),url(../assets/fonts/sarabun/Sarabun-SemiBold.ttf) format("truetype");font-weight:600;font-display:swap}
+@font-face{font-family:"Sarabun";src:url(../assets/fonts/sarabun/Sarabun-Bold.woff2) format("woff2"),url(../assets/fonts/sarabun/Sarabun-Bold.ttf) format("truetype");font-weight:700;font-display:swap}
+@font-face{font-family:"Kanit";src:url(../assets/fonts/kanit/Kanit-SemiBold.woff2) format("woff2"),url(../assets/fonts/kanit/Kanit-SemiBold.ttf) format("truetype");font-weight:600;font-display:swap}
 
 :root{
-  --bg:#f6f2ea; --panel:#fffdf8; --ink:#2a2622; --muted:#7a7166; --line:#e5dccd;
-  --brand:#e0622d; --brand-d:#b94a1c; --ok:#2f9e60; --bad:#d64545; --info:#2f6fb5;
+  --bg:#f6f2ea; --panel:#fffdf8; --ink:#2a2622; --muted:#635b51; --line:#e5dccd;
+  --brand:#b34a20; --brand-d:#903915; --ok:#267749; --bad:#a62f2f; --info:#2f6fb5;
   --gold:#f2b632; --shadow:0 2px 0 rgba(0,0,0,.06), 0 8px 24px rgba(60,40,20,.08);
   --r:14px;
 }
@@ -148,11 +148,14 @@ p{margin:.4em 0 .8em}
 .script{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;font-size:17px}
 
 .modal{position:fixed;inset:0;background:rgba(30,20,10,.45);display:grid;place-items:center;z-index:50;padding:16px}
-.modal-card{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-card{background:#fff;border-radius:18px;max-width:520px;width:100%;max-height:calc(100vh - 32px);overflow:auto;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .modal-card .bigstars{font-size:46px;letter-spacing:4px}
 .modal-card.left{text-align:left}
 
 @media (max-width:640px){
+  .topbar{flex-wrap:wrap;gap:6px;padding:8px 12px}
+  .top-right{flex-wrap:wrap;justify-content:flex-end;margin-inline-start:auto;min-width:0}
+  .icon-btn{flex:none}
   .brand small{display:none}
   .field{grid-template-columns:1fr 110px 50px 22px}
   .slider{grid-template-columns:1fr;}

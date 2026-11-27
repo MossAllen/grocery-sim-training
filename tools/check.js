@@ -18,6 +18,7 @@ const err = (m) => errors.push(m);
 const jsFiles = [
   ...fs.readdirSync(path.join(GAME, 'js')).map((f) => path.join(GAME, 'js', f)),
   path.join(GAME, 'assets/audio/manifest.js'),
+  path.join(GAME, 'assets/voice/manifest.js'),
   path.join(GAME, 'assets/sprites/manifest.js'),
 ];
 for (const f of jsFiles) {
@@ -28,7 +29,7 @@ for (const f of jsFiles) {
 const sandbox = { window: {}, console, Math, Date, JSON };
 sandbox.window = sandbox;
 vm.createContext(sandbox);
-for (const f of ['assets/audio/manifest.js', 'assets/sprites/manifest.js', 'js/util.js', 'js/curriculum.js', 'js/reading.js', 'js/lesson-kit.js', 'js/lessons-w1.js', 'js/lessons-w2.js', 'js/lessons-w3.js', 'js/lessons-w4.js', 'js/lessons-w5.js', 'js/lessons-w6.js', 'js/lessons-w7.js', 'js/lessons-w8.js']) {
+for (const f of ['assets/audio/manifest.js', 'assets/voice/manifest.js', 'assets/sprites/manifest.js', 'js/util.js', 'js/curriculum.js', 'js/reading.js', 'js/lesson-kit.js', 'js/lessons-w1.js', 'js/lessons-w2.js', 'js/lessons-w3.js', 'js/lessons-w4.js', 'js/lessons-w5.js', 'js/lessons-w6.js', 'js/lessons-w7.js', 'js/lessons-w8.js']) {
   try { vm.runInContext(fs.readFileSync(path.join(GAME, f), 'utf8'), sandbox, { filename: f }); } catch (e) { err(`load ${f}: ${e.message}`); }
 }
 const M = sandbox.MTL;
@@ -169,7 +170,8 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
   const html = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8');
   const refs = [...html.matchAll(/(?:src|href)="((?:js|css|assets|vendor)\/[^"]+)"/g)].map((m) => m[1]);
   const vers = new Set(refs.map((r) => (r.split('?v=')[1] || '(ไม่มี)')));
-  if (vers.size !== 1) err(`index.html: เลขเวอร์ชัน ?v= ไม่เท่ากันทุกไฟล์ (${[...vers].join(', ')})`);
+  if (vers.size !== 1 || vers.has('(ไม่มี)')) err(`index.html: ต้องระบุ ?v= เลขเดียวกันทุกไฟล์ (${[...vers].join(', ')})`);
+  for (const ref of refs) if (!fs.existsSync(path.join(GAME, ref.split('?')[0]))) err(`index.html: ไม่พบ ${ref}`);
   for (const f of fs.readdirSync(path.join(GAME, 'js'))) {
     checks++;
     if (!refs.some((r) => r.split('?')[0] === `js/${f}`)) err(`index.html: ไม่ได้โหลด js/${f}`);
@@ -177,8 +179,9 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
 }
 
 // ---- 4) manifest เสียง/ภาพ ----
-const AUDIO_KEYS = ['click', 'correct', 'wrong', 'coin', 'star', 'door', 'levelup', 'tick', 'whoosh', 'note', 'bgm_store'];
+const AUDIO_KEYS = ['click', 'correct', 'wrong', 'coin', 'star', 'door', 'levelup', 'tick', 'whoosh', 'note', 'bgm_store', 'rain', 'lesson_step'];
 const SPRITE_KEYS = ['shelf', 'counter', 'customer_1', 'customer_2', 'customer_3', 'customer_4', 'customer_5',
+  'customer_1_walk', 'customer_2_walk', 'customer_3_walk', 'customer_4_walk',
   'item_water_small', 'item_water_big', 'item_snack_small', 'item_snack_big', 'item_household_small', 'item_household_big'];
 const checkManifest = (name, man, keys) => {
   if (!man) return err(`ไม่พบ ${name}`);
@@ -192,16 +195,54 @@ const checkManifest = (name, man, keys) => {
     }
     if (v && typeof v !== 'string') return err(`${name}: "${k}" ต้องเป็น null, path หรือ array`);
     if (v && !fs.existsSync(path.join(GAME, v))) err(`${name}: "${k}" อ้างไฟล์ ${v} แต่ไม่มีไฟล์`);
-    if (v && /\.(ogg|mp3|wav)$/i.test(v) && fs.statSync(path.join(GAME, v)).size > (k.startsWith('bgm') ? 1.5e6 : 2e5)) err(`${name}: ไฟล์ ${v} ใหญ่เกินสเปก`);
+    else if (v && /\.(ogg|mp3|wav)$/i.test(v) && fs.statSync(path.join(GAME, v)).size > (k.startsWith('bgm') ? 1.5e6 : 2e5)) err(`${name}: ไฟล์ ${v} ใหญ่เกินสเปก`);
   });
 };
 checkManifest('audio/manifest.js', sandbox.MTL_AUDIO_MANIFEST, AUDIO_KEYS);
 checkManifest('sprites/manifest.js', sandbox.MTL_SPRITE_MANIFEST, SPRITE_KEYS);
 
+const voiceIds = sandbox.MTL_VOICE_IDS || new Set();
+const voiceDoc = fs.readFileSync(path.join(ROOT, 'docs/VOICE_LINES.md'), 'utf8');
+const voiceRows = [...voiceDoc.matchAll(/^\| `([a-z0-9]+)` \| (?:customer|staff) \| (.*?) \| /gm)];
+if (!voiceRows.length || voiceIds.size !== voiceRows.length) err('manifest เสียงพากย์ไม่ตรงกับ VOICE_LINES.md');
+for (const [, id, line] of voiceRows) {
+  checks++;
+  const file = path.join(GAME, 'assets/voice', `${id}.ogg`);
+  if (!voiceIds.has(id) || M.voiceId(line) !== id) err(`เสียงพากย์ ${id}: รหัสไม่ตรงกับประโยค`);
+  else if (!fs.existsSync(file)) err(`เสียงพากย์ ${id}: ไม่พบไฟล์ Ogg`);
+  else {
+    const bytes = fs.readFileSync(file);
+    if (bytes.length > 80000 || bytes.subarray(0, 4).toString() !== 'OggS') err(`เสียงพากย์ ${id}: รูปแบบหรือขนาดไฟล์ไม่ตรงสเปก`);
+  }
+}
+
+// ---- 4b) เสียง ZzFX ต้องได้ยินจริง (กัน filter/ค่าที่ทำให้เสียงเงียบ) ----
+{
+  let last = null;
+  class AC { constructor() { this.sampleRate = 44100; this.destination = {}; }
+    createBuffer(ch, len, rate) { const d = new Float32Array(len); last = { len, rate, d }; return { getChannelData: () => d }; }
+    createBufferSource() { return { connect() {}, start() {} }; } }
+  const zctx = { AudioContext: AC, Math, Float32Array };
+  vm.createContext(zctx);
+  try {
+    vm.runInContext(fs.readFileSync(path.join(GAME, 'vendor/zzfx/ZzFXMicro.js'), 'utf8') + ';\nthis.zzfx = zzfx;', zctx);
+    for (const [k, v] of Object.entries(sandbox.MTL_AUDIO_MANIFEST || {})) {
+      if (!Array.isArray(v)) continue;
+      checks++;
+      zctx.zzfx(...v);
+      let peak = 0; for (const x of last.d) peak = Math.max(peak, Math.abs(x));
+      const dur = last.len / last.rate;
+      if (peak < 0.03) err(`audio/manifest.js: "${k}" เบาเกินจนแทบไม่ได้ยิน (peak ${peak.toFixed(3)}) — filter ค่าบวกคือ high-pass ลองใช้ค่าลบ`);
+      if (peak > 1) err(`audio/manifest.js: "${k}" ดังจนแตก (peak ${peak.toFixed(2)})`);
+      if (dur > 2.5) err(`audio/manifest.js: "${k}" ยาว ${dur.toFixed(2)} วิ เกินเสียงเอฟเฟกต์`);
+    }
+  } catch (e) { err(`ตรวจเสียง ZzFX ไม่ได้: ${e.message}`); }
+}
+
 const audioDone = AUDIO_KEYS.filter((k) => sandbox.MTL_AUDIO_MANIFEST && sandbox.MTL_AUDIO_MANIFEST[k]).length;
 const spriteDone = SPRITE_KEYS.filter((k) => sandbox.MTL_SPRITE_MANIFEST && sandbox.MTL_SPRITE_MANIFEST[k]).length;
 
-console.log(`ตรวจ ${checks} รายการ · ${jsFiles.length} ไฟล์ JS · เสียงจริง ${audioDone}/${AUDIO_KEYS.length} · ภาพ ${spriteDone}/${SPRITE_KEYS.length}`);
+console.log(`ตรวจ ${checks} รายการ · ${jsFiles.length} ไฟล์ JS · เสียงเกม ${audioDone}/${AUDIO_KEYS.length} · พากย์ ${voiceIds.size} · ภาพ ${spriteDone}/${SPRITE_KEYS.length}`);
 if (errors.length) {
   console.error(`\n❌ พบปัญหา ${errors.length} ข้อ\n- ` + [...new Set(errors)].slice(0, 50).join('\n- '));
   process.exit(1);

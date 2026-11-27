@@ -3,6 +3,10 @@
   const M = window.MTL;
   const { $, $$, esc, sfx, State } = M;
   const app = $('#app');
+  const titleIntro = $('.hero', app);
+  const lessonScripts = $$('script[src]', $('#lesson-scripts').content);
+  const weekLoads = new Map();
+  let currentScreen = 0;
   State.load();
 
   const product = () => M.PRODUCTS[State.data.product];
@@ -13,7 +17,11 @@
   const roundOpen = (w, r) => State.data.settings.unlockAll || r === 0 || !!State.round(w, r - 1);
   const starStr = (n, max = 3) => '★'.repeat(n) + '☆'.repeat(max - n);
 
-  function leave() { if (M.onLeave) { M.onLeave(); M.onLeave = null; } if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+  function leave() {
+    currentScreen++;
+    if (M.onLeave) { M.onLeave(); M.onLeave = null; }
+    M.stopSpeaking();
+  }
 
   function header() {
     const P = product();
@@ -26,14 +34,15 @@
   // ---------- หน้าเริ่ม ----------
   function titleScreen() {
     leave();
-    app.innerHTML = `<div class="hero"><div class="big">🏪</div><h1>ร้านชำจำลอง</h1>
-      <p class="muted">เกมฝึกจำลองสถานการณ์จริง เตรียมเข้า ปวส. การตลาด — 8 สัปดาห์ · 40 รอบ · ทฤษฎี + ลงมือทำ</p></div>
+    if (titleIntro.parentNode !== app) app.replaceChildren(titleIntro);
+    $('.card', app)?.remove();
+    app.insertAdjacentHTML('beforeend', `
       <div class="card"><h2>1. เลือกสินค้าที่จะใช้ตลอดแผน</h2>
       <p class="muted">ใช้กลุ่มเดิมตั้งแต่สังเกตลูกค้าไปจนถึงทำแผนการตลาด</p>
       <div class="product-pick">${Object.values(M.PRODUCTS).map((p) => `<button data-p="${p.id}" class="${State.data.product === p.id ? 'sel' : ''}"><span class="e">${p.icon}</span><b>${p.th}</b><br><small class="muted">${esc(p.small.name)} · ${esc(p.big.name)}</small></button>`).join('')}</div>
-      <h2>2. ชื่อผู้ฝึก <small class="muted">(ไม่บังคับ ใช้ในแฟ้มผลงาน)</small></h2>
+      <h2><label for="pname">2. ชื่อผู้ฝึก <small class="muted">(ไม่บังคับ ใช้ในแฟ้มผลงาน)</small></label></h2>
       <input id="pname" maxlength="40" value="${esc(State.data.player)}" style="padding:10px;border:1px solid var(--line);border-radius:10px;width:min(360px,100%)">
-      <div class="row"><button class="btn primary" id="startBtn" ${State.data.product ? '' : 'disabled'}>เริ่มฝึก →</button></div></div>`;
+      <div class="row"><button class="btn primary" id="startBtn" ${State.data.product ? '' : 'disabled'}>เริ่มฝึก →</button></div></div>`);
     $$('.product-pick button').forEach((b) => (b.onclick = () => {
       sfx.play('click'); State.data.product = b.dataset.p; State.save();
       $$('.product-pick button').forEach((x) => x.classList.toggle('sel', x === b)); $('#startBtn').disabled = false; header();
@@ -95,10 +104,40 @@
   }
 
   // ---------- หน้าเล่น ----------
-  function playScreen(w, r, opts = {}) {
+  function loadWeek(w) {
+    if (!weekLoads.has(w)) {
+      const pending = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = lessonScripts[w].getAttribute('src');
+        script.onload = resolve;
+        script.onerror = () => { script.remove(); reject(new Error('โหลดบทเรียนไม่ได้')); };
+        document.head.appendChild(script);
+      }).catch((error) => { weekLoads.delete(w); throw error; });
+      weekLoads.set(w, pending);
+    }
+    return weekLoads.get(w);
+  }
+
+  async function playScreen(w, r, opts = {}) {
     leave(); header();
+    const screen = currentScreen;
     const isFinal = w === 'final';
     const R = isFinal ? M.FINAL : M.WEEKS[w].rounds[r];
+    if (!isFinal && !R.lesson) {
+      app.innerHTML = `<button class="btn ghost small" id="back">← สัปดาห์ ${w + 1}</button>
+        <p class="muted" role="status">กำลังเปิดบทเรียน…</p>`;
+      $('#back').onclick = () => weekScreen(w);
+      try { await loadWeek(w); }
+      catch (error) {
+        if (screen === currentScreen) {
+          $('[role="status"]', app).textContent = 'โหลดบทเรียนไม่ได้ ลองอีกครั้ง';
+          app.insertAdjacentHTML('beforeend', '<button class="btn primary" id="retryLesson">ลองอีกครั้ง</button>');
+          $('#retryLesson').onclick = () => playScreen(w, r, opts);
+        }
+        return;
+      }
+      if (screen !== currentScreen) return;
+    }
     const ctx = ctxFor(isFinal ? 8 : w, r);
     app.innerHTML = `<button class="btn ghost small" id="back">← ${isFinal ? 'แผนที่' : 'สัปดาห์ ' + (w + 1)}</button>
       <div class="play-head"><h2>${isFinal ? '📝 ' : `สัปดาห์ ${w + 1} · รอบ ${r + 1} — `}${esc(R.title)} <span class="tag">${M.SKILLS[R.skill]}</span></h2></div>
@@ -131,8 +170,8 @@
       afterLesson();
     }
     function runEngine() {
-    const engine = M.engines[R.engine];
-    engine($('.stage'), R, ctx, (score, summary) => {
+    const stage = $('.stage');
+    const finish = (score, summary) => {
       leave();
       const stars = score >= 0.999 ? 3 : score >= 0.66 ? 2 : score > 0 ? 1 : 0;
       const wasDone = isFinal ? false : weekDone(w);
@@ -154,7 +193,8 @@
         else isFinal ? mapScreen() : weekScreen(w);
       });
       if (weekNow) setTimeout(() => sfx.play('levelup'), 600);
-    });
+    };
+    if (!M.RealWorksheets.run(stage, R, ctx, finish)) M.engines[R.engine](stage, R, ctx, finish);
     }
   }
 
@@ -195,7 +235,7 @@
     const items = Object.entries(State.data.portfolio).sort((a, b) => a[1].week - b[1].week);
     const rb = rubric();
     const md = () => `# แฟ้มผลงาน — แผนฝึกการตลาด 8 สัปดาห์\n\nผู้ฝึก: ${State.data.player || '-'}  \nสินค้า: ${product().th}  \nดาวรวม: ${State.totalStars()}  \nคะแนนเกณฑ์: ${rb.total}/10\n\n` +
-      items.map(([, v]) => `## สัปดาห์ ${v.week} — ${v.title}\n\n${v.text}\n`).join('\n') + '\n> ตัวเลขจากเกมเป็นข้อมูลจำลอง ให้แทนด้วยข้อมูลจริงจากร้านเมื่อทำได้\n';
+      items.map(([, v]) => `## สัปดาห์ ${v.week} — ${v.title}\n\n${v.text}\n`).join('\n') + '\n> ใช้ป้ายกำกับแหล่งข้อมูลในแต่ละชิ้นงานเมื่อนำผลไปอ้างอิง\n';
     app.innerHTML = `<button class="btn ghost small" id="back">← แผนที่</button><h1>📁 แฟ้มผลงาน</h1>
       <p class="muted">ชิ้นงานที่บันทึกจากแต่ละรอบ ดาวน์โหลดเป็นไฟล์ .md เพื่อแนบใบงานหรือส่งครู</p>
       <div class="row"><button class="btn primary" id="dl" ${items.length ? '' : 'disabled'}>⬇️ ดาวน์โหลดแฟ้มผลงาน</button></div>
@@ -213,10 +253,17 @@
   }
   function settings() {
     const s = State.data.settings;
+    const pid = State.data.product;
+    const hasReal = pid && (M.RealW4.hasReal(pid) || M.RealWorksheets.hasReal(pid));
     modal(`<h2>⚙️ ตั้งค่า</h2>
-      <label class="checks"><label><input type="checkbox" id="ul" ${s.unlockAll ? 'checked' : ''}> โหมดครู: ปลดล็อกทุกสัปดาห์และทุกรอบ</label></label>
-      <div class="row"><button class="btn" data-a="product">เปลี่ยนสินค้า / ชื่อ</button><button class="btn" data-a="reset">🗑️ ล้างความคืบหน้า</button><button class="btn primary" data-a="close">ปิด</button></div>`, (a) => {
+      <div class="checks"><label><input type="checkbox" id="ul" ${s.unlockAll ? 'checked' : ''}> โหมดครู: ปลดล็อกทุกสัปดาห์และทุกรอบ</label></div>
+      <div class="row"><button class="btn" data-a="product">เปลี่ยนสินค้า / ชื่อ</button>${hasReal ? '<button class="btn" data-a="drop">ลบชุดข้อมูลร้านของสินค้านี้</button>' : ''}<button class="btn" data-a="reset">🗑️ ล้างความคืบหน้า</button><button class="btn primary" data-a="close">ปิด</button></div>`, (a) => {
       if (a === 'product') titleScreen();
+      if (a === 'drop' && confirm('ลบข้อมูลร้านและใบงานที่เกี่ยวข้องของ ' + product().th + '? ดาวที่ได้จะยังอยู่')) {
+        M.RealW4.drop(pid);
+        M.RealWorksheets.drop(pid);
+        mapScreen();
+      }
       if (a === 'reset' && confirm('ล้างดาว ผลจำลอง และแฟ้มผลงานทั้งหมด? (ย้อนกลับไม่ได้)')) { State.reset(); titleScreen(); }
       if (a === 'close' && product()) mapScreen();
     }, true);
@@ -226,7 +273,11 @@
   M.nav = { play: playScreen, week: weekScreen };
   $('#homeBtn').onclick = () => (product() ? mapScreen() : titleScreen());
   $('#soundBtn').onclick = () => { State.data.settings.sound = !State.data.settings.sound; State.save(); header(); if (!State.data.settings.sound) sfx.stopBgm(); else sfx.play('click'); };
-  $('#ttsBtn').onclick = () => { State.data.settings.tts = !State.data.settings.tts; State.save(); header(); M.speak('Hello!'); };
+  $('#ttsBtn').onclick = () => {
+    State.data.settings.tts = !State.data.settings.tts;
+    State.save(); header();
+    if (State.data.settings.tts) M.speak('Hello!'); else M.stopSpeaking();
+  };
   $('#menuBtn').onclick = settings;
   if ('speechSynthesis' in window) speechSynthesis.getVoices();
 

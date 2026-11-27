@@ -52,7 +52,7 @@
 | `1w8l5f9` | customer | Yes. Here's fifty baht. | ส.7 ร.4 |
 | `bn9dq9` | staff | Four bags are seventy-two baht in total. | ส.4 ร.4 |
 | `1fyey0t` | staff | Four bottles are seventy-two baht in total. | ส.4 ร.4 |
-| `1l7jx10` | staff | Four packs are fifty-two baht in total. | ส.4 ร.4 |
+| `1wjplvm` | staff | Four packs are fifty-four baht in total. | ส.4 ร.4 |
 | `1ybnptp` | staff | Here you are. It's ten baht. | ส.1 ร.4 |
 | `1bpk7n1` | staff | Here you are. It's twelve baht. | ส.1 ร.4 |
 | `1v65c98` | staff | Is that two bags at eighteen baht each? | ส.7 ร.3 |
@@ -82,7 +82,7 @@
 | `4khgct` | staff | This small pack is easy to carry. | ส.2 ร.4 |
 | `1bjdjz1` | staff | Two bags are thirty-six baht in total. | ส.4 ร.4 |
 | `pd9pu1` | staff | Two bottles are thirty-six baht in total. | ส.4 ร.4 |
-| `9ft46d` | staff | Two packs are twenty-six baht in total. | ส.4 ร.4 |
+| `b5vteu` | staff | Two packs are twenty-seven baht in total. | ส.4 ร.4 |
 | `1m8saut` | staff | We help customers save time by keeping everyday items nearby. | ส.6 ร.4 |
 | `de5kvs` | staff | We're out of that item, but this one is similar. | ส.7 ร.2 |
 | `ifsa6a` | staff | What are you looking for today? | ส.1 ร.4 |

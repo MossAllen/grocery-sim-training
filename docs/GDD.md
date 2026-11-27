@@ -247,6 +247,10 @@
 4. **รางวัลตกแต่งร้าน** ผูกกับการแก้ชิ้นงานโดยใช้หลักฐาน
 5. **ทดสอบสมดุล** ใช้ชุดกรณี §5 ตรวจสูตรก่อน แล้วสังเกตผู้ฝึกตามเกณฑ์เฟส 3 เพื่อปรับค่าพฤติกรรม
 
+### สเปกรอบถัดไปสำหรับบทสนทนาแบบพิมพ์
+
+เริ่มกับ W4R4 แบบฝึกแจ้งราคารวม ใช้จำนวน ราคา และหน่วยจากชุดที่ใช้เล่นในรอบนั้น ผู้ฝึกพิมพ์ประโยคตอบแล้วกดตรวจ ระบบให้ 1 คะแนนต่อเกณฑ์เมื่อคำตอบครั้งแรกระบุจำนวน หน่วย และยอดรวมตรงโจทย์ พร้อมสื่อความหมายว่าเป็นยอดรวม ให้ใช้เลขอารบิก เลขไทย หรือคำเลขอังกฤษที่แปลงได้ ตัดช่องว่างซ้ำและไม่จับผิดเครื่องหมายวรรคตอน แสดงเหตุผลรายเกณฑ์ เช่น “ได้ยินราคาแต่เป็นราคาต่อหน่วย” พร้อมตัวอย่างให้อ่านหรือฟังซ้ำ ถ้าพิมพ์ไม่ได้ให้เลือกเล่นแบบเดิม คะแนนรอบนี้รวมจากเกณฑ์ที่ตอบถูกหารด้วยจำนวนเกณฑ์ เก็บผลสรุปโดยไม่เก็บประโยคอิสระ
+
 ## §9 คำขอกลไกใหม่
 
 ### `observe` แบบ `timeCompare` สำหรับสัปดาห์ 1 รอบ 2
@@ -277,50 +281,50 @@
 
 ปุ่ม **📚 อ่านประกอบ** อยู่ก่อนคำถามเช็กความเข้าใจ และเปิดซ้ำจากคำอธิบายหลังตอบได้ ตารางใช้รหัสรอบตาม §4 และใช้ URL จาก `RESEARCH.md` §1–2 เท่านั้น คำว่า **ต้องค้นเพิ่ม** ให้แสดงสถานะโดยไม่สร้างลิงก์ เมื่อมีลิงก์ให้เปิดในแท็บใหม่โดยคงสถานะรอบเดิม
 
-ตรวจหน้าต้นทางหรือข้อมูลชื่อคลิปจากผู้เผยแพร่เมื่อ 2026-11-26 การเปิดเล่นและดูคลิปเต็มยังอยู่ในรายการตรวจรับก่อนใช้สอน ช่องคลิปในตารางหมายถึงวิดีโอ สื่อเสียงและใบกิจกรรมที่ใช้เสริมได้อยู่ท้ายตาราง
+ตรวจหน้าต้นทางหรือข้อมูลชื่อคลิปจากผู้เผยแพร่เมื่อ 2026-11-26 การเปิดเล่นและดูคลิปเต็มยังอยู่ในรายการตรวจรับก่อนใช้สอน ช่องคลิปหมายถึงวิดีโอ บางคลิปเป็นภาษาอังกฤษและใช้เป็นตัวอย่างของแนวคิด ให้ผู้สอนเลือกช่วงและสรุปเชื่อมกับโจทย์ก่อนใช้สอน สื่อเสียงและใบกิจกรรมเสริมอยู่ท้ายตาราง
 
 | สัปดาห์/รอบ · หัวข้อ | คลิป (RESEARCH §2) | แหล่งทางการ (RESEARCH §1) |
 |---|---|---|
-| W1R1 · ส่วนประสม 4P | แยกสินค้า ราคา ช่องทาง และโปรโมชัน · [4P — อาชีวะเพชรบุรี](https://www.youtube.com/watch?v=OuOCx7Tc250) | ต้องค้นเพิ่ม · 4P สำหรับร้านค้าปลีก |
-| W1R2 · สังเกตลูกค้า | ต้องค้นเพิ่ม · วิธีจดพฤติกรรมที่เห็น | ต้องค้นเพิ่ม · การสังเกตหน้าร้าน |
-| W1R3 · เชื่อมหลักฐานกับ 4P | เทียบหลักฐานที่จดกับตัวเลือกของร้าน · [4P — อาชีวะเพชรบุรี](https://www.youtube.com/watch?v=OuOCx7Tc250) | ต้องค้นเพิ่ม · ใช้ข้อมูลลูกค้าปรับ 4P |
-| W1R4 · ทักและถามความต้องการ | ต้องค้นเพิ่ม · วิดีโอทักลูกค้า | ต้องค้นเพิ่ม · บทสนทนาทักลูกค้า |
-| W1R5 · งบรายเดือน | ต้องค้นเพิ่ม · กันเงินและทำงบรายเดือน | [ธปท. — การวางแผนการเงิน](https://www.bot.or.th/th/satang-story/money-plan/planning-steps.html) |
-| W2R1 · แบ่งกลุ่มลูกค้า | ต้องค้นเพิ่ม · แบ่งกลุ่มจากพฤติกรรม | ต้องค้นเพิ่ม · การแบ่งกลุ่มลูกค้า |
-| W2R2 · เทียบราคาต่อหน่วย | ต้องค้นเพิ่ม · เทียบขนาดและราคา | ต้องค้นเพิ่ม · ใช้หน่วยเดียวกันเทียบราคา |
-| W2R3 · จุดยืนสินค้า | ฟังแนวคิดเรื่องประโยชน์ที่ลูกค้าได้รับ · [4P กับมุมมองเรื่องสินค้า — วิทยุจุฬาฯ](https://www.youtube.com/watch?v=LyUxZHQA8oQ) | ต้องค้นเพิ่ม · การกำหนดจุดยืนและเหตุผลสนับสนุน |
-| W2R4 · แนะนำขนาดและประโยชน์ | ต้องค้นเพิ่ม · วิดีโอแนะนำขนาดสินค้า | ต้องค้นเพิ่ม · ภาษาแนะนำขนาดและประโยชน์ |
-| W2R5 · ซื้อสดเทียบผ่อน | ต้องค้นเพิ่ม · เทียบยอดจ่ายรวมและค่างวด | อ่านวิธีใส่ภาระจ่ายเพิ่มในงบรายเดือน · [ธปท. — ใช้เงินให้อยู่รอดถึงสิ้นเดือน](https://www.bot.or.th/th/satang-story/money-plan/monthly-survive.html) |
-| W3R1 · ส่วนต่างต่อชิ้น | ต้องค้นเพิ่ม · คำนวณราคาขายหักต้นทุนต่อชิ้น | ต้องค้นเพิ่ม · ส่วนต่างต่อหน่วยของร้านค้าปลีก |
-| W3R2 · ยอดขายและกำไรขั้นต้น | ต้องค้นเพิ่ม · รายได้ ต้นทุนขาย และกำไรขั้นต้น | ดูตัวอย่างแยกรายได้ ต้นทุนสินค้า และค่าใช้จ่ายอื่น · [กรมสรรพากร — ตัวอย่างสำหรับ e-Commerce (PDF หน้าแรก)](https://www.rd.go.th/fileadmin/user_upload/SMEs/infographic/SME_lv1_2.pdf) |
-| W3R3 · สต็อกและเงินสด | ต้องค้นเพิ่ม · ผลของการซื้อสต็อกต่อเงินสด | ต้องค้นเพิ่ม · สต็อกคงเหลือและกระแสเงินสด |
-| W3R4 · ฟังต้นทุนและราคาขาย | ต้องค้นเพิ่ม · ฟังราคาขายเทียบต้นทุน | ต้องค้นเพิ่ม · ภาษาอังกฤษสำหรับต้นทุนและราคาขาย |
-| W3R5 · ลงบัญชี | ต้องค้นเพิ่ม · บัญชีรับ–จ่ายจากเหตุการณ์ร้าน | ดูรายงานเงินสดรับ–จ่ายและหลักฐาน · [กรมสรรพากร — ตัวอย่างสำหรับ e-Commerce (PDF หน้าสุดท้าย)](https://www.rd.go.th/fileadmin/user_upload/SMEs/infographic/SME_lv1_2.pdf) |
-| W4R1 · เก็บยอดปกติ | ต้องค้นเพิ่ม · ตั้งตัวเลขฐานและช่วงวัด | ต้องค้นเพิ่ม · การเก็บยอดฐานหน้าร้าน |
-| W4R2 · ออกแบบโปร | พิจารณาราคาและเหตุผลก่อนแข่งกันลดราคา · [4P กับมุมมองเรื่องราคา — วิทยุจุฬาฯ](https://www.youtube.com/watch?v=LyUxZHQA8oQ) | ต้องค้นเพิ่ม · ส่วนต่างต่อชุดและจุดคุ้มค่าป้าย |
-| W4R3 · ทดลองโปร | ฟังแนวคิดการติดตามผลหลังทำโปร · [4P กับการติดตามผล — วิทยุจุฬาฯ](https://www.youtube.com/watch?v=LyUxZHQA8oQ) | ต้องค้นเพิ่ม · เทียบช่วงโปรกับช่วงฐานและจดปัจจัยอื่น |
-| W4R4 · แจ้งราคารวม | ต้องค้นเพิ่ม · วิดีโอทวนราคาและราคารวม | ต้องค้นเพิ่ม · ภาษาสำหรับทวนยอดรวม |
-| W4R5 · หลักฐานภาษี | ต้องค้นเพิ่ม · หลักฐานรับเงินและจ่ายเงินของร้าน | [กรมสรรพากร — คู่มือภาษีสำหรับผู้ประกอบการ](https://www.rd.go.th/62063.html) |
-| W5R1 · เส้นทางลูกค้า | ต้องค้นเพิ่ม · จากเห็นสินค้าไปสู่สั่งซื้อ | ดูความแตกต่างระหว่างช่องทางแสดงสินค้ากับช่องทางรับซื้อขาย · [กรมสรรพากร — E-Commerce](https://rd.go.th/53537.html) |
+| W1R1 · ส่วนประสม 4P | แยกสินค้า ราคา ช่องทาง และโปรโมชัน · [4P — อาชีวะเพชรบุรี](https://www.youtube.com/watch?v=OuOCx7Tc250) | 4P สำหรับร้านค้าปลีก · [OpenStax — ส่วนประสมการตลาด 4P](https://openstax.org/books/principles-marketing/pages/1-2-the-marketing-mix-and-the-4ps-of-marketing) |
+| W1R2 · สังเกตลูกค้า | วิธีจดพฤติกรรมที่เห็น · [Strategyzer — บันทึกวิดีโอการสัมภาษณ์ลูกค้า](https://www.strategyzer.com/library/how-to-talk-to-customers) | การสังเกตหน้าร้าน · [OpenStax — ขั้นตอนการวิจัยตลาด](https://openstax.org/books/principles-marketing/pages/6-3-steps-in-a-successful-marketing-research-plan) |
+| W1R3 · เชื่อมหลักฐานกับ 4P | เทียบหลักฐานที่จดกับตัวเลือกของร้าน · [4P — อาชีวะเพชรบุรี](https://www.youtube.com/watch?v=OuOCx7Tc250) | ใช้ข้อมูลลูกค้าปรับ 4P · [OpenStax — ส่วนประสมการตลาด 4P](https://openstax.org/books/principles-marketing/pages/1-2-the-marketing-mix-and-the-4ps-of-marketing) |
+| W1R4 · ทักและถามความต้องการ | วิดีโอทักลูกค้า · [British Council — วิดีโอ At the Shop](https://learnenglishteens.britishcouncil.org/skills/speaking/a1-speaking/shop) | บทสนทนาทักลูกค้า · [British Council — ถามขนาดและราคา (เสียงและบทถอดความ)](https://learnenglish.britishcouncil.org/free-resources/listening/a1/shopping-clothes) |
+| W1R5 · งบรายเดือน | กันเงินและทำงบรายเดือน · [Khan Academy — วิดีโอจัดงบให้สมดุล](https://www.khanacademy.org/college-careers-more/financial-literacy/xa6995ea67a8e9fdd%3Abudgeting-and-saving/xa6995ea67a8e9fdd%3Abudgeting/v/balancing-a-budget-fin-lit) | [ธปท. — การวางแผนการเงิน](https://www.bot.or.th/th/satang-story/money-plan/planning-steps.html) |
+| W2R1 · แบ่งกลุ่มลูกค้า | ฟังส่วนการแบ่งกลุ่มแล้วโยงกับพฤติกรรมที่จด · [VRU Startup — STP Marketing](https://www.youtube.com/watch?v=VcYZDVRSg64) | การแบ่งกลุ่มลูกค้า · [OpenStax — การแบ่งกลุ่มตลาด](https://openstax.org/books/principles-marketing/pages/5-1-market-segmentation-and-consumer-markets) |
+| W2R2 · เทียบราคาต่อหน่วย | เทียบขนาดและราคาสินค้าจากป้าย · [ACCC — Unit pricing explained](https://www.youtube.com/watch?v=_8_RMaCwS-k) | ใช้หน่วยเดียวกันเทียบราคา · [ACCC — การเทียบราคาต่อหน่วย](https://www.accc.gov.au/business/pricing/unit-pricing) |
+| W2R3 · จุดยืนสินค้า | ฟังแนวคิดเรื่องประโยชน์ที่ลูกค้าได้รับ · [4P กับมุมมองเรื่องสินค้า — วิทยุจุฬาฯ](https://www.youtube.com/watch?v=LyUxZHQA8oQ) | การกำหนดจุดยืนและเหตุผลสนับสนุน · [OpenStax — จุดยืนสินค้า](https://openstax.org/books/principles-marketing/pages/5-6-product-positioning) |
+| W2R4 · แนะนำขนาดและประโยชน์ | วิดีโอแนะนำขนาดสินค้า · [British Council — วิดีโอ At the Shop](https://learnenglishteens.britishcouncil.org/skills/speaking/a1-speaking/shop) | ภาษาแนะนำขนาดและประโยชน์ · [British Council — ถามขนาดและราคา (เสียงและบทถอดความ)](https://learnenglish.britishcouncil.org/free-resources/listening/a1/shopping-clothes) |
+| W2R5 · ซื้อสดเทียบผ่อน | เทียบยอดจ่ายรวมและค่างวด · [Khan Academy — วิดีโอค่างวดกับยอดจ่ายรวม](https://www.khanacademy.org/economics-finance-domain/economics-personal-finance-va/x3ed8f3aede624754%3Acar-buying/x3ed8f3aede624754%3Acar-loans/v/monthly-payment-versus-total-cost) | อ่านวิธีใส่ภาระจ่ายเพิ่มในงบรายเดือน · [ธปท. — ใช้เงินให้อยู่รอดถึงสิ้นเดือน](https://www.bot.or.th/th/satang-story/money-plan/monthly-survive.html) |
+| W3R1 · ส่วนต่างต่อชิ้น | คำนวณราคาขายหักต้นทุนต่อชิ้น · [Khan Academy — วิดีโอแยกยอดขาย ต้นทุน และกำไร](https://www.khanacademy.org/v/introduction-to-the-income-statement?topic=valuation-and-investing) | ส่วนต่างต่อหน่วยของร้านค้าปลีก · [OpenStax — ส่วนต่างและจุดคุ้มทุน](https://openstax.org/books/principles-managerial-accounting/pages/3-2-calculate-a-break-even-point-in-units-and-dollars) |
+| W3R2 · ยอดขายและกำไรขั้นต้น | รายได้ ต้นทุนขาย และกำไรขั้นต้น · [Khan Academy — วิดีโอแยกยอดขาย ต้นทุน และกำไร](https://www.khanacademy.org/v/introduction-to-the-income-statement?topic=valuation-and-investing) | ดูตัวอย่างแยกรายได้ ต้นทุนสินค้า และค่าใช้จ่ายอื่น · [กรมสรรพากร — ตัวอย่างสำหรับ e-Commerce (PDF หน้าแรก)](https://www.rd.go.th/fileadmin/user_upload/SMEs/infographic/SME_lv1_2.pdf) |
+| W3R3 · สต็อกและเงินสด | ผลของการซื้อสต็อกต่อเงินสด · [Khan Academy — วิดีโอแยกกำไรกับกระแสเงินสด](https://www.khanacademy.org/economics-finance-domain/core-finance/accounting-and-financial-stateme/financial-statements-tutorial/v/basic-cash-flow-statement) | สต็อกคงเหลือและกระแสเงินสด · [OpenStax — การจัดการสินค้าคงเหลือ](https://openstax.org/books/principles-finance/pages/19-5-inventory-management) |
+| W3R4 · ฟังต้นทุนและราคาขาย | ฟังราคาขายเทียบต้นทุน · [British Council — วิดีโอ At the Shop](https://learnenglishteens.britishcouncil.org/skills/speaking/a1-speaking/shop) | ภาษาอังกฤษสำหรับต้นทุนและราคาขาย · [British Council — ถามขนาดและราคา (เสียงและบทถอดความ)](https://learnenglish.britishcouncil.org/free-resources/listening/a1/shopping-clothes) |
+| W3R5 · ลงบัญชี | บัญชีรับ–จ่ายจากเหตุการณ์ร้าน · [Khan Academy — วิดีโอแยกกำไรกับกระแสเงินสด](https://www.khanacademy.org/economics-finance-domain/core-finance/accounting-and-financial-stateme/financial-statements-tutorial/v/basic-cash-flow-statement) | ดูรายงานเงินสดรับ–จ่ายและหลักฐาน · [กรมสรรพากร — ตัวอย่างสำหรับ e-Commerce (PDF หน้าสุดท้าย)](https://www.rd.go.th/fileadmin/user_upload/SMEs/infographic/SME_lv1_2.pdf) |
+| W4R1 · เก็บยอดปกติ | ตั้งตัวเลขฐานและช่วงวัด · [Strategyzer — วิดีโอออกแบบการทดลองด้วย Test Card](https://www.youtube.com/watch?v=cW46ySJmLD8) | การเก็บยอดฐานหน้าร้าน · [OpenStax — ขั้นตอนการวิจัยตลาด](https://openstax.org/books/principles-marketing/pages/6-3-steps-in-a-successful-marketing-research-plan) |
+| W4R2 · ออกแบบโปร | พิจารณาราคาและเหตุผลก่อนแข่งกันลดราคา · [4P กับมุมมองเรื่องราคา — วิทยุจุฬาฯ](https://www.youtube.com/watch?v=LyUxZHQA8oQ) | ส่วนต่างต่อชุดและจุดคุ้มค่าป้าย · [OpenStax — ส่วนต่างและจุดคุ้มทุน](https://openstax.org/books/principles-managerial-accounting/pages/3-2-calculate-a-break-even-point-in-units-and-dollars) |
+| W4R3 · ทดลองโปร | ฟังแนวคิดการติดตามผลหลังทำโปร · [4P กับการติดตามผล — วิทยุจุฬาฯ](https://www.youtube.com/watch?v=LyUxZHQA8oQ) | เทียบช่วงโปรกับช่วงฐานและจดปัจจัยอื่น · [Strategyzer — ใบออกแบบการทดลอง](https://www.strategyzer.com/library/validate-your-ideas-with-the-test-card) |
+| W4R4 · แจ้งราคารวม | วิดีโอทวนราคาและราคารวม · [British Council — วิดีโอ At the Shop](https://learnenglishteens.britishcouncil.org/skills/speaking/a1-speaking/shop) | ภาษาสำหรับทวนยอดรวม · [British Council — ถามขนาดและราคา (เสียงและบทถอดความ)](https://learnenglish.britishcouncil.org/free-resources/listening/a1/shopping-clothes) |
+| W4R5 · หลักฐานภาษี | เลือกช่วงตัวอย่างหลักฐานจากสัมมนาปี 2559 ตรวจเกณฑ์ปัจจุบันในคู่มือ · [กรมสรรพากร — เอกสารประกอบการลงบัญชี ตอน 2](https://www.youtube.com/watch?v=NR3QOBE9Km4) | [กรมสรรพากร — คู่มือภาษีสำหรับผู้ประกอบการ](https://www.rd.go.th/62063.html) |
+| W5R1 · เส้นทางลูกค้า | จากเห็นสินค้าไปสู่สั่งซื้อ · [Google Career Certificates — เส้นทางลูกค้าและกรวยการตลาด](https://www.youtube.com/watch?v=VT7brk804Ow) | ดูความแตกต่างระหว่างช่องทางแสดงสินค้ากับช่องทางรับซื้อขาย · [กรมสรรพากร — E-Commerce](https://rd.go.th/53537.html) |
 | W5R2 · ทำโพสต์ | สื่อสารผลลัพธ์ที่ลูกค้าจะได้และติดตามผลหลังเผยแพร่ · [4P กับการสื่อสาร — วิทยุจุฬาฯ](https://www.youtube.com/watch?v=LyUxZHQA8oQ) | ดูตัวอย่างองค์ประกอบหน้าที่แสดงรูป ราคา และโปร · [กรมสรรพากร — E-Commerce](https://rd.go.th/53537.html) |
-| W5R3 · คำนวณอัตราทัก | ต้องค้นเพิ่ม · อัตราทักและอัตราสั่งซื้อต่อผู้ทัก | ต้องค้นเพิ่ม · นิยามตัวตั้งและตัวหารของแต่ละอัตรา |
-| W5R4 · ตอบแชตลูกค้า | ต้องค้นเพิ่ม · วิดีโอทวนคำสั่งซื้อทางแชต | ต้องค้นเพิ่ม · ภาษาอังกฤษสำหรับตอบคำถามทางแชต |
+| W5R3 · คำนวณอัตราทัก | อัตราทักและอัตราสั่งซื้อต่อผู้ทัก · [Khan Academy — วิดีโอตัวตั้ง ตัวหาร และร้อยละ](https://www.khanacademy.org/v/percent-word-problems) | นิยามตัวตั้งและตัวหารของแต่ละอัตรา · [OpenStax — ตัวชี้วัดการตลาดออนไลน์](https://openstax.org/books/principles-marketing/pages/16-3-metrics-used-to-evaluate-the-success-of-online-marketing) |
+| W5R4 · ตอบแชตลูกค้า | นำรูปประโยคทวนความเข้าใจมาซ้อมทวนออเดอร์ · [British Council — วิดีโอ Checking Understanding](https://learnenglish.britishcouncil.org/free-resources/speaking/a1/checking-understanding) | ซ้อมภาษาบริการก่อนนำไปใช้ทางแชต · [British Council — บทบาทสมมติบริการหน้าร้าน](https://www.teachingenglish.org.uk/teaching-resources/teaching-adults/activities/pre-intermediate-a2/shop-service-role-play) |
 | W5R5 · กติกาซื้อขายหุ้น | เกริ่นภาพรวมการซื้อขายและความเสี่ยง · [SET e-Learning — ลงทุนหุ้นฉบับมือใหม่ (ตัวอย่างคอร์ส)](https://www.youtube.com/watch?v=8VDomd___SI) | [SET — เวลาทำการซื้อขาย](https://www.set.or.th/th/market/information/trading-procedure/trading-hours) |
-| W6R1 · BMC ด้านลูกค้า | เปิดดูภาพรวมก่อนจัดกลุ่มลูกค้า คุณค่า และช่องทาง · [Business Model Canvas คืออะไร](https://www.youtube.com/watch?v=b3cE2fMgCBU) | ต้องค้นเพิ่ม · BMC ด้านลูกค้า |
-| W6R2 · BMC ด้านปฏิบัติการ | เปิดดูภาพรวมก่อนจัดกิจกรรม ทรัพยากร คู่ค้า และต้นทุน · [Business Model Canvas คืออะไร](https://www.youtube.com/watch?v=b3cE2fMgCBU) | ต้องค้นเพิ่ม · BMC ด้านปฏิบัติการ |
-| W6R3 · สมมติฐานและวิธีทดสอบ | ต้องค้นเพิ่ม · ตั้งสมมติฐานและเกณฑ์ตรวจ | ต้องค้นเพิ่ม · การทดลองสมมติฐานทางธุรกิจ |
-| W6R4 · อธิบายคุณค่าเป็นภาษาอังกฤษ | ต้องค้นเพิ่ม · พูดว่าเราช่วยลูกค้ากลุ่มไหนอย่างไร | ต้องค้นเพิ่ม · ภาษาอังกฤษสำหรับข้อเสนอคุณค่า |
-| W6R5 · แบบ 56-1 One Report และ 10-K | ต้องค้นเพิ่ม · วิธีหาและอ่านรายงานประจำปี | [ก.ล.ต. — Thai One Report](https://www.sec.or.th/onereport) |
-| W7R1 · ป้ายหน้าร้าน | ปูพื้นว่าป้ายเป็นส่วนหนึ่งของการส่งเสริมการขาย · [4P — อาชีวะเพชรบุรี](https://www.youtube.com/watch?v=OuOCx7Tc250) | ต้องค้นเพิ่ม · การแสดงราคาและเงื่อนไขบนป้าย |
-| W7R2 · แจ้งของหมด | ต้องค้นเพิ่ม · วิดีโอแจ้งของหมดและเสนอทางเลือก | ต้องค้นเพิ่ม · ภาษาสำหรับแจ้งของหมด |
-| W7R3 · อธิบายราคาและเสนอของทดแทน | ต้องค้นเพิ่ม · วิดีโออธิบายราคาและทวนตัวเลือก | ต้องค้นเพิ่ม · ภาษาสำหรับร้องขอและเสนอทางเลือกอย่างสุภาพ |
-| W7R4 · สนทนาและทอนเงิน | ต้องค้นเพิ่ม · วิดีโอฟังยอดชำระและทอนเงิน | ต้องค้นเพิ่ม · ภาษาสำหรับรับชำระและแจ้งเงินทอน |
-| W7R5 · บันทึกธุรกรรมลงทุน | ต้องค้นเพิ่ม · ต้นทุนซื้อ เงินปันผล และผลหลังค่าธรรมเนียม | ดูหน้าที่ของแบบรับรองสถานะผู้รับเงิน · [IRS — คำแนะนำ Form W-8BEN](https://www.irs.gov/instructions/iw8ben) |
-| W8R1 · สรุปแผนหน้าเดียว | ต้องค้นเพิ่ม · สรุปการทดลองและข้อเสนอหน้าเดียว | ต้องค้นเพิ่ม · แผนการตลาดโยงกับหลักฐาน |
-| W8R2 · ย้อนคำนวณจากหลักฐาน | ต้องค้นเพิ่ม · ตรวจช่วงเวลา หน่วย และตัวหาร | ต้องค้นเพิ่ม · การตรวจสอบย้อนกลับของตัวชี้วัด |
-| W8R3 · จัดสไลด์สามหน้า | ต้องค้นเพิ่ม · เรียงปัญหา วิธีทดลอง และผล | ต้องค้นเพิ่ม · การสรุปหลักฐานในสไลด์ |
-| W8R4 · นำเสนอภาษาอังกฤษ | ต้องค้นเพิ่ม · นำเสนอผลทดลองภาษาอังกฤษแบบสั้น | ต้องค้นเพิ่ม · การอธิบายผลและขั้นต่อไปเป็นภาษาอังกฤษ |
-| W8R5 · ค่าเงินกับผลตอบแทนและ ETF | ต้องค้นเพิ่ม · ตัวอย่างผลตอบแทนเมื่อค่าเงินเปลี่ยน | [Investor.gov — พื้นฐาน ETF](https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins-24) |
+| W6R1 · BMC ด้านลูกค้า | เปิดดูภาพรวมก่อนจัดกลุ่มลูกค้า คุณค่า และช่องทาง · [Business Model Canvas คืออะไร](https://www.youtube.com/watch?v=b3cE2fMgCBU) | BMC ด้านลูกค้า · [Strategyzer — Business Model Canvas](https://www.strategyzer.com/library/the-business-model-canvas) |
+| W6R2 · BMC ด้านปฏิบัติการ | เปิดดูภาพรวมก่อนจัดกิจกรรม ทรัพยากร คู่ค้า และต้นทุน · [Business Model Canvas คืออะไร](https://www.youtube.com/watch?v=b3cE2fMgCBU) | BMC ด้านปฏิบัติการ · [Strategyzer — Business Model Canvas](https://www.strategyzer.com/library/the-business-model-canvas) |
+| W6R3 · สมมติฐานและวิธีทดสอบ | ตั้งสมมติฐานและเกณฑ์ตรวจ · [Strategyzer — วิดีโอออกแบบการทดลองด้วย Test Card](https://www.youtube.com/watch?v=cW46ySJmLD8) | การทดลองสมมติฐานทางธุรกิจ · [Strategyzer — ใบออกแบบการทดลอง](https://www.strategyzer.com/library/validate-your-ideas-with-the-test-card) |
+| W6R4 · อธิบายคุณค่าเป็นภาษาอังกฤษ | พูดว่าเราช่วยลูกค้ากลุ่มไหนอย่างไร · [Strategyzer — วิดีโอข้อเสนอคุณค่า 3 นาที](https://www.strategyzer.com/value-proposition) | ภาษาอังกฤษสำหรับข้อเสนอคุณค่า · [Strategyzer — ข้อเสนอคุณค่า](https://www.strategyzer.com/value-proposition) |
+| W6R5 · แบบ 56-1 One Report และ 10-K | คลิปสองตอนสำหรับค้น EDGAR และอ่าน 10-K · [University of Kansas — Public companies](https://opentext.ku.edu/becredible/chapter/public-companies/) | [ก.ล.ต. — Thai One Report](https://www.sec.or.th/onereport) |
+| W7R1 · ป้ายหน้าร้าน | ปูพื้นว่าป้ายเป็นส่วนหนึ่งของการส่งเสริมการขาย · [4P — อาชีวะเพชรบุรี](https://www.youtube.com/watch?v=OuOCx7Tc250) | ตัวอย่างหลักเกณฑ์ไทยสำหรับป้ายราคา · [กรมการค้าภายใน — ประกาศการแสดงราคาสินค้าและค่าบริการ (PDF)](https://www.dit.go.th/media/cejpahs1/20260707163750_4880.pdf) |
+| W7R2 · แจ้งของหมด | นำรูปประโยคเสนอทางเลือกมาซ้อมกับฉากของหมด · [British Council — วิดีโอ Making Suggestions](https://learnenglish.britishcouncil.org/free-resources/speaking/a1/making-suggestions) | ซ้อมภาษารับมือเมื่อลูกค้าต้องการความช่วยเหลือ · [British Council — บทบาทสมมติบริการหน้าร้าน](https://www.teachingenglish.org.uk/teaching-resources/teaching-adults/activities/pre-intermediate-a2/shop-service-role-play) |
+| W7R3 · อธิบายราคาและเสนอของทดแทน | นำรูปประโยคเสนอทางเลือกมาซ้อมแนะนำสินค้าแทน · [British Council — วิดีโอ Making Suggestions](https://learnenglish.britishcouncil.org/free-resources/speaking/a1/making-suggestions) | ภาษาสำหรับร้องขอและเสนอทางเลือกอย่างสุภาพ · [British Council — บทบาทสมมติบริการหน้าร้าน](https://www.teachingenglish.org.uk/teaching-resources/teaching-adults/activities/pre-intermediate-a2/shop-service-role-play) |
+| W7R4 · สนทนาและทอนเงิน | วิดีโอฟังยอดชำระและทอนเงิน · [British Council — วิดีโอ At the Shop](https://learnenglishteens.britishcouncil.org/skills/speaking/a1-speaking/shop) | ภาษาสำหรับรับชำระและแจ้งเงินทอน · [British Council — ถามขนาดและราคา (เสียงและบทถอดความ)](https://learnenglish.britishcouncil.org/free-resources/listening/a1/shopping-clothes) |
+| W7R5 · บันทึกธุรกรรมลงทุน | ต้นทุนซื้อ เงินปันผล และผลหลังค่าธรรมเนียม · [SET in the City — วิดีโอหุ้นปันผล](https://www.youtube.com/watch?v=hNsmP4LxqO4) | ดูหน้าที่ของแบบรับรองสถานะผู้รับเงิน · [IRS — คำแนะนำ Form W-8BEN](https://www.irs.gov/instructions/iw8ben) |
+| W8R1 · สรุปแผนหน้าเดียว | ใช้ผลทดลองเลือกสิ่งที่จะทำต่อ · [Strategyzer — Learning Card พร้อมวิดีโอ](https://www.strategyzer.com/library/capture-customer-insights-and-actions-with-the-learning-card) | แผนการตลาดโยงกับหลักฐาน · [OpenStax — โครงสร้างแผนการตลาด](https://openstax.org/books/principles-marketing/pages/2-3-purpose-and-structure-of-the-marketing-plan) |
+| W8R2 · ย้อนคำนวณจากหลักฐาน | ตรวจช่วงเวลา หน่วย และตัวหาร · [Strategyzer — วิดีโอออกแบบการทดลองด้วย Test Card](https://www.youtube.com/watch?v=cW46ySJmLD8) | การตรวจสอบย้อนกลับของตัวชี้วัด · [OpenStax — ตัวชี้วัดการตลาดออนไลน์](https://openstax.org/books/principles-marketing/pages/16-3-metrics-used-to-evaluate-the-success-of-online-marketing) |
+| W8R3 · จัดสไลด์สามหน้า | เรียงปัญหา วิธีทดลอง และผล · [TED-Ed — วิดีโอใช้ภาพประกอบการนำเสนอ](https://ed.ted.com/lessons/how-to-effectively-use-visuals-in-your-presentation) | การสรุปหลักฐานในสไลด์ · [TED Masterclass — หลักการจัดสไลด์ให้อ่านง่าย](https://masterclass.ted.com/blog/visual-presentations-series-less-is-more) |
+| W8R4 · นำเสนอภาษาอังกฤษ | นำเสนอผลทดลองภาษาอังกฤษแบบสั้น · [British Council — วิดีโอนำเสนอผลและข้อจำกัด](https://learnenglish.britishcouncil.org/free-resources/business/youre-hired/episode-06) | การอธิบายผลและขั้นต่อไปเป็นภาษาอังกฤษ · [OpenStax — ออกแบบคำเสนอให้เหมาะกับผู้ฟัง](https://openstax.org/books/entrepreneurship/pages/7-3-developing-pitches-for-various-audiences-and-goals) |
+| W8R5 · ค่าเงินกับผลตอบแทนและ ETF | ผลของการเปลี่ยนค่าเงินเมื่อลงทุนต่างประเทศ · [SET Thailand — ความเสี่ยงเรื่องค่าเงิน](https://www.youtube.com/watch?v=1iNIBu5CiVg) | [Investor.gov — พื้นฐาน ETF](https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins-24) |
 
 สื่อสำหรับใช้เสริมจาก §1–2 ของ `RESEARCH.md`
 
@@ -373,6 +377,12 @@
 - บนฟอร์ม สรุป กราฟ และแฟ้มผลงาน ให้กำกับค่าที่สังเกตว่า `จริง — ผู้ฝึกบันทึก` ผลคำนวณจากค่าเหล่านั้นว่า `คำนวณจากข้อมูลจริง` ค่าที่กำหนดเพื่อทดลองว่า `แผน` และค่าที่เกมสร้างว่า `จำลอง` ถ้าผลใช้ข้อมูลหลายชนิด ให้กำกับต่อคอลัมน์หรือต่อค่า เช่น `ค่าใช้จ่ายตามแผน` ในคอลัมน์ผลโปรจำลอง
 - เก็บข้อมูลในเครื่องผ่าน `localStorage` ใต้ `state.sim.promoV2` แยกตาม `productId` ให้แต่ละชุดมี `id`, `version`, `period`, `inputs`, `sourceByField`, `baseline`, `plan`, `run` และ `seed` ตามสมควร วัตถุ `plan` อ้าง `baseline.id` วัตถุ `run` อ้าง `baseline.id` และ `plan.id` ให้แฟ้มสัปดาห์ 8 ใช้ผลที่ยังตรงกับชุดอ้างอิง เมื่อแก้ฐานให้บันทึกฉบับใหม่และเปิดให้คำนวณแผนอีกครั้งก่อนอนุญาตให้เทียบผล เมื่อแก้แผนให้เปิดให้รันใหม่ ดาวเดิมยังเป็นประวัติความคืบหน้า
 - ชุดเดิมที่ยังไม่มี `promoV2` เปิดอ่านได้ในแฟ้ม v0.1 ให้เริ่มคู่เปรียบเทียบชุดใหม่เมื่อต้องคำนวณด้วยสูตร v0.2 หน้าตั้งค่ามีปุ่มลบชุดข้อมูลร้าน และการดาวน์โหลดแฟ้มเป็นการสั่งเองโดยผู้เล่น เก็บตัวเลขสรุปกับรหัสอ้างอิง หลีกเลี่ยงชื่อคน เลขใบเสร็จ หรือข้อมูลระบุตัวบุคคลในฟอร์มและแฟ้ม
+
+## §12 รายการทบทวนหลังส่งมอบ
+
+| รอบ | สิ่งที่ต้องตรวจหรือแก้ | เกณฑ์ตรวจรับ |
+|---|---|---|
+| W8R1 | ตัวอย่างข้อเสนออาจแนะนำให้ทำโปรต่อขณะหลักฐานชี้ให้หยุด | ทดสอบผลขาดทุน ผลบวกแต่ต่ำกว่าฐาน ผลดีกว่าฐาน และไม่มีเซฟ ข้อเสนอและเหตุผลต้องตรงกับผลที่แสดง |
 
 ## สรุปการเปลี่ยนแปลง v0.2
 

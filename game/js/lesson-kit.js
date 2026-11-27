@@ -113,7 +113,7 @@
       const say = $('.sayit', el); if (say) say.onclick = () => M.speak(s.say);
       $('.prev', el).onclick = () => { if (i > 0) { i--; sfx.play('click'); show(); } };
       const skip = $('.skip', el); if (skip) skip.onclick = () => { sfx.play('click'); done(true); };
-      nx.onclick = () => { sfx.play('click'); if (last) done(false); else { i++; show(); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
+      nx.onclick = () => { sfx.play(last ? 'click' : 'lesson_step'); if (last) done(false); else { i++; show(); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
       const lock = (on) => { nx.disabled = on; };
 
       if (s.type === 'reveal') {
@@ -134,8 +134,8 @@
       if (s.type === 'try') {
         lock(true);
         let miss = 0;
-        act.innerHTML = `<div class="lv-try"><div class="q">✏️ ${s.ask}</div>
-          <div class="row"><input class="ans" inputmode="decimal" placeholder="?"><span class="muted">${esc(s.unit || '')}</span><button class="btn primary ck">ตรวจ</button></div>
+        act.innerHTML = `<div class="lv-try"><div class="q" id="lesson-try-question">✏️ ${s.ask}</div>
+          <div class="row"><input class="ans" inputmode="decimal" aria-labelledby="lesson-try-question" placeholder="?"><span class="muted">${esc(s.unit || '')}</span><button class="btn primary ck">ตรวจ</button></div>
           <div class="fb"></div></div>`;
         const inp = $('.ans', act), fb = $('.fb', act);
         const reveal = (good) => {

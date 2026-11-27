@@ -160,7 +160,12 @@
 
   // ===== รอบ 4 บอกราคารวมเป็นภาษาอังกฤษ =====
   W4[3].lesson = (ctx) => {
-    const P = ctx.product, E = P.en, r = real(ctx);
+    const P = ctx.product, E = P.en;
+    const prices = M.RealW4?.pricing(ctx);
+    const r = real(ctx);
+    const single = prices?.P ?? Math.round(r.P * 100), bundle = prices?.B ?? Math.round(r.B * 100);
+    const sayPrice = M.RealW4?.sayPrice || ((satang) => M.baht(satang / 100));
+    const showPrice = (satang) => n(satang / 100);
     return [
       { type: 'say', level: 'ง่าย',
         text: `ลูกค้าต่างชาติเดินมาที่เคาน์เตอร์ ถามว่า <i>"How much is it?"</i> (ราคาเท่าไร) คุณต้องตอบเป็นภาษาอังกฤษ`,
@@ -169,29 +174,29 @@
       { type: 'reveal', level: 'ง่าย',
         text: '1 ชิ้นใช้ <b>is</b> · ตั้งแต่ 2 ชิ้นขึ้นไปใช้ <b>are</b> และเติม s',
         visual: L.vs(`${L.items(P, 1)}<p>one ${E.unit}</p>`, `${L.items(P, 2)}<p>two ${E.units}</p>`, '1 ชิ้น', '2 ชิ้น'),
-        say: `One ${E.unit} is ${M.baht(r.P)}. Two ${E.units} are ${M.baht(r.B)}.`,
+        say: `One ${E.unit} is ${sayPrice(single)}. Two ${E.units} are ${sayPrice(bundle)}.`,
         parts: [
-          { btn: 'ประโยค 1 ชิ้น', html: L.eq(`One ${E.unit} <b>is</b> ${M.baht(r.P)}.`) },
-          { btn: 'ประโยค 2 ชิ้น', html: L.eq(`Two ${E.units} <b>are</b> ${M.baht(r.B)}.`) },
+          { btn: 'ประโยค 1 ชิ้น', html: L.eq(`One ${E.unit} <b>is</b> ${sayPrice(single)}.`) },
+          { btn: 'ประโยค 2 ชิ้น', html: L.eq(`Two ${E.units} <b>are</b> ${sayPrice(bundle)}.`) },
         ] },
       { type: 'reveal', level: 'กลาง',
         text: '<b>in total</b> แปลว่า "รวมทั้งหมด" ใช้บอกยอดที่ลูกค้าต้องจ่าย',
-        visual: L.receipt('ใบเสร็จ', [[`${E.units} × 2 (โปร)`, n(r.B)]], `${n(r.B)} บาท`),
-        say: `Two ${E.units} are ${M.baht(r.B)} in total.`,
-        parts: [{ btn: 'พูดเป็นประโยค', html: L.eq(`Two ${E.units} are ${M.baht(r.B)} <b>in total</b>.`) + '<p class="muted">กด 🔊 ด้านบนเพื่อฟังแล้วพูดตาม</p>' }] },
+        visual: L.receipt('ใบเสร็จ', [[`${E.units} × 2 (โปร)`, showPrice(bundle)]], `${showPrice(bundle)} บาท`),
+        say: `Two ${E.units} are ${sayPrice(bundle)} in total.`,
+        parts: [{ btn: 'พูดเป็นประโยค', html: L.eq(`Two ${E.units} are ${sayPrice(bundle)} <b>in total</b>.`) + '<p class="muted">กด 🔊 ด้านบนเพื่อฟังแล้วพูดตาม</p>' }] },
       { type: 'pick', level: 'กลาง',
-        text: `โปร 2 ชิ้น ${n(r.B)} บาท (ชิ้นเดียว ${n(r.P)} บาท) ลูกค้าเอา <b>4 ชิ้น</b>`,
-        visual: L.bundles(P, 2, 0, r.B),
+        text: `โปร 2 ชิ้น ${showPrice(bundle)} บาท (ชิ้นเดียว ${showPrice(single)} บาท)${prices ? ` · ${prices.source}` : ''} ลูกค้าเอา <b>4 ชิ้น</b>`,
+        visual: L.bundles(P, 2, 0, bundle / 100),
         ask: 'ควรตอบประโยคไหน',
         ...(() => {
-          const opts = [[`Four ${E.units} are ${M.baht(2 * r.B)} in total.`, ''], [`Four ${E.units} are ${M.baht(4 * r.P)} in total.`, 'ลืมใช้ราคาโปร 4 ชิ้น = 2 ชุด'], [`Four ${E.unit} is ${M.baht(2 * r.B)} in total.`, '4 ชิ้นต้องใช้ are และเติม s']]
+          const opts = [[`Four ${E.units} are ${sayPrice(2 * bundle)} in total.`, ''], [`Four ${E.units} are ${sayPrice(4 * single)} in total.`, 'ลืมใช้ราคาโปร 4 ชิ้น = 2 ชุด'], [`Four ${E.unit} is ${sayPrice(2 * bundle)} in total.`, '4 ชิ้นต้องใช้ are และเติม s']]
             .filter((o, i, a) => a.findIndex((x) => x[0] === o[0]) === i);
           return { options: opts.map((o) => o[0]), answer: 0, why: Object.fromEntries(opts.map((o, i) => [i, o[1]])) };
         })(),
-        explain: `4 ชิ้น = 2 ชุด × ${n(r.B)} = ${n(2 * r.B)} บาท` },
+        explain: `4 ชิ้น = 2 ชุด × ${showPrice(bundle)} = ${showPrice(2 * bundle)} บาท` },
       { type: 'say', level: 'ของจริง',
-        text: `ทวนเลขเป็นคำก่อนไปคุยกับลูกค้า: ${n(r.P)} = <i>${M.words(r.P)}</i> · ${n(r.B)} = <i>${M.words(r.B)}</i> · ${n(2 * r.B)} = <i>${M.words(2 * r.B)}</i>`,
-        say: `${M.words(r.P)}. ${M.words(r.B)}. ${M.words(2 * r.B)}.`,
+        text: `ทวนเลขเป็นคำก่อนไปคุยกับลูกค้า: ${showPrice(single)} = <i>${sayPrice(single)}</i> · ${showPrice(bundle)} = <i>${sayPrice(bundle)}</i> · ${showPrice(2 * bundle)} = <i>${sayPrice(2 * bundle)}</i>`,
+        say: `${sayPrice(single)}. ${sayPrice(bundle)}. ${sayPrice(2 * bundle)}.`,
         visual: L.scene(P, { customers: 2, bubble: 'Can I have two?', label: 'ลูกค้ารออยู่แล้ว' }) },
     ];
   };

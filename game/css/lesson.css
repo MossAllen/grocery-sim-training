@@ -45,15 +45,15 @@
 .lv-bar .track{display:flex;height:30px;background:#f3eee6;border-radius:8px;overflow:hidden}
 .lv-bar .track i{display:flex;align-items:center;justify-content:center;min-width:2px;font-style:normal;color:#fff;font-size:13px;white-space:nowrap;overflow:hidden}
 .lv-bar .track i b{padding:0 4px}
-.lv-bar i.sales{background:#7f9caa}
-.lv-bar i.cost{background:#8d7b68}
-.lv-bar i.profit{background:#2f9e60}
-.lv-bar i.sign{background:#d98a1f}
-.lv-bar i.loss{background:#d64545}
+.lv-bar i.sales{background:#7f9caa;color:var(--ink)}
+.lv-bar i.cost{background:#6e5d4c}
+.lv-bar i.profit{background:var(--ok)}
+.lv-bar i.sign{background:#d98a1f;color:var(--ink)}
+.lv-bar i.loss{background:var(--bad)}
 .lv-bar i.k1{background:#577590}
-.lv-bar i.k2{background:#8e6bb3}
-.lv-bar i.k3{background:#8d7b68}
-.lv-bar i.k4{background:#c0566b}
+.lv-bar i.k2{background:#765298}
+.lv-bar i.k3{background:#6e5d4c}
+.lv-bar i.k4{background:#9c3e54}
 .lv-p4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:620px;margin:0 auto;text-align:left}
 .lv-p4>div{border-radius:12px;padding:10px 12px;color:#2a2622;border:2px solid}
 .lv-p4 .pr{background:#eef3fb;border-color:#9db4d6}

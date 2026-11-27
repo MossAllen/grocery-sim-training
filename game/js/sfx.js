@@ -54,6 +54,8 @@
     tick: () => tone(1200, 0.03, 'square', 0.03),
     whoosh: () => noise(0.3, 0.06, 0, 500),
     note: () => { noise(0.12, 0.05, 0, 3000); tone(880, 0.08, 'sine', 0.05, 0.05); },
+    rain: () => noise(1.0, 0.05, 0, 1200),
+    lesson_step: () => tone(660, 0.08, 'sine', 0.03),
   };
 
   M.sfx = {
@@ -61,7 +63,7 @@
       if (!M.State || !M.State.data.settings.sound) return;
       const url = manifest[key];
       if (Array.isArray(url) && typeof zzfx === 'function') {
-        try { zzfxX.resume(); zzfx(...url); return; } catch (e) { /* ใช้เสียงสำรองด้านล่าง */ }
+        try { zzfx(...url); return; } catch (e) { /* ใช้เสียงสำรองด้านล่าง */ }
       }
       if (typeof url === 'string' && url) {
         let a = cache[key];

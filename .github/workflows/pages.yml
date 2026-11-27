@@ -12,10 +12,20 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
       - name: Check game content, keys and assets
         run: node tools/check.js
+      - name: Install browser audit tools
+        run: |
+          npm install --prefix "$RUNNER_TEMP/grocery-audit" --no-save --ignore-scripts --no-audit --no-fund playwright@1.62.0 axe-core@4.14.1 lighthouse@13.6.0
+          "$RUNNER_TEMP/grocery-audit/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Verify game in Chromium and audit mobile readiness
+        run: node tools/run-browser-check.js "$RUNNER_TEMP/grocery-audit/node_modules"
 
   deploy:
     needs: check

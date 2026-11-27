@@ -13,7 +13,7 @@
 // ZzFXMicro - Zuper Zmall Zound Zynth - v1.4.0 by Frank Force
 
 const zzfxV = .3; // volume
-const zzfxX = new AudioContext; // audio context
+let zzfxX; // initialize the audio context on the first sound
 const zzfx = // generate samples
 (
     volume = 1, 
@@ -39,6 +39,9 @@ const zzfx = // generate samples
     filter = 0
 )=>
 {
+    zzfxX ??= new AudioContext;
+    if (zzfxX.state === 'suspended') zzfxX.resume().catch(() => {});
+
     // init parameters
     const sampleRate = 44100;
     let PI2 = Math.PI*2, 
