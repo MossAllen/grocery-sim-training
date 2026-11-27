@@ -30,7 +30,13 @@ BUNDLES = {
     },
     "handoff-blender": {
         "readme": "handoff/to-blender.md",
-        "files": ["blender/generate_store_assets.py", "docs/ART_SPEC.md", "game/assets/sprites/manifest.js"]
+        "version": "ต้นแบบเคาน์เตอร์",
+        "intro": "เริ่มที่คู่มือด้านล่างสำหรับฉากเคาน์เตอร์ Blender และเกณฑ์ตรวจภาพของต้นแบบ",
+        "files": ["blender/generate_store_assets.py", "blender/build_checkout_preview.py",
+                  ".agents/skills/grocery-blender-vfx/SKILL.md", "handoff/to-blender.md",
+                  "docs/ART_SPEC.md", "docs/AUDIO_SPEC.md",
+                  "game/assets/audio/scanner.ogg", "game/assets/fonts/kanit/Kanit-SemiBold.ttf", "game/assets/fonts/kanit/OFL.txt",
+                  "game/assets/sprites/manifest.js"]
         + sorted(os.path.relpath(p, ROOT).replace("\\", "/") for p in glob.glob(os.path.join(ROOT, "game/assets/sprites/*.png")))
         + COMMON,
     },
@@ -43,11 +49,14 @@ def main():
         out = os.path.join(DIST, f"{name}.zip")
         with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
             guide = os.path.join(ROOT, spec["readme"])
-            with open(guide, "r", encoding="utf-8") as file:
-                previous = file.read()
-            z.writestr("README-ส่งงาน.md", f"# ชุดส่งงาน {name} · v0.4\n\n"
-                       f"เริ่มที่ `{RELEASE}` โดยใช้ตารางส่งงานรอบถัดไปหลังรับผลผู้ฝึก\n\n"
-                       "## คำสั่งและขั้นตอนจากรุ่นก่อนสำหรับอ้างอิง\n\n" + previous)
+            intro = spec.get("intro", f"เริ่มที่ `{RELEASE}` โดยใช้ตารางส่งงานรอบถัดไปหลังรับผลผู้ฝึก")
+            if spec["readme"] in spec["files"]:
+                previous = f"[เปิดคู่มือในชุดส่งงาน]({spec['readme']})\n"
+            else:
+                with open(guide, "r", encoding="utf-8") as file:
+                    previous = file.read()
+            version = spec.get("version", "v0.4")
+            z.writestr("README-ส่งงาน.md", f"# ชุดส่งงาน {name} · {version}\n\n{intro}\n\n" + previous)
             for rel in spec["files"]:
                 src = os.path.join(ROOT, rel)
                 if not os.path.exists(src):

@@ -12,7 +12,7 @@ const scenarios = [
   // Keyboard on a desktop, sound on, fresh save: walk past, out-of-order notes, full marks, then a 9/12 replay.
   { product: 'water', width: 1280, touch: false, seed: save('water') },
   // 320 px phone, sound off, a v0.4 save without observations and an older W1R2 result: leave mid-play, then finish.
-  { product: 'household', width: 320, touch: true,
+  { product: 'household', width: 320, height: 568, touch: true,
     seed: save('household', { rounds: { '0-1': { stars: 1, score: 0.4, skill: 'evid', at: 1 } }, settings: { sound: false, tts: false, unlockAll: true } }) },
   // 390 px phone with another product's notes already saved: data stays per product, then the list route still opens.
   { product: 'snack', width: 390, touch: true,
@@ -21,9 +21,9 @@ const scenarios = [
 
 async function verifyObserveWalk(browser, url, axeScript) {
   const problems = [];
-  for (const { product, width, touch, seed } of scenarios) {
+  for (const { product, width, height, touch, seed } of scenarios) {
     const context = await browser.newContext({
-      viewport: { width, height: touch ? 760 : 880 }, isMobile: touch, hasTouch: touch, reducedMotion: 'reduce',
+      viewport: { width, height: height ?? (touch ? 760 : 880) }, isMobile: touch, hasTouch: touch, reducedMotion: 'reduce',
     });
     await context.addInitScript((state) => {
       if (!sessionStorage.getItem('seeded')) {
@@ -50,9 +50,23 @@ async function verifyObserveWalk(browser, url, axeScript) {
         }
       };
       const goTo = async (id) => {
-        if (touch) await page.locator(`[data-ow-go="${id}"]`).tap();
-        else await page.locator(`[data-ow-go="${id}"]`).press('Enter');
+        const customer = page.locator(`[data-ow-go="${id}"]`);
+        if (height === 568) await customer.evaluate((button) => button.scrollIntoView({ block: 'center' }));
+        if (touch) await customer.tap();
+        else await customer.press('Enter');
         await focusIs(id, 'ready');
+        if (height === 568) {
+          const record = page.locator(`[data-ow-record][data-target="${id}"]`);
+          const placement = await record.evaluate((button) => {
+            const { top, bottom, left, width } = button.getBoundingClientRect();
+            const headerBottom = document.querySelector('.topbar').getBoundingClientRect().bottom;
+            const hit = document.elementFromPoint(left + width / 2, (top + bottom) / 2);
+            return { top, bottom, headerBottom, viewportHeight: window.innerHeight,
+              focused: document.activeElement === button, tappable: button.contains(hit) };
+          });
+          assert.ok(placement.focused && placement.tappable && placement.top >= placement.headerBottom &&
+            placement.bottom <= placement.viewportHeight, `Compact phone hid the focused record button: ${JSON.stringify(placement)}`);
+        }
       };
       const note = async (id) => {
         await use(`[data-ow-record][data-target="${id}"]`);

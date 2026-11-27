@@ -205,7 +205,13 @@
       if (!placed) return;
       scene.draw();
       sense();
-      (recordButton.disabled ? viewport : recordButton).focus({ preventScroll: true });
+      const target = recordButton.disabled ? viewport : recordButton;
+      const { top, bottom } = target.getBoundingClientRect();
+      const headerBottom = $('.topbar')?.getBoundingClientRect().bottom ?? 0;
+      if (top < headerBottom || bottom > window.innerHeight) {
+        target.scrollIntoView({ block: 'center', behavior: 'instant' });
+      }
+      target.focus({ preventScroll: true });
     }
 
     function updateProgress() {

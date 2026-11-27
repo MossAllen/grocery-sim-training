@@ -3,6 +3,8 @@
 > **เจ้าของเอกสาร: ทีม Blender** · สคริปต์: `blender/generate_store_assets.py`
 > โมเดล low-poly สร้างจากโค้ดและทดสอบกับ Blender 5.3 ใช้กล้องชุดเดียวกันสำหรับท่ายืนและท่าเดิน
 
+ฉากเคาน์เตอร์สำหรับทดสอบแสง เอฟเฟกต์ และท่าทางใช้ `blender/build_checkout_preview.py` ดู [ช็อตและเกณฑ์ตรวจ](../handoff/to-blender.md) และ [สกิล Grocery Blender VFX](../.agents/skills/grocery-blender-vfx/SKILL.md) ส่วนตารางด้านล่างใช้กับสไปรต์ที่เกมโหลด
+
 ## วิธีสร้างภาพ
 
 ```powershell
