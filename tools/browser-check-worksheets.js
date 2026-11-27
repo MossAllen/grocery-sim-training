@@ -23,6 +23,11 @@ module.exports = async function worksheets(phase) {
     }
   };
   const submit = () => one('.worksheet-form').requestSubmit();
+  const waitFor = async (selector) => {
+    const deadline = Date.now() + 5000;
+    while (!document.querySelector(selector) && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 25));
+    return one(selector);
+  };
   const finish = () => {
     click('.stage .chk');
     click('.stage .sv');
@@ -37,7 +42,8 @@ module.exports = async function worksheets(phase) {
     await open(7, 1);
     assert(one('.stage').textContent.includes('จริง — ผู้ฝึกบันทึก'), 'W8 evidence lost source label');
     click('.stage [data-evidence-source="0"]');
-    assert(one('.play-head').textContent.includes('สัปดาห์ 3'), 'W8 evidence link did not open its source round');
+    const source = await waitFor('.play-head');
+    assert(source.textContent.includes('สัปดาห์ 3'), 'W8 evidence link did not open its source round');
     click('#menuBtn');
     const confirmBefore = window.confirm;
     window.confirm = () => true;
@@ -68,8 +74,7 @@ module.exports = async function worksheets(phase) {
   finish();
   assert(setup.rounds['2-0'].stars === 3 && setup.portfolio['w3-stock-water'].text.includes('น้ำดื่มทดสอบ'), 'W3 Thai answers or portfolio save failed');
   await open(2, 3);
-  const until = Date.now() + 3000;
-  while (!document.querySelector('.stage .opt') && Date.now() < until) await new Promise((resolve) => setTimeout(resolve, 25));
+  await waitFor('.stage .opt');
   assert(one('.stage .chat').textContent.includes('five satang'), 'W3 dialogue rounded away satang');
 
   await open(4, 2);
