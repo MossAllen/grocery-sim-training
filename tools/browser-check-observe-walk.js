@@ -123,9 +123,17 @@ async function verifyObserveWalk(browser, url, axeScript) {
         assert.notDeepEqual(await canvas.screenshot(), before, 'keyboard did not move the camera');
         await page.reload();
         await open();
+        // Record sound cues (docs/AUDIO_SPEC.md): footsteps only while moving, notebook once per new note.
+        await page.evaluate(() => {
+          const { sfx } = window.MTL, play = sfx.play;
+          window.cues = [];
+          sfx.play = (key) => { window.cues.push(key); return play.call(sfx, key); };
+        });
+        const cues = (key) => page.evaluate((name) => window.cues.filter((cue) => cue === name).length, key);
 
         // Walk toward the price comparer: seen from afar, then close enough to hear and see.
         await walk('left', 3);
+        assert.ok(await cues('step_shop') > 0, 'walking must play footsteps');
         await focusIs('am-price', 'seen');
         assert.match(await page.locator('.ow-caption').innerText(), /เห็น[\s\S]*เข้าใกล้/);
         assert.ok(await page.locator('[data-ow-record]').isDisabled(), 'notes must wait until the customer is heard');
@@ -136,8 +144,10 @@ async function verifyObserveWalk(browser, url, axeScript) {
         await page.waitForFunction(() => document.querySelector('.walk-viewport').dataset.level !== 'ready');
         await walk('left', 3);
         await focusIs('am-price', 'ready');
-        // A behaviour event needs sight: turned away it is heard but cannot be noted.
+        // A behaviour event needs sight: turned away it is heard but cannot be noted. Turning makes no footsteps.
+        const steps = await cues('step_shop');
         await walk('turn-right', 2);
+        assert.equal(await cues('step_shop'), steps, 'turning in place must not play footsteps');
         await focusIs('am-price', 'heard');
         assert.match(await page.locator('.ow-caption').innerText(), /ได้ยิน 07:09[\s\S]*หันไปทางลูกค้า/);
         assert.ok(await page.locator('[data-ow-record]').isDisabled());
@@ -151,6 +161,7 @@ async function verifyObserveWalk(browser, url, axeScript) {
         await use('[data-ow-record][data-target="am-price"]');
         assert.match(await page.locator('.ow-caption').innerText(), /มีแถวนี้ในสมุดแล้ว/);
         assert.deepEqual(await rows(), ['am-price'], 'repeat notes must not add rows');
+        assert.equal(await cues('notebook'), 1, 'the notebook cue must play once per new note');
         assert.equal(await page.locator('.ow-clock').innerText(), '07:09');
         await use('[data-ow-replay]');
         await page.waitForFunction(() => /ได้ยิน 07:09/.test(document.querySelector('.ow-caption').innerText));
