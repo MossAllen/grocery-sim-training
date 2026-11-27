@@ -128,32 +128,60 @@ async function verifyGame(browser, url, axeScript) {
   return problems;
 }
 
-async function lighthouse(url, cliPath, chromium) {
+async function runLighthouse(url, cliPath, chromePath, flags) {
+  const audit = spawn(process.execPath, [cliPath, url, ...flags, '--quiet', '--output=json',
+    '--output-path=stdout', '--only-categories=performance,accessibility'], {
+    env: { ...process.env, CHROME_PATH: chromePath },
+    stdio: ['ignore', 'pipe', 'pipe'],
+    signal: AbortSignal.timeout(90_000),
+    killSignal: 'SIGINT',
+  });
+  let output = '';
+  let diagnostics = '';
+  audit.stdout.setEncoding('utf8').on('data', (chunk) => { output += chunk; });
+  audit.stderr.setEncoding('utf8').on('data', (chunk) => { diagnostics += chunk; });
+  const [exit] = await once(audit, 'close');
+  if (exit !== 0) throw new Error(`Lighthouse exited with code ${exit}\n${diagnostics.trim()}`);
+  const report = JSON.parse(output);
+  if (report.runtimeError) throw new Error(`Lighthouse ${report.runtimeError.code}: ${report.runtimeError.message}`);
+  return report;
+}
+
+async function lighthouseOnWindows(url, cliPath, chromium, chromePath) {
   const temp = realpathSync(os.tmpdir());
   const profilePrefix = 'grocery-lighthouse-';
   const profile = mkdtempSync(path.join(temp, profilePrefix));
   let context;
-  let report;
   try {
     // A dedicated profile lets Lighthouse attach directly, even when Chrome does not log its debug port.
     context = await chromium.launchPersistentContext(profile, {
-      executablePath: process.env.CHROME_PATH || chromium.executablePath(),
+      executablePath: chromePath,
       args: [...chromeArgs, '--remote-debugging-port=0'],
     });
     const port = Number(readFileSync(path.join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0]);
     if (!Number.isInteger(port) || port <= 0) throw new Error('Chrome did not expose its local debugging port');
-    const audit = spawn(process.execPath, [cliPath, url, `--port=${port}`, '--quiet', '--output=json',
-      '--output-path=stdout', '--only-categories=performance,accessibility'], { stdio: ['ignore', 'pipe', 'inherit'] });
-    let output = '';
-    audit.stdout.setEncoding('utf8').on('data', (chunk) => { output += chunk; });
-    const [exit] = await once(audit, 'close');
-    if (exit !== 0) throw new Error(`Lighthouse exited with code ${exit}`);
-    report = JSON.parse(output);
+    return await runLighthouse(url, cliPath, chromePath, [`--port=${port}`]);
   } finally {
     if (context) await context.close();
     if (path.dirname(profile) === temp && path.basename(profile).startsWith(profilePrefix)) {
       rmSync(profile, { recursive: true, force: true, maxRetries: 3 });
     }
+  }
+}
+
+async function lighthouse(url, cliPath, chromium) {
+  const chromePath = process.env.CHROME_PATH || chromium.executablePath();
+  // On Linux, let Lighthouse own the entire browser and its temporary profile.
+  const measure = process.platform === 'win32'
+    ? () => lighthouseOnWindows(url, cliPath, chromium, chromePath)
+    : () => runLighthouse(url, cliPath, chromePath, ['--chrome-flags=--headless --no-sandbox --disable-dev-shm-usage']);
+  let report;
+  try {
+    report = await measure();
+  } catch (error) {
+    if (error.code !== 'ABORT_ERR' && !/ERR_ABORTED|ECONNRESET|ECONNREFUSED|waiting for dynamic debugging port/i.test(error.message)) throw error;
+    console.warn(`Transient Lighthouse error, retrying with a new profile: ${error.message}`);
+    report = await measure();
   }
   const scores = Object.fromEntries(Object.entries(report.categories).map(([key, category]) => [key, Math.round(category.score * 100)]));
   console.log('Lighthouse (mobile)', scores);
