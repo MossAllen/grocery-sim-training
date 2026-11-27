@@ -44,7 +44,7 @@
         <div class="ow-caption" aria-live="polite" aria-atomic="true"></div></div>
         <div class="walk-controls">${M.WalkControls.pad()}
           <div class="walk-act"><div class="row ow-actions"><button type="button" class="btn primary" data-ow-record disabled>เข้าใกล้ลูกค้าเพื่อจด</button>
-            <button type="button" class="btn ghost" data-ow-replay disabled>อ่านคำพูดซ้ำ</button></div>
+            <button type="button" class="btn ghost" data-ow-replay disabled>ฟังหรืออ่านคำพูดซ้ำ</button></div>
             <small class="muted">ลูกศร / WASD เดิน · Q/R หัน · E จด · แตะภาพเพื่อจด</small></div></div>
         <p class="walk-hint"></p>
         <section class="ow-list" aria-labelledby="ow-list-title"><h3 id="ow-list-title">ลูกค้าในช่วงนี้</h3><ul></ul></section>
@@ -76,21 +76,16 @@
       return;
     }
 
-    let lastPose = scene.pose();
-    const controls = M.WalkControls.attach({ root: el, viewport, scene, onMove: moved, onInteract: interact });
-    M.onLeave = () => controls.destroy();
+    const controls = M.WalkControls.attach({ root: el, viewport, scene, onMove: sense, onInteract: interact });
+    M.onLeave = () => {
+      controls.destroy();
+      M.stopSpeaking();
+    };
     recordButton.onclick = record;
-    replayButton.onclick = () => replay(true);
+    replayButton.onclick = replay;
     next.onclick = advance;
     showPeriod();
     viewport.focus({ preventScroll: true });
-
-    function moved() {
-      const pose = scene.pose();
-      if (Math.hypot(pose.x - lastPose.x, pose.z - lastPose.z) > 0.01) cue('step_shop', null, 0.42);
-      lastPose = pose;
-      sense();
-    }
 
     // เลือกลูกค้าที่รับรู้ชัดที่สุด: จดได้ > ได้ยิน > เห็น · ระยะใกล้กว่าชนะ
     function sense() {
@@ -99,9 +94,10 @@
       const sensed = events().map((event) => ({ event, sense: OM.perceive(pose, event) }));
       sensed.sort((a, b) => rank[level(b.sense)] - rank[level(a.sense)] || a.sense.distance - b.sense.distance);
       const best = sensed[0] && level(sensed[0].sense) !== 'none' ? sensed[0] : null;
+      const previouslyHeard = focus?.sense.heard ? focus.event.id : '';
       focus = best;
       const id = best ? best.event.id : '';
-      const key = best ? `${id}:${level(best.sense)}:${session.isRecorded(id)}` : '';
+      const key = best ? `${id}:${best.sense.ready}:${best.sense.seen}:${best.sense.heard}:${session.isRecorded(id)}` : '';
       viewport.dataset.focus = id;
       viewport.dataset.level = best ? level(best.sense) : 'none';
       if (best && (best.sense.heard || best.sense.ready) && best.event.minute !== clock) {
@@ -113,8 +109,8 @@
       if (key !== captionKey) {
         captionKey = key;
         renderCaption();
-        if (best?.sense.heard) cue('tick', 'tick', 0.3);
       }
+      if (best?.sense.heard && id !== previouslyHeard) cue('tick', 'tick', 0.3);
     }
 
     function renderCaption() {
@@ -125,7 +121,7 @@
       const { event, sense } = focus;
       const done = session.isRecorded(event.id);
       const lines = [];
-      if (sense.seen || sense.ready) lines.push(`<p class="ow-line"><span aria-hidden="true">👀</span> <b>เห็น</b> ${esc(event.place)} — ${esc(event.seen)}</p>`);
+      if (sense.seen) lines.push(`<p class="ow-line"><span aria-hidden="true">👀</span> <b>เห็น</b> ${esc(event.place)} — ${esc(event.seen)}</p>`);
       if (sense.heard) lines.push(`<p class="ow-line ow-quote"><span aria-hidden="true">👂</span> <b>ได้ยิน ${timeLabel(event.minute)}</b> ลูกค้าพูดว่า ${esc(event.heard)}</p>`);
       if (!sense.heard) lines.push('<p class="ow-line muted">เข้าใกล้อีกนิดจนถึงวงสีเหลืองบนพื้นเพื่อฟังคำพูด</p>');
       else if (!sense.ready) lines.push(`<p class="ow-line muted">หันไปทางลูกค้า (${OM.direction(sense.bearing)}) เพื่อดูสิ่งที่ทำก่อนจด</p>`);
@@ -149,20 +145,23 @@
         return;
       }
       const { event, sense } = waiting[0];
-      hint.textContent = sense.ready ? `ลูกค้าที่${event.place}อยู่ตรงหน้า พร้อมจด` :
+      hint.textContent = sense.ready ? `ลูกค้าที่${event.place}อยู่ในระยะจด` :
         `ลูกค้าที่ยังไม่ได้จดใกล้สุด: ${event.place} ${OM.direction(sense.bearing)} ${M.fmt(sense.distance, 1)} ม.`;
     }
 
     function interact() {
       if (focus?.sense.ready && !session.isRecorded(focus.event.id)) record();
-      else if (focus?.sense.heard) replay(true);
+      else if (focus?.sense.heard) replay();
       else hint.textContent = 'ยังไม่มีลูกค้าในระยะได้ยิน เดินเข้าใกล้วงสีเหลืองบนพื้น หรือใช้รายการลูกค้า';
     }
 
-    function replay(announce) {
+    function replay() {
       if (!focus?.sense.heard) return;
       cue('tick', 'tick', 0.3);
-      if (announce) { caption.textContent = ''; setTimeout(renderCaption, 60); }
+      const { sound, tts } = State.data.settings;
+      if (sound && tts) M.speak(focus.event.heard, 'th-TH');
+      caption.textContent = '';
+      setTimeout(renderCaption, 60);
     }
 
     function record() {
@@ -205,7 +204,6 @@
         yaw: Math.atan2(event.spot.x - front.x - offset, event.spot.z - front.z) }));
       if (!placed) return;
       scene.draw();
-      lastPose = scene.pose();
       sense();
       (recordButton.disabled ? viewport : recordButton).focus({ preventScroll: true });
     }
@@ -229,7 +227,6 @@
       scene.actors.splice(0, scene.actors.length, ...events().map(actorFor));
       scene.ambience.tint = periodIndex ? EVENING : null;
       scene.place(START);
-      lastPose = scene.pose();
       scene.draw();
       fillNotebook();
       fillList();
@@ -241,6 +238,7 @@
 
     function advance() {
       if (next.disabled) return;
+      M.stopSpeaking();
       if (periodIndex < periods.length - 1) {
         periodIndex++;
         cue('door', 'door', 0.3);

@@ -27,6 +27,13 @@
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const stop = () => { pressed.clear(); queued = []; queueTime = 0; hold = null; drag = null; };
     const moved = () => { scene.draw(); onMove(); };
+    const step = (forward, strafe, turn, seconds) => {
+      const before = scene.pose();
+      scene.step(forward, strafe, turn, seconds);
+      const after = scene.pose();
+      if (Math.hypot(after.x - before.x, after.z - before.z) > 0.001) M.sfx.play('step_shop');
+      moved();
+    };
 
     function renderFrame(now) {
       if (closed) return;
@@ -39,14 +46,12 @@
           const vector = [0, 0, 0];
           for (const move of new Set(moves)) direction[move].forEach((value, i) => { vector[i] += value; });
           const [forward, strafe, turn] = vector.map(Math.sign);
-          scene.step(forward, strafe, turn, dt);
-          moved();
+          step(forward, strafe, turn, dt);
         } else if (queued.length) {
           const time = Math.min(dt, NUDGE - queueTime);
-          scene.step(...direction[queued[0]], time);
+          step(...direction[queued[0]], time);
           queueTime += time;
           if (queueTime >= NUDGE) { queued.shift(); queueTime = 0; }
-          moved();
         }
       }
       frame = requestAnimationFrame(renderFrame);
@@ -54,8 +59,7 @@
     const nudge = (move) => {
       if (paused()) return;
       if (reducedMotion) {
-        scene.step(...direction[move], NUDGE);
-        moved();
+        step(...direction[move], NUDGE);
       } else if (queued.length < 8) queued.push(move);
     };
 

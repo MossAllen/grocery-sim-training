@@ -140,10 +140,29 @@ async function verifyObserveWalk(browser, url, axeScript) {
         assert.equal(await page.locator('.ow-clock').innerText(), '07:09');
         await use('[data-ow-replay]');
         await page.waitForFunction(() => /ได้ยิน 07:09/.test(document.querySelector('.ow-caption').innerText));
+        await page.evaluate(() => {
+          window.mtlThaiSpeech = [];
+          window.speechSynthesis.speak = (utterance) => {
+            window.mtlThaiSpeech.push({ text: utterance.text, lang: utterance.lang });
+            utterance.onend();
+          };
+          window.MTL.State.data.settings.tts = true;
+        });
+        await use('[data-ow-replay]');
+        assert.deepEqual(await page.evaluate(() => window.mtlThaiSpeech), [
+          { text: '“สองขนาดนี้ ขนาดไหนถูกกว่าต่อหน่วย”', lang: 'th-TH' },
+        ]);
+        await page.evaluate(() => { window.MTL.State.data.settings.tts = false; });
         assert.ok(await page.locator('.ow-next').isDisabled(), 'evening must wait for three morning notes');
         await viaList(['am-fast']);
         assert.ok(await page.locator('.ow-next').isDisabled());
-        await viaList(['am-carry']);
+        await goTo('am-carry');
+        assert.equal(await page.locator('.ow-caption b').first().innerText(), 'เห็น');
+        await walk('turn-right', 6);
+        await focusIs('am-carry', 'ready');
+        assert.deepEqual(await page.locator('.ow-caption b').allInnerTexts(), ['ได้ยิน 07:02'],
+          'the caption must omit sight when the player faces away, even if the event can be noted');
+        await note('am-carry');
         assert.deepEqual(await rows(), ['am-carry', 'am-fast', 'am-price'], 'notebook must be in time order');
         if (axeScript) {
           const { axe } = require('./run-browser-check.js');

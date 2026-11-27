@@ -101,7 +101,7 @@
       if (!seen.has(id)) {
         seen.add(id);
         updateNotebook();
-        sfx.play('note');
+        sfx.play('notebook');
       }
       activeTarget = undefined;
       updateTarget();
