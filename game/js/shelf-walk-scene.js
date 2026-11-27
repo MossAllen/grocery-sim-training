@@ -179,8 +179,34 @@
       const image = actorImage(actor.sprite);
       const width = ACTOR_HEIGHT * 2 / 3;
       billboard(actor.x, ACTOR_HEIGHT / 2, actor.z, width, ACTOR_HEIGHT, (sx, sy, bw, bh) => {
-        if (image) ctx.drawImage(image, sx - bw / 2, sy - bh / 2, bw, bh);
-        else {
+        // actor.motion = { flip, lift (0..1), sx, sy, puffs: [{age, side}], sparkle (0..1) } จากผู้เรียกฉาก
+        const motion = actor.motion || {};
+        const feet = sy + bh / 2, rise = (motion.lift || 0) * bh * 0.045;
+        for (const puff of motion.puffs || []) {
+          const k = puff.age / 0.5;
+          ctx.fillStyle = 'rgba(214, 196, 168,' + (0.55 * (1 - k)).toFixed(3) + ')';
+          ctx.beginPath();
+          ctx.ellipse(sx + puff.side * bw * 0.16, feet - bh * 0.01 - k * bh * 0.03, bw * (0.07 + 0.1 * k), bh * (0.018 + 0.02 * k), 0, 0, TAU);
+          ctx.fill();
+        }
+        if (image) {
+          ctx.save();
+          ctx.translate(sx, feet - rise);
+          ctx.scale((motion.flip ? -1 : 1) * (motion.sx || 1), motion.sy || 1);
+          ctx.drawImage(image, -bw / 2, -bh, bw, bh);
+          ctx.restore();
+          if (motion.sparkle > 0) {
+            ctx.fillStyle = 'rgba(255, 214, 90,' + motion.sparkle.toFixed(3) + ')';
+            for (let i = 0; i < 3; i++) {
+              const a = -Math.PI / 2 + (i - 1) * 0.9, r = bw * (0.42 + (1 - motion.sparkle) * 0.25), size = bw * 0.06 * (0.6 + motion.sparkle);
+              const px = sx + Math.cos(a) * r, py = feet - bh * 0.92 + Math.sin(a) * r * 0.5;
+              ctx.beginPath();
+              ctx.moveTo(px, py - size); ctx.lineTo(px + size * 0.35, py); ctx.lineTo(px, py + size); ctx.lineTo(px - size * 0.35, py);
+              ctx.closePath();
+              ctx.fill();
+            }
+          }
+        } else {
           ctx.fillStyle = '#577590';
           ctx.fillRect(sx - bw * 0.22, sy - bh * 0.2, bw * 0.44, bh * 0.68);
           ctx.beginPath();

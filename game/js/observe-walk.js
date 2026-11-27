@@ -9,7 +9,7 @@
   const EVENING = 'rgba(122, 58, 24, .17)';
   const RING = 'rgba(255, 214, 90, .2)';
   const WALK_SPEED = 2.4;     // เมตรต่อวินาที ลูกค้าที่เดินเข้ามาที่เคาน์เตอร์
-  const STRIDE = 0.3;         // วินาทีต่อเฟรมก้าว สลับท่ายืนกับท่าก้าว
+  const STRIDE_LENGTH = 1.1;  // เมตรต่อหนึ่งรอบก้าว (ซ้ายและขวา)
 
   // คิวเสียงตาม docs/AUDIO_SPEC.md: เล่นคีย์ใหม่เมื่อมีใน manifest แล้ว ระหว่างรอไฟล์ใช้เสียงเดิมหรือภาพแทน
   const lastCue = {};
@@ -161,7 +161,11 @@
       for (const actor of scene.actors) {
         if (actor.arriving) continue;
         const sprite = spriteOf(session.get(actor.id));
-        if (actor.sprite !== sprite) { actor.sprite = sprite; changed = true; }
+        if (actor.sprite !== sprite) {
+          if (sprite === sprites[session.get(actor.id).pose]) actor.popAt = performance.now() / 1000;
+          actor.sprite = sprite;
+          changed = true;
+        }
       }
       viewport.dataset.poses = scene.actors.map((actor) =>
         `${actor.id}:${actor.arriving ? 'walk' : performed.has(actor.id) ? 'action' : 'idle'}`).join(' ');
@@ -174,30 +178,51 @@
         ring: session.isRecorded(event.id) ? 0 : OM.SENSE.hear });
     }
 
-    // ลูกค้าที่มีจุดเริ่ม enter เดินผ่านจุดแวะทีละจุดจนถึงจุดของเหตุการณ์ สลับท่ายืนกับท่าก้าว
-    function walkIn() {
+    // ท่าทางลูกค้า (M.StudMotion): เดิน 4 จังหวะสลับเท้า ตัวเด้ง ฝุ่นที่เท้า หายใจตอนยืน และเด้งตอนเปลี่ยนเป็นท่ากระทำ
+    // ลูกค้าที่มีจุดเริ่ม enter เดินผ่านจุดแวะจนถึงจุดของเหตุการณ์ · ตั้งลดการเคลื่อนไหวแล้วไม่วาดซ้ำเลย
+    function animate() {
       cancelAnimationFrame(walker);
-      if (!scene.actors.some((actor) => actor.arriving)) return;
-      let last = 0, elapsed = 0;
+      if (reducedMotion) return;
+      let last = 0, drawn = 0;
       const frame = (now) => {
         const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
+        const t = now / 1000;
         last = now;
-        elapsed += dt;
-        for (const actor of scene.actors.filter((entry) => entry.arriving)) {
-          const event = session.get(actor.id), [goal] = actor.path;
-          const dx = goal.x - actor.x, dz = goal.z - actor.z, distance = Math.hypot(dx, dz);
-          if (distance <= WALK_SPEED * dt) {
-            if (actor.path.length > 1) Object.assign(actor, actor.path.shift());
-            else arrive(actor);
-          } else {
-            actor.x += dx / distance * WALK_SPEED * dt;
-            actor.z += dz / distance * WALK_SPEED * dt;
-            actor.sprite = sprites[Math.floor(elapsed / STRIDE) % 2 && sprites[event.walk] ? event.walk : event.sprite];
+        let moving = false;
+        scene.actors.forEach((actor, n) => {
+          const event = session.get(actor.id);
+          const motion = actor.motion || (actor.motion = { puffs: [] });
+          motion.puffs = motion.puffs.filter((puff) => (puff.age += dt) < 0.5);
+          if (actor.arriving) {
+            moving = true;
+            const [goal] = actor.path;
+            const dx = goal.x - actor.x, dz = goal.z - actor.z, distance = Math.hypot(dx, dz), move = WALK_SPEED * dt;
+            actor.walked = (actor.walked || 0) + Math.min(distance, move);
+            if (distance <= move) {
+              if (actor.path.length > 1) Object.assign(actor, actor.path.shift());
+              else arrive(actor);
+            } else {
+              actor.x += dx / distance * move;
+              actor.z += dz / distance * move;
+            }
           }
+          if (actor.arriving) {
+            const step = M.StudMotion.walk(actor.walked, STRIDE_LENGTH);
+            actor.sprite = sprites[step.frame === 'walk' && sprites[event.walk] ? event.walk : event.sprite];
+            if (step.step !== motion.step) motion.puffs.push({ age: 0, side: step.step ? 1 : -1 });
+            Object.assign(motion, { step: step.step, flip: step.flip, lift: step.lift, sx: 1, sy: step.squash, sparkle: 0 });
+          } else {
+            const pop = M.StudMotion.pop(t - (actor.popAt ?? -9));
+            Object.assign(motion, { flip: false, lift: 0, sx: pop.sx, sy: pop.sy * M.StudMotion.idle(t, n), sparkle: pop.sparkle });
+          }
+        });
+        // เดินอยู่วาดทุกเฟรม ยืนเฉย ๆ วาดราว 20 ภาพต่อวินาที
+        if (moving || now - drawn > 50) {
+          scene.draw();
+          drawn = now;
         }
-        scene.draw();
-        sense();
-        if (scene.actors.some((actor) => actor.arriving)) walker = requestAnimationFrame(frame);
+        if (moving) sense();
+        walker = requestAnimationFrame(frame);
       };
       walker = requestAnimationFrame(frame);
     }
@@ -304,7 +329,7 @@
       scene.ambience.tint = periodIndex ? EVENING : null;
       scene.place(START);
       scene.draw();
-      walkIn();
+      animate();
       fillNotebook();
       fillList();
       updateProgress();

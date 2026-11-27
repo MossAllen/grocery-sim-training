@@ -3,6 +3,8 @@
 > **เจ้าของเอกสาร: ทีม Blender** · สคริปต์: `blender/generate_store_assets.py`
 > โมเดล low-poly สร้างจากโค้ดและทดสอบกับ Blender 5.3 ใช้กล้องชุดเดียวกันสำหรับท่ายืนและท่าเดิน
 
+**ทรง stud (2026-11-27):** ภาพทั้ง 22 คีย์สร้างด้วย `blender/generate_stud_sprites.py -- --out game/assets/sprites` ตามสกิล `stud-model-style` (บล็อกลบมุม เฉดสี 3–4 ขั้น ปุ่ม stud สี่เหลี่ยมห่าง ๆ เงาที่ฐาน) ตัวช่วยอยู่ที่ `blender/stud_kit.py` คีย์ ขนาด และกรอบกล้องเหมือนเดิม สคริปต์เดิม `generate_store_assets.py` ยังใช้สร้างทรงเดิมได้ ท่าทางในเกม (เดิน 4 จังหวะสลับเท้า ตัวเด้ง ฝุ่น หายใจ เด้งตอนเปลี่ยนท่า) อยู่ใน `M.StudMotion` ของ `game/js/util.js` และปิดเมื่อตั้งลดการเคลื่อนไหว
+
 ฉากเคาน์เตอร์สำหรับทดสอบแสง เอฟเฟกต์ และท่าทางใช้ `blender/build_checkout_preview.py` ดู [ช็อตและเกณฑ์ตรวจ](../handoff/to-blender.md) และ [สกิล Grocery Blender VFX](../.agents/skills/grocery-blender-vfx/SKILL.md) ส่วนตารางด้านล่างใช้กับสไปรต์ที่เกมโหลด
 
 ## วิธีสร้างภาพ

@@ -64,6 +64,13 @@
         const dx = p.x - c.x, dy = p.y - c.y, d = Math.hypot(dx, dy);
         const v = c.speed * dt * (this.opts.speedMul || 1);
         c.stride = (c.stride + Math.min(d, v)) % (2 * WALK_FRAME_DISTANCE);
+        c.walked = (c.walked || 0) + Math.min(d, v);
+        // ฝุ่นเล็ก ๆ ทุกครั้งที่เท้าแตะพื้น (ท่าทางแบบ stud ใน M.StudMotion)
+        const step = M.StudMotion?.walk(c.walked, 2 * WALK_FRAME_DISTANCE).step;
+        if (step !== undefined && step !== c.footStep && !reducedMotion?.matches) {
+          c.footStep = step;
+          (this.puffs ||= []).push({ x: c.x + (step ? 8 : -8), y: c.y + 2, t: 0 });
+        }
         if (d <= v) {
           c.x = p.x; c.y = p.y; c.wait = p.wait || 0;
           if (this.opts.onArrive) this.opts.onArrive(c, c.step);
@@ -73,6 +80,7 @@
       const gone = this.customers.filter((c) => c.done);
       if (gone.length) { this.customers = this.customers.filter((c) => !c.done); gone.forEach((c) => this.opts.onLeave && this.opts.onLeave(c)); }
       this.floaters.forEach((f) => (f.t += dt));
+      this.puffs = (this.puffs || []).filter((puff) => (puff.t += dt) < 0.5);
       this.floaters = this.floaters.filter((f) => f.t < 1.4);
     }
     onClick(e) {
@@ -132,12 +140,28 @@
       // ประตู
       g.fillStyle = '#9ad1d4'; g.fillRect(0, 290, 18, 80);
       // ลูกค้า
+      for (const puff of this.puffs || []) {
+        const k = puff.t / 0.5;
+        g.fillStyle = `rgba(190,165,130,${(0.5 * (1 - k)).toFixed(3)})`;
+        g.beginPath(); g.ellipse(puff.x, puff.y - k * 4, 4 + 7 * k, 2 + 2 * k, 0, 0, Math.PI * 2); g.fill();
+      }
       const sorted = this.customers.slice().sort((a, b) => a.y - b.y);
+      const still = reducedMotion?.matches, now = performance.now() / 1000;
       for (const c of sorted) {
-        const walking = !reducedMotion?.matches && c.wait <= 0 && c.stride >= WALK_FRAME_DISTANCE;
-        const img = (walking && sprite(`${c.sprite}_walk`)) || sprite(c.sprite);
+        const moving = !still && c.wait <= 0;
+        // เดิน 4 จังหวะ สลับเท้าโดยกลับภาพ ตัวเด้งกลางก้าว · ยืนรอหายใจเบา ๆ
+        const step = moving && M.StudMotion ? M.StudMotion.walk(c.walked || 0, 2 * WALK_FRAME_DISTANCE) : null;
+        const img = (step && step.frame === 'walk' && sprite(`${c.sprite}_walk`)) || sprite(c.sprite);
         g.fillStyle = 'rgba(0,0,0,.15)'; g.beginPath(); g.ellipse(c.x, c.y + 4, 16, 5, 0, 0, Math.PI * 2); g.fill();
-        if (img) g.drawImage(img, c.x - 28, c.y - 80, 56, 84);
+        if (img) {
+          const rise = step ? step.lift * 4 : 0;
+          const sy = step ? step.squash : still ? 1 : M.StudMotion?.idle(now, c.id) ?? 1;
+          g.save();
+          g.translate(c.x, c.y + 4 - rise);
+          g.scale(step?.flip ? -1 : 1, sy);
+          g.drawImage(img, -28, -84, 56, 84);
+          g.restore();
+        }
         else {
           g.fillStyle = c.shirt; g.beginPath(); g.roundRect ? g.roundRect(c.x - 13, c.y - 30, 26, 32, 8) : g.rect(c.x - 13, c.y - 30, 26, 32); g.fill();
           g.font = '30px sans-serif'; g.textAlign = 'center'; g.fillText(c.face, c.x, c.y - 30);

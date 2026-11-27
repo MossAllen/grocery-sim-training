@@ -19,7 +19,7 @@ sys.path.append(HERE)
 import stud_kit  # noqa: E402
 from stud_kit import Kit, PALETTE  # noqa: E402
 
-SIZES = {"shelf": (260, 180), "counter": (320, 160), "customer": (88, 132), "item": (48, 56)}
+SIZES = {"shelf": (260, 180), "counter": (320, 160), "customer": (88, 132), "customer_pose": (176, 264), "item": (48, 56)}
 
 # สีของเกมนี้: 3–4 เฉดต่อวัสดุ (สว่างด้านบน · กลาง · มืดด้านข้าง · มืดสุดที่ฐาน)
 PALETTE.update({
@@ -181,25 +181,49 @@ def build_item(product, size):
     return [k], top
 
 
-def build_customer(i):
-    k = Kit(f"Customer_{i + 1}", ao_floor=0.6, ao_height=0.7)
+# ท่ากระทำ W1R2 (ART_SPEC): ของถืออยู่หน้าลำตัวเพราะกล้อง ortho ไม่เห็นแขนที่ยื่นเข้าหากล้อง
+POSES = [(0, "pick"), (3, "look"), (1, "look"), (2, "pay"), (4, "pay")]
+
+
+def held_arm(k, x, s, hand_x, hand_z, colour):
+    """แขนงอยกมือมาหน้าอก: ต้นแขนตั้ง + ปลายแขนเฉียงขึ้นถึงมือ"""
+    k.box((x, 0, 1.3 * s), (0.16, 0.24, 0.36 * s), colour)
+    mid_x, mid_z = (x + hand_x) / 2, (1.12 * s + hand_z) / 2
+    k.box((mid_x, -0.14, mid_z), (abs(hand_x - x) + 0.15, 0.2, abs(hand_z - 1.12 * s) + 0.15), colour)
+    k.box((hand_x, -0.24, hand_z), (0.15, 0.16, 0.14), "SKIN")
+
+
+def pack(k, x, z, w, h, body, label="CREAM_L"):
+    k.box((x, -0.34, z), (w, 0.14, h), body)
+    k.flat((x, -0.42, z - h * 0.12), (w * 0.7, 0.02, h * 0.22), label)
+
+
+def build_customer(i, mode=None):
+    """mode: None = ยืน · 'walk' = ก้าว (เกมสลับซ้ายขวาเอง) · 'pick' 'look' 'pay' = ท่ากระทำ"""
+    k = Kit(f"Customer_{i + 1}_{mode or 'stand'}", ao_floor=0.6, ao_height=0.7)
     shirt, shirt_d = SHIRTS[i]
     s = 0.88 if i == 2 else 1.0
     wide = 1.18 if i == 1 else 1.0
     pants, pants_d = ("NAVY", "NAVY_D") if i == 2 else ("DENIM", "DENIM_D")
     # ขาและรองเท้า: บล็อกลบมุม 2 ข้าง (ไม่ใช่ทรงกระบอกเดียว)
-    for x in (-0.13, 0.13):
-        k.box((x * wide, 0, 0.47 * s), (0.24 * wide, 0.3, 0.86 * s), pants)
-        k.flat((x * wide, 0.0, 0.84 * s), (0.25 * wide, 0.31, 0.04), pants_d)
-        k.box((x * wide, -0.04, 0.05), (0.27 * wide, 0.38, 0.1), "INK", segs=1)
+    for side, x in ((-1, -0.13), (1, 0.13)):
+        # ท่าก้าว: ขาซ้ายก้าวหน้ายกเท้า ขาขวาถีบหลัง
+        dy = -0.32 * side if mode == "walk" else 0.0
+        lift = 0.16 if mode == "walk" and side < 0 else 0.0
+        k.box((x * wide, dy, 0.47 * s + lift), (0.24 * wide, 0.3, 0.86 * s - lift), pants)
+        k.flat((x * wide, dy, 0.84 * s), (0.25 * wide, 0.31, 0.04), pants_d)
+        k.box((x * wide, dy - 0.04, 0.05 + lift), (0.27 * wide, 0.38, 0.1), "INK", segs=1)
     # ลำตัว: บล็อกใหญ่ + ปกเสื้อเฉดมืด + เข็มขัด
     k.box((0, 0, 1.2 * s), (0.62 * wide, 0.36, 0.7 * s), shirt)
     k.flat((0, -0.19, 0.9 * s), (0.6 * wide, 0.02, 0.06), shirt_d)
     k.box((0, -0.02, 1.53 * s), (0.36, 0.3, 0.08), shirt_d)
-    # แขน
-    for x in (-0.38, 0.38):
-        k.box((x * wide, 0, 1.17 * s), (0.16, 0.24, 0.62 * s), shirt_d)
-        k.box((x * wide, -0.01, 0.82 * s), (0.15, 0.2, 0.12), "SKIN")
+    # แขน (ท่ายืนและท่าก้าว แกว่งสวนขา) · ท่ากระทำวาดแขนเองด้านล่าง
+    if mode in (None, "walk"):
+        for side, x in ((-1, -0.38), (1, 0.38)):
+            dy = 0.26 * side if mode == "walk" else 0.0
+            up = 0.08 if mode == "walk" and side > 0 else 0.0   # แขนที่แกว่งไปหน้ายกขึ้นเล็กน้อย
+            k.box((x * wide, dy, 1.17 * s + up), (0.16, 0.24, 0.62 * s), shirt_d)
+            k.box((x * wide, dy - 0.01, 0.82 * s + up), (0.15, 0.2, 0.12), "SKIN")
     # หัว: บล็อกลบมุมใหญ่ ผม 2 ชั้น ตาเป็นบล็อกเข้มเล็ก
     k.box((0, 0, 1.86 * s), (0.5, 0.44, 0.5), "SKIN", bev=0.08, segs=2)
     k.box((0, 0.04, 2.13 * s), (0.54, 0.48, 0.14), "HAIR", bev=0.05)
@@ -208,7 +232,9 @@ def build_customer(i):
         k.flat((x, -0.225, 1.88 * s), (0.07, 0.02, 0.09), "INK")
     k.flat((0, -0.225, 1.74 * s), (0.14, 0.02, 0.03), "SKIN_D")
     # ของประจำกลุ่ม (GDD §5): 1 กระเป๋าสะพาย · 2 ตะกร้า · 3 เป้ · 4 แว่น+ถือสินค้า · 5 ทั่วไป
-    if i == 0:
+    if mode in ("pick", "look", "pay"):
+        build_pose(k, i, mode, s, wide, shirt_d)
+    elif i == 0:
         k.box((0.45, -0.02, 0.98), (0.2, 0.3, 0.34), "BAG")
         k.flat((0.08, -0.2, 1.3), (0.7, 0.02, 0.05), "BAG")
     elif i == 1:
@@ -228,6 +254,43 @@ def build_customer(i):
     return [k, studs], 2.3 * s
 
 
+def build_pose(k, i, pose, s, wide, arm):
+    if (i, pose) == (0, "pick"):        # หยิบแพ็กเล็กมาดูหน้าอก กระเป๋าสะพายข้าง
+        k.box((0.47, -0.02, 0.98), (0.2, 0.3, 0.34), "BAG")
+        k.flat((0.08, -0.2, 1.3), (0.7, 0.02, 0.05), "BAG")
+        held_arm(k, 0.38, s, 0.14, 1.36, arm)
+        pack(k, 0.14, 1.5, 0.24, 0.32, "WATER")
+        k.box((-0.38, 0, 1.17), (0.16, 0.24, 0.62), arm)
+        k.box((-0.38, -0.01, 0.82), (0.15, 0.2, 0.12), "SKIN")
+    elif (i, pose) == (3, "look"):      # ถือสองขนาดเทียบป้าย
+        held_arm(k, -0.38, s, -0.2, 1.38, arm)
+        held_arm(k, 0.38, s, 0.22, 1.38, arm)
+        pack(k, -0.22, 1.5, 0.2, 0.28, "SNACK_R")
+        pack(k, 0.25, 1.56, 0.3, 0.42, "SNACK_O")
+    elif (i, pose) == (1, "look"):      # ตะกร้าห้อยแขนซ้าย ยกแพ็กใหญ่ขึ้นดู
+        k.box((-0.44 * wide, 0, 1.17), (0.16, 0.24, 0.62), arm)
+        k.box((-0.5 * wide, -0.2, 0.82), (0.5, 0.32, 0.26), "BASKET")
+        k.flat((-0.5 * wide, -0.37, 0.82), (0.44, 0.02, 0.05), "BASKET_D")
+        held_arm(k, 0.44 * wide, s, 0.2, 1.58, arm)
+        pack(k, 0.18, 1.74, 0.42, 0.36, "PAPER", "TEAL")
+    elif (i, pose) == (2, "pay"):       # นักเรียนยื่นสินค้ากับธนบัตรที่เคาน์เตอร์
+        k.box((0, 0.3, 1.25 * s), (0.5, 0.26, 0.56), "PACK")
+        held_arm(k, 0.38, s, 0.2, 1.26 * s, arm)
+        pack(k, 0.2, 1.4 * s, 0.22, 0.3, "WATER")
+        held_arm(k, -0.38, s, -0.2, 1.2 * s, arm)
+        k.flat((-0.22, -0.36, 1.3 * s), (0.28, 0.02, 0.16), "LEAF")
+        k.flat((-0.22, -0.375, 1.3 * s), (0.12, 0.02, 0.06), "LEAF_L")
+    elif (i, pose) == (4, "pay"):       # อุ้มแพ็กใหญ่ 3 ชิ้น
+        for n, z in enumerate((1.02, 1.3, 1.58)):
+            pack(k, 0, z, 0.52, 0.26, "PAPER" if n % 2 == 0 else "PAPER_D", "TEAL")
+        for x in (-0.38, 0.38):
+            k.box((x, 0, 1.32), (0.16, 0.24, 0.34), arm)
+            k.box((x * 0.82, -0.2, 1.06), (0.16, 0.36, 0.14), arm)
+            k.box((x * 0.72, -0.34, 1.04), (0.15, 0.14, 0.14), "SKIN")
+    else:
+        raise ValueError(f"no pose {pose} for customer {i + 1}")
+
+
 # ---------- main ----------
 def main(out_dir):
     os.makedirs(out_dir, exist_ok=True)
@@ -235,12 +298,15 @@ def main(out_dir):
     jobs += [(f"item_{p}_{z}", (lambda p=p, z=z: build_item(p, z)), "item", 1.0)
              for p in ("water", "snack", "household") for z in ("small", "big")]
     jobs += [(f"customer_{i + 1}", (lambda i=i: build_customer(i)), "customer", 1.25) for i in range(5)]
+    jobs += [(f"customer_{i + 1}_walk", (lambda i=i: build_customer(i, "walk")), "customer", 1.25) for i in range(4)]
+    jobs += [(f"customer_{i + 1}_{pose}", (lambda i=i, pose=pose: build_customer(i, pose)), "customer_pose", 1.25)
+             for i, pose in POSES]
     for key, build, size_key, width in jobs:
         scn = reset_scene()
         kits, h = build()
         finish(kits)
         print(f"INFO {key}: {sum(k.tris() for k in kits)} tris")
-        camera_and_light(scn, 2.2 if size_key == "customer" else h, size_key, width)
+        camera_and_light(scn, 2.2 if size_key.startswith("customer") else h, size_key, width)
         render(scn, out_dir, key)
 
 

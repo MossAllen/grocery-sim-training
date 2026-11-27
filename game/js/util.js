@@ -111,6 +111,26 @@
     });
   };
 
+  // ท่าทางลูกค้าแบบ stud ใช้ร่วมกันทั้งฉาก 2 มิติและ 3 มิติ (ไม่แตะ DOM)
+  // walk: ก้าวละ 4 จังหวะ ยืน → ก้าว → ยืน → ก้าวกลับข้าง ตัวเด้งขึ้นกลางก้าว ยุบเล็กน้อยตอนเท้าแตะ
+  // idle: หายใจเบา ๆ · pop: เด้งยืดยุบตอนเปลี่ยนเป็นท่ากระทำ (0.45 วินาที)
+  M.StudMotion = {
+    POP_SECONDS: 0.45,
+    walk(distance, strideLength) {
+      const phase = ((distance / strideLength) % 1 + 1) % 1;
+      const quarter = Math.floor(phase * 4);
+      const lift = Math.abs(Math.sin(phase * 4 * Math.PI));
+      return { frame: quarter % 2 ? 'walk' : 'stand', flip: quarter === 3, lift,
+        squash: 1 - 0.07 * (1 - lift), step: Math.floor(phase * 2) };
+    },
+    idle(seconds, seed = 0) { return 1 + 0.018 * Math.sin(seconds * 2.4 + seed * 1.7); },
+    pop(age) {
+      if (!(age >= 0 && age < M.StudMotion.POP_SECONDS)) return { sx: 1, sy: 1, sparkle: 0 };
+      const u = age / M.StudMotion.POP_SECONDS, wave = Math.sin(u * Math.PI * 2.5) * (1 - u);
+      return { sx: 1 - 0.12 * wave, sy: 1 + 0.18 * wave, sparkle: 1 - u };
+    },
+  };
+
   M.download = (filename, text) => {
     const blob = new Blob(['﻿' + text], { type: 'text/markdown;charset=utf-8' });
     const a = document.createElement('a');
