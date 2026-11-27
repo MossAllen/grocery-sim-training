@@ -233,6 +233,66 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
   }
 }
 
+// ---- 3e) เคาน์เตอร์ W2R2: ราคาต่อหน่วย สองชุดราคา × 3 สินค้า หยิบ สแกน จ่ายเงิน และเงินทอน ----
+{
+  const CM = require(path.join(GAME, 'js/checkout-model.js'));
+  // ราคาต่อหน่วย (สตางค์) ของชั้น A/B และชั้นที่คุ้มกว่า: ชุดแรกแพ็กใหญ่คุ้ม ชุดเล่นซ้ำแพ็กเล็กคุ้ม
+  const expect = {
+    water: ['2000/1333 b 25', '1500/1600 a 29'],
+    snack: ['4000/3333 b 30', '3200/3600 a 32'],
+    household: ['1200/983 b 64', '900/1000 a 65'],
+  };
+  for (const [pid, cases] of Object.entries(expect)) {
+    cases.forEach((want, caseIndex) => {
+      const tag = `${pid} W2R2 เคาน์เตอร์ ชุด ${caseIndex + 1}`;
+      const plan = CM.mission(M.PRODUCTS[pid], caseIndex);
+      const got = `${plan.items.map((item) => item.perSatang).join('/')} ${plan.best.id} ${plan.budget}`;
+      checks += 3;
+      if (got !== want) err(`${tag}: ราคาต่อหน่วย/ชั้นที่คุ้ม/งบ ได้ ${got} ต้องเป็น ${want}`);
+      const purse = CM.wallet(plan.budget);
+      if (purse.reduce((a, b) => a + b, 0) !== plan.budget || purse.some((v) => !CM.DENOMINATIONS.includes(v))) err(`${tag}: กระเป๋าเงินไม่เท่างบ`);
+      if (plan.items.some((item) => /undefined|NaN/.test(item.name + item.sizeText))) err(`${tag}: ข้อความป้ายไม่สมบูรณ์`);
+
+      for (const choice of ['a', 'b']) {
+        const c = CM.createCounter(plan, { transactionId: 'test' });
+        const item = plan.items.find((entry) => entry.id === choice);
+        checks += 9;
+        if (c.scan().accepted) err(`${tag}: สแกนได้ทั้งที่มือว่าง`);
+        c.pick(choice === 'a' ? 'b' : 'a');
+        if (!c.pick(choice).picked || c.hand() !== item) err(`${tag}: หยิบเปลี่ยนแพ็กไม่ได้`);
+        if (c.pick(choice).picked) err(`${tag}: หยิบแพ็กเดิมซ้ำแล้วนับเป็นการหยิบใหม่`);
+        if (c.scan().accepted) err(`${tag}: สแกนได้ก่อนกรอกราคาต่อหน่วย`);
+        c.setUnits(plan.items.map((entry) => entry.perSatang));
+        const scan = c.scan();
+        if (!scan.accepted || scan.total !== item.price || c.lines.length !== 1) err(`${tag}: สแกนต้องเพิ่ม 1 รายการและยอดเท่าราคาป้าย`);
+        if (c.scan().accepted || c.lines.length !== 1 || c.pick(choice === 'a' ? 'b' : 'a').picked) err(`${tag}: สแกนซ้ำหรือเปลี่ยนแพ็กหลังสแกนต้องถูกปฏิเสธ`);
+        // จ่ายไม่พอ จ่ายเงินนอกกระเป๋า แล้วจ่ายจากธนบัตรใหญ่ลงมาจนพอ: เงินทอน = เงินที่จ่าย − ยอด
+        const smallest = purse.length - 1;
+        if (purse[smallest] < item.price && c.pay([smallest]).paid) err(`${tag}: จ่ายไม่พอแต่ระบบรับ`);
+        if (c.pay([purse.length]).paid || c.pay([0, 0]).paid) err(`${tag}: รับเงินที่ไม่มีในกระเป๋า`);
+        const hand = []; let given = 0;
+        for (let i = 0; given < item.price; i++) { hand.push(i); given += purse[i]; }
+        const paid = c.pay(hand);
+        if (!paid.paid || paid.change !== given - item.price) { err(`${tag}: เงินทอนผิด`); continue; }
+        if (c.answerChange(paid.change + 1) || !c.answerChange(paid.change)) err(`${tag}: ตรวจคำตอบเงินทอนผิด`);
+        if (c.receiveChange() !== paid.change > 0 || c.receiveChange()) err(`${tag}: เสียงเงินทอนต้องเล่นครั้งเดียวเมื่อทอนมากกว่า 0`);
+        const r = c.result();
+        if (r.points !== 2 + Number(choice === plan.best.id) || r.changeCorrect || r.changeAnswer !== paid.change + 1) err(`${tag}: คะแนนหรือคำตอบแรกของเงินทอนผิด`);
+      }
+      // จ่ายพอดี: ไม่มีเงินทอนและไม่เล่นเสียงเงินทอน
+      const exact = CM.createCounter(plan);
+      exact.pick('a'); exact.setUnits([0, 0]); exact.scan();
+      const coins = []; let sum = 0;
+      purse.forEach((value, i) => { if (sum + value <= plan.items[0].price) { coins.push(i); sum += value; } });
+      checks++;
+      if (sum === plan.items[0].price) {
+        const p = exact.pay(coins);
+        if (!p.paid || p.change !== 0 || exact.receiveChange()) err(`${tag}: จ่ายพอดีต้องไม่มีเงินทอน`);
+      }
+    });
+  }
+}
+
 // ---- 3c) index.html โหลดทุกไฟล์ใน game/js ด้วยเลขเวอร์ชันเดียวกัน (กันแคชเก่าปนใหม่) ----
 {
   const html = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8');

@@ -325,10 +325,35 @@
         ctx.fillStyle = ambience.tint;
         ctx.fillRect(0, 0, w, h);
       }
+      if (held) heldItem();
     }
 
+    // The pack the player is carrying, drawn as a first-person hand in the lower right corner.
+    let held = null;
+    function heldItem() {
+      const size = Math.min(w, h) * 0.36;
+      const x = w - size * 0.62, y = h - size * 0.5;
+      ctx.fillStyle = '#d9a47c';
+      ctx.beginPath();
+      ctx.ellipse(x + size * 0.18, h + size * 0.02, size * 0.3, size * 0.46, -0.45, 0, TAU);
+      ctx.fill();
+      const image = actorImage(held.sprite);
+      if (image) ctx.drawImage(image, x - size * 0.3, y - size * 0.36, size * 0.56, size * 0.66);
+      else {
+        ctx.font = String(Math.round(size * 0.5)) + 'px "Segoe UI Emoji", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(held.icon || '📦', x - size * 0.02, y);
+      }
+      ctx.fillStyle = '#e8b892';
+      ctx.beginPath();
+      ctx.ellipse(x - size * 0.2, y + size * 0.16, size * 0.13, size * 0.09, 0.35, 0, TAU);
+      ctx.fill();
+    }
+    const hold = (item) => { held = item ? { sprite: item.sprite, icon: item.icon } : null; draw(); };
+
     draw();
-    return { step, target, draw, place, pose: () => ({ ...pose }), actors, ambience };
+    return { step, target, draw, place, hold, pose: () => ({ ...pose }), actors, ambience };
   }
 
   M.ShelfWalkScene = { create };

@@ -46,13 +46,21 @@ async function verifyShelfWalk(browser, url, axeScript) {
           await use('[data-walk-action]');
         }
       };
-      const passFiveAisleSteps = async () => {
-        const right = page.locator('[data-move=right]');
+      const aisle = async (move) => {
+        const button = page.locator('[data-move=' + move + ']');
         for (let step = 0; step < 5; step++) {
-          if (touch) await right.tap();
-          else await right.press('Enter');
+          if (touch) await button.tap();
+          else await button.press('Enter');
         }
       };
+      const passFiveAisleSteps = () => aisle('right');
+      // Shelf action modes: read a tag, pick a pack, or put it back. Waits for the mode before pressing.
+      const act = async (id, mode) => {
+        await page.locator('[data-walk-action][data-target="' + id + '"][data-mode="' + mode + '"]').waitFor({ timeout: 5000 });
+        await use('[data-walk-action]');
+      };
+      const cues = (key) => page.evaluate((name) => window.cues.filter((cue) => cue === name).length, key);
+      const hand = () => page.locator('[data-walk-hand]').innerText();
 
       await page.goto(url);
       await use('.product-pick [data-p=' + product + ']');
@@ -72,14 +80,35 @@ async function verifyShelfWalk(browser, url, axeScript) {
         problems.push(...await axe(page, axeScript, 'shelf-walk mobile launch'));
       }
 
+      await page.evaluate(() => {
+        const { sfx } = window.MTL, play = sfx.play;
+        window.cues = [];
+        sfx.play = (key) => { window.cues.push(key); return play.call(sfx, key); };
+      });
       for (let run = 0; run < prices.length; run++) {
+        await page.evaluate(() => { window.cues = []; });
         const canvas = page.locator('.shelf-walk canvas');
         const firstView = run === 0 ? await canvas.screenshot() : null;
         await interact('a');
+        // The same button now picks the pack; the hand shows it and shelf_pick plays.
+        await act('a', 'pick');
+        assert.match(await hand(), /ชั้น A/, product + ': picked pack is not in hand');
+        assert.equal(await cues('shelf_pick'), 1);
         await passFiveAisleSteps();
         await target('b').waitFor({ timeout: 5000 });
         if (firstView) assert.notDeepEqual(await canvas.screenshot(), firstView, product + ': scene did not move from A to B');
         await interact('b');
+        if (product === 'snack' && run === 0) {
+          // Swap packs, then walk back and take A again: every move from shelf to hand is a new pick.
+          await act('b', 'pick');
+          assert.match(await hand(), /ชั้น B/);
+          await aisle('left');
+          await act('a', 'pick');
+          assert.match(await hand(), /ชั้น A/);
+          assert.equal(await cues('shelf_pick'), 3, 'each pick must play shelf_pick once');
+          await passFiveAisleSteps();
+          await target('b').waitFor({ timeout: 5000 });
+        }
 
         const rates = [];
         for (const [index, id] of ['a', 'b'].entries()) {
@@ -96,17 +125,55 @@ async function verifyShelfWalk(browser, url, axeScript) {
 
         const form = page.locator('.walk-checkout-form');
         await form.waitFor();
+        assert.match(await page.locator('[data-counter-hand]').innerText(), /ชั้น A/);
+        // Scanning before the unit prices are typed is rejected with a reason and no cue.
+        await use('[data-counter-scan]');
+        assert.match(await page.locator('[data-counter-reason]').innerText(), /ราคาต่อหน่วย/);
+        assert.equal(await page.locator('[data-counter-receipt] [data-line]').count(), 0);
         for (const [index, id] of ['a', 'b'].entries()) {
           const amount = rates[index].toFixed(2);
           await form.locator('[name=unit-' + id + ']').fill(run ? amount.replace(/\d/g, (d) => '๐๑๒๓๔๕๖๗๘๙'[d]) : amount);
         }
         const best = rates[0] <= rates[1] ? 'a' : 'b';
         assert.equal(best, run ? 'a' : 'b', product + ': replay should reverse the unit-price comparison');
-        // Pick the sticker-price trap on the first run, then prove the alternate case can earn full credit.
-        await form.locator('[name=chosen][value=a]').check();
-        await form.locator('button[type=submit]').click();
-        await page.locator('.walk-feedback').waitFor();
+        // Shelf A is the sticker-price trap on the first run and the better unit price on the replay.
+        const price = prices[run][0];
+        await use('[data-counter-scan]');
+        await page.locator('[data-counter-receipt] [data-line="a"]').waitFor();
+        assert.equal(await page.locator('[data-counter-total]').innerText(), price.toFixed(2), product + ': till total');
+        assert.equal(await page.locator('[data-counter-scanner].is-flash').count(), 1, product + ': scan flash');
+        await use('[data-counter-scan]');
+        assert.match(await page.locator('[data-counter-reason]').innerText(), /สแกนแล้ว/);
+        assert.equal(await page.locator('[data-counter-receipt] [data-line]').count(), 1, product + ': a repeat scan added a line');
+        assert.equal(await cues('scanner'), 1, product + ': scanner cue must play once per accepted scan');
+
+        // Pay from the wallet. Water's replay pays the exact amount; the rest hand over notes until it covers the total.
+        const purse = await page.locator('[data-cash]').evaluateAll((list) => list.map((coin) => Number(coin.textContent.replace(/\D/g, ''))));
+        assert.equal(purse.reduce((a, b) => a + b, 0), Math.max(...prices[run]) + 5, product + ': wallet must equal the budget');
+        const exact = product === 'water' && run === 1;
+        const coins = [];
+        let given = 0;
+        if (exact) {
+          purse.forEach((value, i) => { if (given + value <= price) { coins.push(i); given += value; } });
+          assert.equal(given, price);
+        } else for (let i = 0; given < price; i++) { coins.push(i); given += purse[i]; }
+        for (const [n, i] of coins.entries()) {
+          await use('[data-cash="' + i + '"]');
+          if (exact && n === 0) {
+            assert.ok(await page.locator('[data-counter-pay]').isDisabled(), product + ': paid before covering the total');
+            assert.match(await page.locator('[data-counter-pay-reason]').innerText(), /ขาดอีก/);
+          }
+        }
+        await use('[data-counter-pay]');
+        const change = given - price;
+        const wrongFirst = product === 'household' && run === 0;
+        await page.locator('[name=change]').fill(String(wrongFirst ? change + 1 : change));
+        await use('[data-counter-change]');
+        assert.match(await page.locator('[data-counter-change-feedback]').innerText(), new RegExp(String(change) + ' บาท'));
+        assert.equal(await cues('cash_change'), change > 0 ? 1 : 0, product + ': cash_change once and only when change is above 0');
+        await page.locator('.walk-feedback .walk-receipt').waitFor();
         assert.match(await page.locator('.walk-feedback').innerText(), /หน่วย|ลิตร|กรัม|ม้วน/);
+        assert.match(await page.locator('.walk-feedback').innerText(), /เลขที่ w2-/);
         assert.doesNotMatch(await page.locator('.shelf-walk').innerText(), /\b(?:undefined|NaN)\b/);
         if (axeScript && product === 'water' && run === 0) {
           const { axe } = require('./run-browser-check.js');
@@ -116,7 +183,11 @@ async function verifyShelfWalk(browser, url, axeScript) {
         await page.locator('#modal [data-a=again]').waitFor();
         const state = await page.evaluate(() => JSON.parse(localStorage.getItem('mtl-save-v1')));
         assert.equal(state.rounds['1-1'].stars, run === 0 ? 2 : 3, product + ': incorrect evidence score');
-        assert.ok(state.portfolio['w2-store-' + product]?.text, product + ': missing portfolio record');
+        const walk = state.shelfWalk[product];
+        assert.deepEqual([walk.caseIndex, walk.choice, walk.total, walk.paid, walk.change, walk.changeCorrect],
+          [run, 'a', price, given, change, !wrongFirst], product + ': saved receipt does not match the counter');
+        assert.match(walk.transactionId, /^w2-/);
+        assert.match(state.portfolio['w2-store-' + product]?.text || '', /ใบเสร็จ w2-/, product + ': missing portfolio receipt');
         if (run === 0) await use('#modal [data-a=again]');
       }
 
