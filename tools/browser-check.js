@@ -57,7 +57,7 @@ module.exports = async ({ week, idx, playRound, stopAtNumericLesson }) => {
     else {
       click(`.week[data-w="${week}"]`);
       click(`.round[data-r="${idx}"]`);
-      if (week === 1 && idx === 1) {
+      if ((week === 0 || week === 1) && idx === 1) {
         await waitFor(() => get('[data-walk-classic]'), 'classic practice choice');
         click('[data-walk-classic]');
       }
@@ -158,9 +158,14 @@ module.exports = async ({ week, idx, playRound, stopAtNumericLesson }) => {
       stage('.tc-next');
       stage('[data-answer="home"]');
       stage('.tc-next');
+      // After the score, cite one recorded event for a shelf or service change (prepares W1R3, not scored).
+      stage('.tc-proposal input[name="tc-event"][value="am-price"]');
+      stage('.tc-proposal input[name="tc-change"][value="service"]');
+      stage('.tc-save');
       const data = State.data.observations.timeCompare[ctx.product.id];
       check(data.events.length === 5 && data.comparison[0].sampleCount === 3 && data.comparison[1].sampleCount === 2,
         'Observation counts were not saved for both periods');
+      check(data.route === 'list' && data.proposal?.eventId === 'am-price' && data.proposal.kind === 'service', 'The proposal was not saved');
     } else if (round.engine === 'observe') {
       if (round.variant === 'timeCompare') stage('.observe-standard');
       const scene = M.currentScene;

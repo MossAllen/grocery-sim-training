@@ -1,4 +1,4 @@
-/* shelf-walk-scene.js — first-person shelves and checkout in a single Canvas view. */
+/* shelf-walk-scene.js — first-person shelves, checkout, and optional customers in a single Canvas view. */
 (function () {
   const M = (window.MTL = window.MTL || {});
   const ROOM = { left: -6.2, right: 6.2, near: -1, far: 9.6, height: 3.25 };
@@ -11,6 +11,8 @@
   const SPEED = 2.5;
   const NEAR_PLANE = 0.075;
   const PLAYER_RADIUS = 0.24;
+  const ACTOR_RADIUS = 0.3;
+  const ACTOR_HEIGHT = 1.72;
   const EYE_HEIGHT = 1.42;
   const TAU = 2 * Math.PI;
 
@@ -18,12 +20,26 @@
   const quadXZ = (x1, z1, x2, z2, y) => [[x1, y, z1], [x2, y, z1], [x2, y, z2], [x1, y, z2]];
   const quadYZ = (z1, y1, z2, y2, x) => [[x, y1, z1], [x, y1, z2], [x, y2, z2], [x, y2, z1]];
 
-  function create(canvas, { stations }) {
+  // actors: [{ id, x, z, sprite, bubble, bubbleColor, ring, ringColor }] read on every draw, so callers may mutate them
+  // start: { x, z, yaw } · ambience: { tint } washes the whole view, for example evening light
+  function create(canvas, { stations, actors = [], start, ambience = {} }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     if (!canvas.hasAttribute('width')) canvas.width = 960;
     if (!canvas.hasAttribute('height')) canvas.height = 540;
-    const pose = { x: OUTLETS[0].x, z: 4.05, yaw: 0 };
+    const pose = { x: OUTLETS[0].x, z: 4.05, yaw: 0, ...start };
+    const sprites = new Map();
+    const actorImage = (url) => {
+      if (!url) return null;
+      if (!sprites.has(url)) {
+        const image = new Image();
+        image.addEventListener('load', () => draw(), { once: true });
+        image.src = url;
+        sprites.set(url, image);
+      }
+      const image = sprites.get(url);
+      return image.complete && image.naturalWidth ? image : null;
+    };
     const displays = OUTLETS.map((outlet) => {
       const station = stations.find((entry) => entry.id === outlet.id) || {};
       const image = station.sprite ? new Image() : null;
@@ -38,7 +54,8 @@
     const blocked = (x, z) => x < ROOM.left + PLAYER_RADIUS || x > ROOM.right - PLAYER_RADIUS ||
       z < ROOM.near + PLAYER_RADIUS || z > ROOM.far - PLAYER_RADIUS ||
       obstacles.some((box) => x > box.x1 - PLAYER_RADIUS && x < box.x2 + PLAYER_RADIUS &&
-        z > box.z1 - PLAYER_RADIUS && z < box.z2 + PLAYER_RADIUS);
+        z > box.z1 - PLAYER_RADIUS && z < box.z2 + PLAYER_RADIUS) ||
+      actors.some((actor) => Math.hypot(actor.x - x, actor.z - z) < ACTOR_RADIUS + PLAYER_RADIUS);
 
     function step(forward, strafe, turn, seconds) {
       if (!(seconds > 0) || ![forward, strafe, turn, seconds].every(Number.isFinite)) return;
@@ -54,6 +71,14 @@
         if (!blocked(x, pose.z)) pose.x = x;
         if (!blocked(pose.x, z)) pose.z = z;
       }
+    }
+
+    // Move the camera to a free spot, for example the listening point in front of a customer.
+    function place(next) {
+      const candidate = { ...pose, ...next };
+      if (![candidate.x, candidate.z, candidate.yaw].every(Number.isFinite) || blocked(candidate.x, candidate.z)) return false;
+      Object.assign(pose, candidate);
+      return true;
     }
 
     function target() {
@@ -142,6 +167,43 @@
       for (const { x, z } of displays) {
         face(quadXZ(x - 1.32, z - 0.73, x + 1.32, z + 0.53, 0.002), 'rgba(67, 40, 23, .17)');
       }
+      for (const actor of actors) {
+        if (actor.ring) fillFace(circle(actor.x, actor.z, actor.ring, 0.004).map(camera), actor.ringColor || 'rgba(255, 214, 90, .28)');
+        fillFace(circle(actor.x, actor.z, 0.34, 0.006).map(camera), 'rgba(52, 33, 21, .22)');
+      }
+    }
+    const circle = (x, z, radius, y) => Array.from({ length: 28 }, (_, i) =>
+      [x + radius * Math.sin(i / 28 * TAU), y, z + radius * Math.cos(i / 28 * TAU)]);
+
+    function customer(actor) {
+      const image = actorImage(actor.sprite);
+      const width = ACTOR_HEIGHT * 2 / 3;
+      billboard(actor.x, ACTOR_HEIGHT / 2, actor.z, width, ACTOR_HEIGHT, (sx, sy, bw, bh) => {
+        if (image) ctx.drawImage(image, sx - bw / 2, sy - bh / 2, bw, bh);
+        else {
+          ctx.fillStyle = '#577590';
+          ctx.fillRect(sx - bw * 0.22, sy - bh * 0.2, bw * 0.44, bh * 0.68);
+          ctx.beginPath();
+          ctx.arc(sx, sy - bh * 0.32, bw * 0.17, 0, TAU);
+          ctx.fillStyle = '#f2c9a0';
+          ctx.fill();
+        }
+        if (!actor.bubble) return;
+        const radius = Math.max(11, Math.min(30, bw * 0.24));
+        const bx = sx + bw * 0.3, by = sy - bh * 0.5 - radius * 0.4;
+        ctx.beginPath();
+        ctx.arc(bx, by, radius, 0, TAU);
+        ctx.fillStyle = actor.bubbleColor || '#ffde59';
+        ctx.fill();
+        ctx.lineWidth = Math.max(1.5, radius * 0.12);
+        ctx.strokeStyle = '#3b2a1e';
+        ctx.stroke();
+        ctx.fillStyle = '#2b1d12';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '700 ' + Math.round(radius * 1.15) + 'px Sarabun, "Segoe UI Emoji", sans-serif';
+        ctx.fillText(actor.bubble, bx, by + radius * 0.05);
+      });
     }
 
     const depthQueue = [];
@@ -249,6 +311,7 @@
         if (display.id === 'checkout') checkout(display);
         else shelf(display);
       }
+      for (const actor of actors) customer(actor);
       depthQueue.sort((a, b) => b.depth - a.depth);
       for (const entry of depthQueue) entry.paint();
       depthQueue.length = 0;
@@ -258,10 +321,14 @@
       edge.addColorStop(1, 'rgba(53, 30, 22, .25)');
       ctx.fillStyle = edge;
       ctx.fillRect(0, 0, w, h);
+      if (ambience.tint) {
+        ctx.fillStyle = ambience.tint;
+        ctx.fillRect(0, 0, w, h);
+      }
     }
 
     draw();
-    return { step, target, draw };
+    return { step, target, draw, place, pose: () => ({ ...pose }), actors, ambience };
   }
 
   M.ShelfWalkScene = { create };

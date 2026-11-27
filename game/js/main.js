@@ -6,9 +6,11 @@
   const titleIntro = $('.hero', app);
   const lessonScripts = $$('script[src]', $('#lesson-scripts').content);
   const shelfWalkScripts = $$('script[src]', $('#shelf-walk-scripts').content);
+  const observeWalkScripts = $$('script[src]', $('#observe-walk-scripts').content);
   const scriptLoads = new Map();
   let currentScreen = 0;
-  const shelfWalkPreview = location.hash === '#shelf-walk';
+  // ฉากเดินในร้านรุ่นทดลอง: W1R2 สังเกตลูกค้า และ W2R2 เทียบราคา · #observe-walk หรือ #shelf-walk เปิดรอบนั้นหลังเลือกสินค้า
+  const previewRound = { '#shelf-walk': [1, 1], '#observe-walk': [0, 1] }[location.hash];
   State.load();
 
   const product = () => M.PRODUCTS[State.data.product];
@@ -44,14 +46,14 @@
       <div class="product-pick">${Object.values(M.PRODUCTS).map((p) => `<button data-p="${p.id}" class="${State.data.product === p.id ? 'sel' : ''}"><span class="e">${p.icon}</span><b>${p.th}</b><br><small class="muted">${esc(p.small.name)} · ${esc(p.big.name)}</small></button>`).join('')}</div>
       <h2><label for="pname">2. ชื่อผู้ฝึก <small class="muted">(ไม่บังคับ ใช้ในแฟ้มผลงาน)</small></label></h2>
       <input id="pname" maxlength="40" value="${esc(State.data.player)}" style="padding:10px;border:1px solid var(--line);border-radius:10px;width:min(360px,100%)">
-      <div class="row"><button class="btn primary" id="startBtn" ${State.data.product ? '' : 'disabled'}>${shelfWalkPreview ? 'เข้าร้าน →' : 'เริ่มฝึก →'}</button></div></div>`);
+      <div class="row"><button class="btn primary" id="startBtn" ${State.data.product ? '' : 'disabled'}>${previewRound ? 'เข้าร้าน →' : 'เริ่มฝึก →'}</button></div></div>`);
     $$('.product-pick button').forEach((b) => (b.onclick = () => {
       sfx.play('click'); State.data.product = b.dataset.p; State.save();
       $$('.product-pick button').forEach((x) => x.classList.toggle('sel', x === b)); $('#startBtn').disabled = false; header();
     }));
     $('#startBtn').onclick = () => {
       State.data.player = $('#pname').value.trim(); State.save(); sfx.play('door');
-      if (shelfWalkPreview) playScreen(1, 1);
+      if (previewRound) playScreen(previewRound[0], previewRound[1]);
       else mapScreen();
     };
   }
@@ -130,14 +132,22 @@
     const screen = currentScreen;
     const isFinal = w === 'final';
     const R = isFinal ? M.FINAL : M.WEEKS[w].rounds[r];
-    const walking = w === 1 && r === 1 && !opts.classic;
+    // ฉากเดินในร้าน: แต่ละรอบระบุไฟล์ที่โหลดทีหลัง ฟังก์ชันเริ่มภารกิจ และทางกลับไปแบบเดิม
+    const walks = {
+      '0-1': { scripts: observeWalkScripts, start: () => M.playObserveWalk, title: 'เดินสังเกตลูกค้าในร้าน',
+        classicLabel: 'ใช้แบบรายการเดิม', replay: 'เล่นซ้ำได้ด้วยเหตุการณ์ชุดเดิมเพื่อทบทวน' },
+      '1-1': { scripts: shelfWalkScripts, start: () => M.playShelfWalk, title: 'เทียบราคาบนชั้นวาง',
+        classicLabel: 'ฝึกคำนวณแบบเดิม', replay: 'เล่นซ้ำเพื่อเจอป้ายราคาชุดถัดไป' },
+    };
+    const walk = opts.classic || isFinal ? null : walks[`${w}-${r}`] || null;
+    const walking = !!walk;
     const toClassic = () => playScreen(w, r, { classic: true });
-    if (walking ? !M.playShelfWalk || !M.ShelfWalkScene : !isFinal && !R.lesson) {
+    if (walking ? !(walk.start() && M.ShelfWalkScene && M.WalkControls) : !isFinal && !R.lesson) {
       app.innerHTML = `<button class="btn ghost small" id="back">← สัปดาห์ ${w + 1}</button>
         <p class="muted" role="status">${walking ? 'กำลังเปิดฉากร้าน…' : 'กำลังเปิดบทเรียน…'}</p>`;
       $('#back').onclick = () => weekScreen(w);
       try {
-        if (walking) await Promise.all(shelfWalkScripts.map(loadScript));
+        if (walking) await Promise.all(walk.scripts.map(loadScript));
         else await loadScript(lessonScripts[w]);
       }
       catch (error) {
@@ -146,7 +156,7 @@
           app.insertAdjacentHTML('beforeend', '<button class="btn primary" id="retryLesson">ลองอีกครั้ง</button>');
           $('#retryLesson').onclick = () => playScreen(w, r, opts);
           if (walking) {
-            app.insertAdjacentHTML('beforeend', ' <button class="btn ghost" data-walk-classic>ฝึกคำนวณแบบเดิม</button>');
+            app.insertAdjacentHTML('beforeend', ` <button class="btn ghost" data-walk-classic>${walk.classicLabel}</button>`);
             $('[data-walk-classic]', app).onclick = toClassic;
           }
         }
@@ -156,10 +166,10 @@
     }
     const ctx = ctxFor(isFinal ? 8 : w, r);
     if (walking) {
-      app.innerHTML = `<button class="btn ghost small" id="back">← สัปดาห์ 2</button>
-        <div class="play-head"><h2>เทียบราคาบนชั้นวาง</h2></div><div class="stage card walk-stage"></div>`;
+      app.innerHTML = `<button class="btn ghost small" id="back">← สัปดาห์ ${w + 1}</button>
+        <div class="play-head"><h2>${walk.title}</h2></div><div class="stage card walk-stage"></div>`;
       $('#back').onclick = () => weekScreen(w);
-      M.playShelfWalk($('.stage'), ctx, finish, toClassic);
+      walk.start()($('.stage'), ctx, finish, toClassic);
       return;
     }
     app.innerHTML = `<button class="btn ghost small" id="back">← ${isFinal ? 'แผนที่' : 'สัปดาห์ ' + (w + 1)}</button>
@@ -205,7 +215,7 @@
       modal(`<div class="bigstars" style="color:var(--gold)">${starStr(stars)}</div>
         <h2>${stars === 3 ? 'ยอดเยี่ยม!' : stars === 2 ? 'ดีมาก' : stars === 1 ? 'ผ่าน — ฝึกซ้ำได้' : 'ลองอีกครั้ง'}</h2>
         <p>${esc(summary)}</p>${weekNow ? `<p>🎉 <b>จบสัปดาห์ ${w + 1}!</b> ${w < 7 ? 'ปลดล็อกสัปดาห์ถัดไปแล้ว' : 'ปลดล็อกครบทุกสัปดาห์ ลองทำแบบทดสอบท้ายแผน'}</p>` : ''}
-        <p class="muted">เก็บคะแนนที่ดีที่สุดไว้ ${walking ? 'เล่นซ้ำเพื่อเจอป้ายราคาชุดถัดไป' : 'เล่นซ้ำได้เสมอ (โจทย์ตัวเลขจะสุ่มใหม่)'}</p>
+        <p class="muted">เก็บคะแนนที่ดีที่สุดไว้ ${walking ? walk.replay : 'เล่นซ้ำได้เสมอ (โจทย์ตัวเลขจะสุ่มใหม่)'}</p>
         <div class="row" style="justify-content:center">
           <button class="btn" data-a="again">↻ เล่นซ้ำ</button>
           ${hasNext ? '<button class="btn primary" data-a="next">รอบต่อไป →</button>' : `<button class="btn primary" data-a="back">${isFinal ? 'กลับแผนที่' : 'กลับหน้าสัปดาห์'}</button>`}
@@ -302,5 +312,5 @@
   if ('speechSynthesis' in window) speechSynthesis.getVoices();
 
   header();
-  product() && !shelfWalkPreview ? mapScreen() : titleScreen();
+  product() && !previewRound ? mapScreen() : titleScreen();
 })();

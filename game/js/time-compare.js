@@ -1,61 +1,24 @@
-/* time-compare.js — ใบงานเสริมสังเกตลูกค้าช่วงเช้าและเย็น (GDD §9) */
+/* time-compare.js — สมุดสังเกตลูกค้าช่วงเช้าและเย็น (GDD §9) · ตรรกะอยู่ใน observe-walk-model.js */
 (function () {
   const M = window.MTL;
   const { $, $$, esc, sfx } = M;
-  const periods = [
-    { id: 'am', label: 'ช่วงเช้า', start: 7 * 60, answer: 'carry' },
-    { id: 'pm', label: 'ช่วงเย็น', start: 17 * 60, answer: 'home' },
-  ];
-  const groups = [
-    { id: 'carry', label: 'ซื้อเร็วหรือพกพา' },
-    { id: 'value', label: 'เทียบราคา' },
-    { id: 'home', label: 'ซื้อไว้ใช้ที่บ้าน' },
-  ];
 
-  function eventsFor(product) {
-    return [
-      { id: 'am-carry', minute: 422, period: 'am', group: 'carry', sprite: 'customer_1',
-        observedText: `ลูกค้าถามว่า “${product.small.name} ใส่กระเป๋าได้ไหม”`,
-        supported: 'ลูกค้าอาจให้ความสำคัญกับการพกพา', alternative: 'ลูกค้าต้องการราคาถูกสุด',
-        explanation: 'คำถามเรื่องใส่กระเป๋าสนับสนุนเรื่องการพกพา ลูกค้ายังไม่ได้ถามราคา' },
-      { id: 'am-fast', minute: 426, period: 'am', group: 'carry', sprite: 'customer_1',
-        observedText: 'ลูกค้าถามว่า “หยิบแล้วจ่ายได้เลยไหม กำลังจะขึ้นรถ”',
-        supported: 'ลูกค้าอาจอยากซื้อให้ทันเวลา', alternative: 'ลูกค้าต้องการซื้อหลายชิ้น',
-        explanation: 'ถ้อยคำเรื่องขึ้นรถและจ่ายทันทีสนับสนุนเรื่องเวลา ลูกค้ายังไม่ได้ระบุจำนวน' },
-      { id: 'am-price', minute: 429, period: 'am', group: 'value', sprite: 'customer_4',
-        observedText: 'ลูกค้าเทียบป้ายสองขนาดแล้วถามว่าขนาดไหนถูกกว่าต่อหน่วย',
-        supported: 'ลูกค้าอาจใช้ราคาต่อหน่วยช่วยตัดสิน', alternative: 'ลูกค้ากำลังรีบเดินทาง',
-        explanation: 'คำถามและการเทียบป้ายสนับสนุนเรื่องราคาต่อหน่วย ลูกค้ายังไม่ได้พูดถึงเวลา' },
-      { id: 'pm-stock', minute: 1024, period: 'pm', group: 'home', sprite: 'customer_2',
-        observedText: `ลูกค้าถามว่า “${product.big.name} มีพอใช้ที่บ้านทั้งสัปดาห์ไหม”`,
-        supported: 'ลูกค้าอาจซื้อไว้ใช้ที่บ้าน', alternative: 'ลูกค้าต้องการขนาดที่พกง่าย',
-        explanation: 'คำถามระบุปริมาณสำหรับใช้ที่บ้าน ลูกค้ายังไม่ได้ถามเรื่องการพกพา' },
-      { id: 'pm-stock-more', minute: 1028, period: 'pm', group: 'home', sprite: 'customer_2',
-        observedText: 'ลูกค้าขอหลายชิ้นและบอกว่า “เอาไปเก็บไว้ที่บ้าน”',
-        supported: 'ลูกค้าอาจซื้อไว้ใช้ที่บ้าน', alternative: 'ลูกค้าต้องการราคาต่อหน่วยต่ำสุด',
-        explanation: 'ทั้งการขอหลายชิ้นและคำพูดชี้ไปที่การเก็บไว้ใช้ที่บ้าน ลูกค้ายังไม่ได้เปรียบเทียบราคา' },
-    ];
-  }
-
-  const timeLabel = (minute) => `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
-  const groupLabel = (id) => groups.find((group) => group.id === id).label;
-
-  M.playTimeCompare = (el, ctx, finish) => {
-    const events = eventsFor(ctx.product);
-    const recorded = new Set();
-    const answers = {};
-    const comparison = [];
-    let correct = 0;
+  // options.gather(el, session, done) แทนขั้นเก็บหลักฐานแบบรายการ เช่น ฉากเดินใน observe-walk.js
+  // ขั้นวิเคราะห์ เทียบช่วง ข้อเสนอ คะแนน และแฟ้มผลงานใช้ร่วมกันทั้งสองทาง
+  M.playTimeCompare = (el, ctx, finish, options = {}) => {
+    const session = M.ObserveModel.createSession(ctx.product);
+    const { events, periods, timeLabel } = session;
+    const route = options.route || 'list';
 
     function gather(periodIndex) {
       const period = periods[periodIndex];
-      const available = events.filter((event) => event.period === period.id);
+      const available = session.periodEvents(period.id);
       const positions = [175, 395, 595];
       const customers = {};
       const nextPeriod = periods[periodIndex + 1];
       el.innerHTML = `<div class="hud"><div class="stat">จำลอง<b>${period.label}</b></div>
         <div class="stat">เวลา<b class="tc-time">${timeLabel(period.start)}</b></div>
-        <div class="stat">จดแล้ว<b class="tc-progress" aria-live="polite">${recorded.size} / ${events.length}</b></div></div>
+        <div class="stat">จดแล้ว<b class="tc-progress" aria-live="polite">${session.recordedCount()} / ${events.length}</b></div></div>
         <p>เลือกเหตุการณ์จากฉากร้านหรือจากปุ่มตามเวลา แล้วจดสิ่งที่เห็นหรือได้ยินลงตาราง</p>
         <div class="scene-wrap"><canvas aria-label="ฉากร้านจำลอง${period.label}">ใช้ปุ่มตามเวลาเพื่อเปิดเหตุการณ์</canvas></div>
         <div class="row" role="group" aria-label="รายการเหตุการณ์${period.label}">${available.map((event) => `<button class="btn" data-event="${event.id}">เหตุการณ์ ${timeLabel(event.minute)}</button>`).join('')}</div>
@@ -84,12 +47,12 @@
       fillRows();
 
       function fillRows() {
-        rows.innerHTML = events.filter((event) => recorded.has(event.id)).map((event) =>
+        rows.innerHTML = session.notebook().map((event) =>
           `<tr><td>${timeLabel(event.minute)}</td><td>${esc(event.observedText)}</td></tr>`).join('');
       }
 
       function showEvent(event) {
-        if (recorded.has(event.id)) return;
+        if (session.isRecorded(event.id)) return;
         sfx.play('click');
         scene.clock = event.minute;
         $('.tc-time', el).textContent = timeLabel(event.minute);
@@ -97,7 +60,7 @@
           <button class="btn primary tc-record">จดลงตาราง</button></div>`;
         const record = $('.tc-record', note);
         record.onclick = () => {
-          recorded.add(event.id);
+          session.record(event.id);
           customers[event.id].bubble = '✓';
           customers[event.id].bubbleColor = '#cdeccf';
           const button = $(`[data-event="${event.id}"]`, el);
@@ -105,7 +68,7 @@
           button.textContent += ' ✓';
           fillRows();
           sfx.play('note');
-          $('.tc-progress', el).textContent = `${recorded.size} / ${events.length}`;
+          $('.tc-progress', el).textContent = `${session.recordedCount()} / ${events.length}`;
           const nextEvent = eventButtons.find((candidate) => !candidate.disabled);
           next.disabled = !!nextEvent;
           note.innerHTML = '';
@@ -121,6 +84,7 @@
       };
     }
 
+    // choose(selected) บันทึกคำตอบลง session และคืนค่า true เมื่อถูก
     function ask({ count, title, context = '', options, answer, explain, choose, next, nextText = 'ต่อไป →' }) {
       el.innerHTML = `${context}<div class="q-count">${count}</div><h3 class="q tc-question" tabindex="-1">${title}</h3>
         <div class="opts">${M.R.shuffle(options).map((option) => `<button class="opt" data-answer="${option.id}">${esc(option.label)}</button>`).join('')}</div>
@@ -128,10 +92,7 @@
       $('.tc-question', el).focus();
       const buttons = $$('[data-answer]', el);
       buttons.forEach((button) => { button.onclick = () => {
-        const selected = button.dataset.answer;
-        const ok = selected === answer;
-        if (ok) correct++;
-        choose(selected);
+        const ok = choose(button.dataset.answer);
         sfx.play(ok ? 'correct' : 'wrong');
         buttons.forEach((option) => {
           option.disabled = true;
@@ -147,68 +108,77 @@
     }
 
     function review(index) {
+      M.onLeave = null;
       const event = events[index];
       const count = `ย้อนดูแถว ${index + 1} / ${events.length} · ${timeLabel(event.minute)}`;
-      const choice = answers[event.id] = {};
-      const supported = `${event.id}-supported`;
+      const fact = session.observationQuestion(event.id);
+      const reason = session.reasonQuestion(event.id);
       ask({
-        count, title: 'ข้อความใดคือสิ่งที่เห็นหรือได้ยินโดยตรง',
-        options: [{ id: 'fact', label: event.observedText }, { id: 'inference', label: event.supported }],
-        answer: 'fact', explain: `จดคำพูดหรือการกระทำนี้ได้โดยตรง “${event.observedText}” ส่วนเหตุผลเป็นสิ่งที่เราเสนอจากหลักฐาน`,
-        choose: (id) => { choice.selectedObservationId = id; },
+        ...fact, count, choose: (id) => session.answerObservation(event.id, id),
         next: () => ask({
-          count, title: 'หลักฐานนี้รองรับการตีความใด', context: `<p>${esc(event.observedText)}</p>`,
-          options: [{ id: supported, label: event.supported }, { id: `${event.id}-alternative`, label: event.alternative }],
-          answer: supported, explain: event.explanation,
-          choose: (id) => { choice.selectedReasonId = id; },
+          ...reason, count, context: `<p>${esc(event.observedText)}</p>`,
+          choose: (id) => session.answerReason(event.id, id),
           next: () => index + 1 < events.length ? review(index + 1) : compare(0),
         }),
       });
     }
 
     function compare(index) {
-      const period = periods[index];
-      const sample = events.filter((event) => event.period === period.id);
-      const evidence = sample.filter((event) => event.group === period.answer);
-      const rows = groups.map((group) => {
-        const count = sample.filter((event) => event.group === group.id).length;
-        return `<tr><th scope="row">${group.label}</th><td>${count} ÷ ${sample.length}</td></tr>`;
-      }).join('');
-      const context = `<table class="tbl"><caption>${period.label} · บันทึก ${sample.length} เหตุการณ์</caption>
-        <thead><tr><th scope="col">ความต้องการ</th><th scope="col">จำนวน ÷ ทั้งหมดในช่วงนี้</th></tr></thead><tbody>${rows}</tbody></table>`;
+      const question = session.comparisonQuestion(periods[index].id);
+      const { period, sample, rows } = question;
+      const context = `<table class="tbl tc-tally"><caption>${period.label} · บันทึก ${sample.length} เหตุการณ์ · นับก่อนสรุป</caption>
+        <thead><tr><th scope="col">ความต้องการ</th><th scope="col">จำนวน ÷ ทั้งหมดในช่วงนี้</th><th scope="col">แถวในสมุด</th></tr></thead><tbody>${rows.map((row) =>
+          `<tr><th scope="row">${row.group.label}</th><td>${row.count} ÷ ${row.denominator}</td><td>${row.times.join(', ') || '–'}</td></tr>`).join('')}</tbody></table>`;
       const last = index === periods.length - 1;
       ask({
-        count: `เทียบช่วงเวลา ${index + 1} / ${periods.length}`, title: 'ความต้องการกลุ่มใดพบมากสุดในตัวอย่างนี้', context,
-        options: groups, answer: period.answer,
-        explain: `แถวเวลา ${evidence.map((event) => timeLabel(event.minute)).join(' และ ')} เข้ากลุ่ม${groupLabel(period.answer)} ${evidence.length} ÷ ${sample.length} ในช่วงนี้ ใช้ผลเป็นสมมติฐานสำหรับเก็บข้อมูลเพิ่ม`,
-        choose: (id) => { comparison.push({ period: period.id, sampleCount: sample.length, selectedGroupId: id }); },
-        next: last ? complete : () => compare(index + 1), nextText: last ? 'ดูผล' : 'ต่อไป →',
+        ...question, count: `เทียบช่วงเวลา ${index + 1} / ${periods.length}`, context,
+        choose: (id) => session.answerComparison(period.id, id),
+        next: last ? propose : () => compare(index + 1), nextText: last ? 'ดูผล' : 'ต่อไป →',
       });
     }
 
+    // หลังคะแนน: เลือกเหตุการณ์ 1 แถวและข้อเสนอชั้นวางหรือบริการ 1 อย่างเพื่อเตรียม W1R3 (ไม่นับคะแนน)
+    function propose() {
+      const { correct, total } = session.score();
+      el.innerHTML = `<div class="tc-result"><h3 class="q tc-question" tabindex="-1">ผลวิเคราะห์ ${correct} / ${total} ข้อ</h3>
+        <p>${esc(session.summary())} · มาจากตัวอย่างจำลอง ${events.length} เหตุการณ์</p>
+        <form class="tc-proposal"><fieldset><legend>เลือกเหตุการณ์ 1 แถวที่จะใช้เสนอในรอบถัดไป</legend>${session.notebook().map((event) =>
+          `<label><input type="radio" name="tc-event" value="${event.id}" required> <b>${timeLabel(event.minute)}</b> ${esc(event.observedText)}</label>`).join('')}</fieldset>
+        <fieldset class="tc-change" disabled><legend>เปลี่ยนชั้นวางหรือบริการ 1 อย่าง</legend><p class="muted tc-change-options">เลือกเหตุการณ์ก่อน</p></fieldset>
+        <div class="row"><button type="submit" class="btn primary tc-save" disabled>บันทึกผล</button></div></form></div>`;
+      $('.tc-question', el).focus();
+      const form = $('.tc-proposal', el);
+      const change = $('.tc-change', el);
+      const save = $('.tc-save', el);
+      form.onchange = (event) => {
+        if (event.target.name === 'tc-event') {
+          change.disabled = false;
+          save.disabled = true;
+          $('.tc-change-options', el).outerHTML = `<div class="tc-change-options">${session.proposalOptions(event.target.value).map((option) =>
+            `<label><input type="radio" name="tc-change" value="${option.id}" required> ${option.id === 'shelf' ? 'ชั้นวาง' : 'บริการ'} · ${esc(option.label)}</label>`).join('')}</div>`;
+        } else if (event.target.name === 'tc-change') save.disabled = false;
+      };
+      form.onsubmit = (event) => {
+        event.preventDefault();
+        const chosen = form.elements.namedItem('tc-event').value, kind = form.elements.namedItem('tc-change')?.value;
+        if (!chosen || !kind) return;
+        save.disabled = true;
+        session.propose(chosen, kind);
+        complete();
+      };
+    }
+
     function complete() {
-      const total = events.length * 2 + periods.length;
-      const score = correct / total;
+      const { correct, total, score } = session.score();
       const state = M.State.data;
       const observations = state.observations || (state.observations = {});
       const byProduct = observations.timeCompare || (observations.timeCompare = {});
-      byProduct[ctx.product.id] = {
-        source: 'simulated',
-        events: events.map(({ id, minute, period, observedText }) => ({ id, minute, period, observedText, ...answers[id] })),
-        comparison, score,
-      };
-      const rows = events.map((event, index) =>
-        `| ${index + 1} | ${timeLabel(event.minute)} | ${event.observedText} | ${event.supported} |`).join('\n');
-      const summary = periods.map((period) => {
-        const sample = events.filter((event) => event.period === period.id);
-        const count = sample.filter((event) => event.group === period.answer).length;
-        return `${period.label} ${groupLabel(period.answer)} ${count} ÷ ${sample.length}`;
-      }).join(' · ');
-      M.State.addPortfolio('w1-observe', 1, 'ตารางสังเกตลูกค้า เช้าและเย็น',
-        `| ครั้ง | เวลา | สิ่งที่เห็นหรือได้ยิน | เหตุผลที่เป็นไปได้ |\n|---|---|---|---|\n${rows}\n${summary}\n(ข้อมูลจำลองจากเกม ใช้ตั้งสมมติฐานเพื่อเก็บข้อมูลเพิ่ม)`);
-      finish(score, `ตอบถูก ${correct} จาก ${total} ข้อ · ${summary}`);
+      byProduct[ctx.product.id] = session.result(route);
+      M.State.addPortfolio('w1-observe', 1, 'ตารางสังเกตลูกค้า เช้าและเย็น', session.portfolioText());
+      finish(score, `ตอบถูก ${correct} จาก ${total} ข้อ · ${session.summary()}`);
     }
 
-    gather(0);
+    if (options.gather) options.gather(el, session, () => review(0));
+    else gather(0);
   };
 })();

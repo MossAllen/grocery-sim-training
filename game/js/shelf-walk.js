@@ -3,16 +3,6 @@
   const M = window.MTL;
   const { $, $$, esc, fmt, readDecimal, State, sfx } = M;
   const alternate = { water: [9, 24], snack: [8, 27], household: [9, 60] };
-  const direction = {
-    forward: [1, 0, 0], back: [-1, 0, 0], left: [0, -1, 0], right: [0, 1, 0],
-    'turn-left': [0, 0, -1], 'turn-right': [0, 0, 1],
-  };
-  const keyMoves = {
-    ArrowUp: 'forward', KeyW: 'forward', ArrowDown: 'back', KeyS: 'back',
-    ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
-    KeyQ: 'turn-left', KeyR: 'turn-right',
-  };
-
   function offer(product, caseIndex) {
     const prices = caseIndex === 1 ? alternate[product.id] : [product.small.price, product.big.price];
     const sizeText = (size) => {
@@ -37,8 +27,6 @@
   const record = (item, mission) => '<li data-recorded="' + item.id + '" data-price="' + item.price +
     '" data-quantity="' + item.quantity + '" data-basis="' + mission.basis + '">' + picture(item) +
     '<div><b>ชั้น ' + item.shelf + ' · ' + esc(item.name) + '</b><br>' + esc(item.sizeText) + ' · ' + fmt(item.price) + ' บาท</div></li>';
-  const actionButton = (move, glyph, label) => '<button type="button" class="btn" data-move="' + move + '" aria-label="' + label +
-    '" title="' + label + '"><span aria-hidden="true">' + glyph + '</span></button>';
 
   M.playShelfWalk = (el, ctx, finish, classic) => {
     const previous = ctx.state.shelfWalk?.[ctx.product.id];
@@ -53,9 +41,7 @@
       ' บาท ซื้อสินค้า 1 แพ็กที่มีราคาต่อหน่วยต่ำที่สุด</p><button type="button" class="btn small ghost" data-walk-classic>ฝึกคำนวณแบบเดิม</button></div>' +
       '<div class="walk-world"><div class="walk-viewport" tabindex="0" role="region" aria-label="ร้านมุมมองบุคคลที่หนึ่ง ใช้ปุ่มลูกศรเดิน กด Q หรือ R เพื่อหัน และ E เพื่ออ่านป้าย">' +
       '<canvas width="960" height="540" aria-hidden="true"></canvas><span class="walk-reticle" aria-hidden="true">+</span></div>' +
-      '<div class="walk-controls"><div class="walk-pad" role="group" aria-label="เดินและหัน">' +
-      actionButton('turn-left', '↶', 'หันซ้าย') + actionButton('forward', '↑', 'เดินหน้า') + actionButton('turn-right', '↷', 'หันขวา') +
-      actionButton('left', '←', 'เดินซ้าย') + actionButton('back', '↓', 'ถอยหลัง') + actionButton('right', '→', 'เดินขวา') + '</div>' +
+      '<div class="walk-controls">' + M.WalkControls.pad() +
       '<div class="walk-act"><button type="button" class="btn primary" data-walk-action>อ่านป้ายชั้น A</button>' +
       '<small class="muted">ลูกศร / WASD เดิน · Q/R หัน · E อ่าน</small></div></div>' +
       '<p class="walk-hint" role="status">เริ่มที่ชั้น A อ่านป้าย แล้วเดินขวาไปชั้น B</p>' +
@@ -72,10 +58,7 @@
       return;
     }
 
-    let checkingOut = false, closed = false, frame, last = 0, activeTarget;
-    let hold, drag, queueTime = 0, queued = [];
-    const pressed = new Set();
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let checkingOut = false, closed = false, activeTarget;
 
     const updateNotebook = () => {
       notebook.innerHTML = items.filter((item) => seen.has(item.id)).map((item) => record(item, mission)).join('') ||
@@ -91,108 +74,19 @@
       action.textContent = item ? (seen.has(id) ? 'ดูป้ายชั้น ' : 'อ่านป้ายชั้น ') + item.shelf :
         id === 'checkout' ? 'ไปชำระเงิน' : 'เข้าใกล้ป้ายหรือเคาน์เตอร์';
     };
-    const stopMotion = () => { pressed.clear(); queued = []; queueTime = 0; hold = null; drag = null; };
-
-    function renderFrame(now) {
-      if (closed) return;
-      const dt = Math.min(0.05, last ? (now - last) / 1000 : 0);
-      last = now;
-      if (!checkingOut) {
-        const moves = [...pressed].map((key) => keyMoves[key]);
-        if (hold && now - hold.start > 180) moves.push(hold.move);
-        if (moves.length) {
-          const vector = [0, 0, 0];
-          for (const move of new Set(moves)) direction[move].forEach((value, i) => { vector[i] += value; });
-          const [forward, strafe, turn] = vector.map(Math.sign);
-          scene.step(forward, strafe, turn, dt);
-          updateTarget();
-          scene.draw();
-        } else if (queued.length) {
-          const time = Math.min(dt, 0.26 - queueTime);
-          scene.step(...direction[queued[0]], time);
-          queueTime += time;
-          if (queueTime >= 0.26) { queued.shift(); queueTime = 0; }
-          updateTarget();
-          scene.draw();
-        }
-      }
-      frame = requestAnimationFrame(renderFrame);
-    }
-    const nudge = (move) => {
-      if (reducedMotion) {
-        scene.step(...direction[move], 0.26);
-        updateTarget();
-        scene.draw();
-      } else if (queued.length < 8) queued.push(move);
-    };
-
-    for (const button of $$('[data-move]', el)) {
-      const move = button.dataset.move;
-      button.onclick = (event) => { if (event.detail === 0) nudge(move); };
-      button.onpointerdown = (event) => {
-        if (event.button !== 0 || hold) return;
-        hold = { id: event.pointerId, move, start: performance.now() };
-        button.setPointerCapture(event.pointerId);
-      };
-      const release = (event) => {
-        if (hold?.id !== event.pointerId) return;
-        if (event.type === 'pointerup' && performance.now() - hold.start <= 180) nudge(move);
-        hold = null;
-      };
-      button.onpointerup = button.onpointercancel = button.onlostpointercapture = release;
-    }
-
-    viewport.onpointerdown = (event) => {
-      if (event.button !== 0) return;
-      viewport.focus({ preventScroll: true });
-      drag = { id: event.pointerId, x: event.clientX, origin: event.clientX, moved: false };
-      viewport.setPointerCapture(event.pointerId);
-    };
-    viewport.onpointermove = (event) => {
-      if (drag?.id !== event.pointerId) return;
-      drag.moved ||= Math.abs(event.clientX - drag.origin) > 5;
-      const dx = event.clientX - drag.x;
-      drag.x = event.clientX;
-      if (drag.moved && dx) {
-        scene.step(0, 0, Math.sign(dx), Math.min(0.18, Math.abs(dx) * 0.005));
-        updateTarget();
-        scene.draw();
-      }
-    };
-    const endDrag = (event) => {
-      if (drag?.id !== event.pointerId) return;
-      const tap = !drag.moved && event.type === 'pointerup';
-      drag = null;
-      if (tap && !action.disabled) interact();
-    };
-    viewport.onpointerup = viewport.onpointercancel = viewport.onlostpointercapture = endDrag;
-
-    el.onkeydown = (event) => {
-      if (checkingOut || event.ctrlKey || event.altKey || event.metaKey) return;
-      if (keyMoves[event.code]) {
-        event.preventDefault();
-        pressed.add(event.code);
-      } else if ((event.code === 'KeyE' || (event.code === 'Enter' && event.target === viewport)) && !event.repeat) {
-        event.preventDefault();
-        interact();
-      }
-    };
-    el.onkeyup = (event) => pressed.delete(event.code);
-    el.onfocusout = (event) => { if (!el.contains(event.relatedTarget)) stopMotion(); };
-    const blur = () => stopMotion();
-    window.addEventListener('blur', blur);
+    const controls = M.WalkControls.attach({
+      root: el, viewport, scene, paused: () => checkingOut, onMove: updateTarget,
+      onInteract: () => { if (!action.disabled) interact(); },
+    });
     M.onLeave = () => {
       closed = true;
-      cancelAnimationFrame(frame);
-      window.removeEventListener('blur', blur);
-      el.onkeydown = el.onkeyup = el.onfocusout = null;
+      controls.destroy();
     };
     action.onclick = interact;
     updateNotebook();
     updateTarget();
     scene.draw();
     viewport.focus({ preventScroll: true });
-    frame = requestAnimationFrame(renderFrame);
 
     function interact() {
       if (closed || checkingOut) return;
@@ -216,7 +110,7 @@
     }
 
     function openCheckout() {
-      stopMotion();
+      controls.stop();
       checkingOut = true;
       world.classList.add('hidden');
       checkout.classList.remove('hidden');

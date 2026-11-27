@@ -165,6 +165,74 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
   checks += 4;
 }
 
+// ---- 3d) กลไกสังเกตลูกค้า W1R2 (GDD §9) ใช้ได้โดยไม่ผูกหน้าจอ ทั้งฉากเดินและแบบรายการ ----
+{
+  const OM = require(path.join(GAME, 'js/observe-walk-model.js'));
+  const gddEvents = 'am-carry 422 am carry/am-fast 426 am carry/am-price 429 am value/pm-stock 1024 pm home/pm-stock-more 1028 pm home';
+  for (const pid of Object.keys(M.PRODUCTS)) {
+    const product = M.PRODUCTS[pid];
+    const tag = `${pid} W1R2 สังเกต`;
+    const events = OM.buildEvents(product);
+    checks++;
+    if (events.map((e) => `${e.id} ${e.minute} ${e.period} ${e.group}`).join('/') !== gddEvents) err(`${tag}: ชุดเหตุการณ์ไม่ตรง GDD §9`);
+    for (const e of events) {
+      checks += 4;
+      if (/undefined|NaN|[{}]/.test([e.place, e.seen, e.heard, e.observedText, e.supported, e.alternative, e.explanation].join('|'))) err(`${tag} ${e.id}: ข้อความไม่สมบูรณ์`);
+      const front = OM.approachPose(e);
+      if (!OM.perceive(front, e).ready) err(`${tag} ${e.id}: ยืนที่จุดฟังแล้วจดไม่ได้`);
+      const away = OM.perceive({ ...front, yaw: Math.PI }, e);
+      if (!away.heard || away.ready === e.needsSight) err(`${tag} ${e.id}: หันหลังแล้วต้องได้ยิน และจดได้เฉพาะเหตุการณ์ที่ไม่ต้องเห็น`);
+      if (OM.perceive({ x: e.spot.x, z: e.spot.z - OM.SENSE.hear - 0.3, yaw: 0 }, e).heard) err(`${tag} ${e.id}: ได้ยินไกลเกินระยะ`);
+      for (const other of events) {
+        if (other !== e && other.period === e.period && OM.perceive(front, other).heard) err(`${tag}: จุดฟัง ${e.id} ได้ยิน ${other.id} ปนกัน`);
+      }
+    }
+    // จดสลับลำดับและจดซ้ำ: หนึ่งแถวต่อรหัส สมุดเรียงตามเวลา ไปเย็นเมื่อเช้าครบ 3 ไปวิเคราะห์เมื่อครบ 5
+    const s = OM.createSession(product);
+    s.record('am-price'); s.record('am-carry');
+    checks += 5;
+    if (s.record('am-carry').added || s.recordedCount() !== 2) err(`${tag}: จดซ้ำแล้วได้แถวเพิ่ม`);
+    if (s.periodDone('am')) err(`${tag}: ไปช่วงเย็นได้ก่อนจดเช้าครบ`);
+    s.record('am-fast');
+    if (s.notebook().map((e) => e.id).join() !== 'am-carry,am-fast,am-price') err(`${tag}: สมุดไม่เรียงตามเวลา`);
+    if (!s.periodDone('am') || s.allRecorded()) err(`${tag}: เงื่อนไขไปช่วงเย็นหรือไปวิเคราะห์ผิด`);
+    s.record('pm-stock-more'); s.record('pm-stock');
+    if (!s.allRecorded()) err(`${tag}: จดครบ 5 แล้วยังไปวิเคราะห์ไม่ได้`);
+    for (const e of events) { s.answerObservation(e.id, 'fact'); s.answerReason(e.id, `${e.id}-supported`); }
+    s.answerObservation('am-carry', 'inference'); // คำตอบหลังครั้งแรกไม่เปลี่ยนคะแนน
+    const ratios = [];
+    for (const period of OM.PERIODS) {
+      const q = s.comparisonQuestion(period.id);
+      const row = q.rows.find((entry) => entry.group.id === q.answer);
+      ratios.push(`${row.count}/${row.denominator}`);
+      checks++;
+      if (!q.explain.includes(`${row.count} ÷ ${row.denominator}`) || !q.explain.includes(`ตัวอย่างจำลอง ${events.length} เหตุการณ์`)) err(`${tag}: คำอธิบายเทียบช่วงต้องอ้างตัวหารและขอบเขตตัวอย่าง`);
+      s.answerComparison(period.id, q.answer);
+    }
+    checks += 4;
+    if (ratios.join(' ') !== '2/3 2/2') err(`${tag}: ตัวหารเทียบช่วงต้องเป็น 2/3 และ 2/2 ได้ ${ratios.join(' ')}`);
+    const full = s.score();
+    if (full.correct !== 12 || full.total !== 12 || full.score !== 1) err(`${tag}: ตอบถูกทั้งหมดต้องได้ 12/12 ได้ ${full.correct}/${full.total}`);
+    s.propose('pm-stock', 'shelf');
+    const saved = s.result('walk');
+    const okShape = saved.source === 'simulated' && saved.route === 'walk' && saved.events.length === 5 &&
+      saved.events.every((e) => Number.isInteger(e.minute) && e.selectedObservationId === 'fact' && e.selectedReasonId === `${e.id}-supported`) &&
+      saved.comparison.map((c) => `${c.period}:${c.sampleCount}:${c.selectedGroupId}`).join() === 'am:3:carry,pm:2:home' &&
+      saved.proposal?.eventId === 'pm-stock' && !/[{}]/.test(saved.proposal.text);
+    if (!okShape) err(`${tag}: รูปแบบเซฟไม่ตรง GDD §9`);
+    if (!/pm-stock/.test(s.portfolioText()) || /undefined|NaN/.test(s.portfolioText())) err(`${tag}: แฟ้มผลงานต้องอ้างรหัสเหตุการณ์ที่เสนอ`);
+    // ตัวอย่างคะแนน GDD §9: ข้อสังเกตถูก 4 การตีความถูก 4 เทียบช่วงถูก 1 = 9 ÷ 12 = 0.75 (2 ดาว)
+    const t = OM.createSession(product);
+    events.forEach((e, i) => {
+      t.record(e.id);
+      t.answerObservation(e.id, i === 0 ? 'inference' : 'fact');
+      t.answerReason(e.id, i === 1 ? `${e.id}-alternative` : `${e.id}-supported`);
+    });
+    t.answerComparison('am', 'carry'); t.answerComparison('pm', 'value');
+    if (t.score().score !== 0.75) err(`${tag}: ตัวอย่าง 9/12 ต้องได้ 0.75 ได้ ${t.score().score}`);
+  }
+}
+
 // ---- 3c) index.html โหลดทุกไฟล์ใน game/js ด้วยเลขเวอร์ชันเดียวกัน (กันแคชเก่าปนใหม่) ----
 {
   const html = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8');
