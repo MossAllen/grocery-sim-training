@@ -304,13 +304,7 @@
       if (!placed) return;
       scene.draw();
       sense();
-      const target = recordButton.disabled ? viewport : recordButton;
-      const { top, bottom } = target.getBoundingClientRect();
-      const headerBottom = $('.topbar')?.getBoundingClientRect().bottom ?? 0;
-      if (top < headerBottom || bottom > window.innerHeight) {
-        target.scrollIntoView({ block: 'center', behavior: 'instant' });
-      }
-      target.focus({ preventScroll: true });
+      M.WalkControls.focusVisible(recordButton.disabled ? viewport : recordButton);
     }
 
     function updateProgress() {

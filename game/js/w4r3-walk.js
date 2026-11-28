@@ -126,10 +126,11 @@
     // ปุ่มรายการพาไปยืนหน้าจุด หรือทำงานที่จุดทันทีเมื่อเปิดฉากเดินไม่ได้
     function goTo(point) {
       if (!scene) return act(point);
+      controls.stop();
       scene.place({ x: point.go.x, z: point.go.z, yaw: 0 });
       scene.draw();
       update();
-      action.focus({ preventScroll: true });
+      M.WalkControls.focusVisible(action);
     }
 
     // ---------- งานที่แต่ละจุด ----------
@@ -157,9 +158,9 @@
         panel.innerHTML = '';
         sfx.play('shelf_pick');
         note(point, `ป้ายเดิม ${bt(pm.P)} บาท/ชิ้น → โปร 2 ชิ้น ${bt(B)} บาท · เดี่ยว ${bt(pm.P)} บาท · ค่าทำโปร ${bt(F)} บาท`);
-        startBtn.focus({ preventScroll: true });
+        M.WalkControls.focusVisible(startBtn);
       };
-      confirm.focus({ preventScroll: true });
+      M.WalkControls.focusVisible(confirm);
     }
 
     const stockText = () => {
@@ -180,9 +181,7 @@
       summary.innerHTML = '<h3 tabindex="-1">ใบสรุปคู่ช่วงที่เคาน์เตอร์</h3><div class="after"></div>';
       const evidence = POINTS.map((entry) => ({ id: entry.id, text: rows.get(entry.id) }));
       W4.runSummary($('.after', summary), ctx, setup, finish, { route: 'walk', evidence });
-      const heading = $('h3', summary);
-      heading.focus({ preventScroll: true });
-      heading.scrollIntoView({ block: 'start' });
+      M.WalkControls.focusVisible($('h3', summary));
     }
 
     // ---------- ช่วงโปร 30 นาที: ลูกค้าจากรายการขายของแบบจำลอง ----------

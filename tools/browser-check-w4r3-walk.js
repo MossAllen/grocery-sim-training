@@ -18,7 +18,8 @@ const scenarios = [
 async function verifyW4R3Walk(browser, url, axeScript) {
   const problems = [];
   for (const sc of scenarios) {
-    const context = await browser.newContext({ viewport: { width: sc.width, height: sc.touch ? 760 : 880 }, isMobile: sc.touch,
+    const compact = sc.width === 320;
+    const context = await browser.newContext({ viewport: { width: sc.width, height: compact ? 568 : sc.touch ? 760 : 880 }, isMobile: sc.touch,
       hasTouch: sc.touch, reducedMotion: sc.motion ? 'no-preference' : 'reduce' });
     await context.addInitScript((pid) => {
       if (!sessionStorage.getItem('seeded')) {
@@ -33,7 +34,7 @@ async function verifyW4R3Walk(browser, url, axeScript) {
       const errors = [];
       page.on('pageerror', (error) => errors.push(error.message));
       const use = (selector) => (sc.touch ? page.locator(selector).tap() : page.locator(selector).click());
-      await page.goto(url);
+      await page.goto(compact ? `${url}#promo-walk` : url);
       // Base and plan the model would have saved in W4R1/W4R2 for this seed.
       const model = await page.evaluate(({ product, seed, event, B, F }) => {
         const M = window.MTL, PM = M.PromoModel, pr = M.PRODUCTS[product].promo;
@@ -50,19 +51,42 @@ async function verifyW4R3Walk(browser, url, axeScript) {
       }, sc);
       for (const [key, value] of Object.entries(sc.expect)) assert.equal(model[key], value, `${sc.product} ${sc.seed}: model ${key}`);
 
-      await use('#homeBtn');
-      await use('.week[data-w="3"]');
-      await use('.round[data-r="2"]');
+      if (compact) await use('#startBtn');
+      else {
+        await use('#homeBtn');
+        await use('.week[data-w="3"]');
+        await use('.round[data-r="2"]');
+      }
       await page.locator('.w4r3-walk').waitFor();
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), sc.width, 'viewport overflow');
       const row = (id) => page.locator(`.ow-book tr[data-row="${id}"]`);
-      const go = async (id) => { await use(`[data-w4-go="${id}"]`); await page.locator(`[data-w4-action][data-target="${id}"]`).waitFor(); await use('[data-w4-action]'); };
+      const assertFocusable = async (selector) => {
+        if (!compact) return;
+        const reachable = await page.locator(selector).evaluate((button) => {
+          const { top, bottom, left, width } = button.getBoundingClientRect();
+          const header = document.querySelector('.topbar').getBoundingClientRect();
+          return document.activeElement === button && top >= header.bottom && bottom <= window.innerHeight &&
+            button.contains(document.elementFromPoint(left + width / 2, (top + bottom) / 2));
+        });
+        assert.ok(reachable, `Compact focus is behind the header or offscreen: ${selector}`);
+      };
+      const go = async (id) => {
+        const button = `[data-w4-go="${id}"]`;
+        if (compact) await page.locator(button).evaluate((item) => item.scrollIntoView({ block: 'center', behavior: 'instant' }));
+        await use(button);
+        const target = `[data-w4-action][data-target="${id}"]`;
+        await page.locator(target).waitFor();
+        await assertFocusable(target);
+        await use(target);
+      };
 
       // Counter and stock wait for their turn.
       await go('w4r3-counter');
       assert.equal(await row('w4r3-counter').count(), 0, 'counter opened before stock');
       await go('w4r3-sign');
+      await assertFocusable('[data-w4-sign]');
       await use('[data-w4-sign]');
+      await assertFocusable('[data-w4-start]');
       await row('w4r3-sign').waitFor();
       assert.match(await row('w4r3-sign').innerText(), new RegExp(`โปร 2 ชิ้น ${sc.B / 100} บาท`));
       await go('w4r3-sign');

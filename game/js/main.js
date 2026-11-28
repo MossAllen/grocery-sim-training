@@ -11,7 +11,7 @@
   const scriptLoads = new Map();
   let currentScreen = 0;
   // ฉากเดินในร้านรุ่นทดลอง: W1R2 สังเกตลูกค้า และ W2R2 เทียบราคา · #observe-walk หรือ #shelf-walk เปิดรอบนั้นหลังเลือกสินค้า
-  const previewRound = { '#shelf-walk': [1, 1], '#observe-walk': [0, 1] }[location.hash];
+  const previewRound = { '#shelf-walk': [1, 1], '#observe-walk': [0, 1], '#promo-walk': [3, 2] }[location.hash];
   State.load();
 
   const product = () => M.PRODUCTS[State.data.product];

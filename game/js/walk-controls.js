@@ -19,6 +19,17 @@
     button('turn-left', '↶', 'หันซ้าย') + button('forward', '↑', 'เดินหน้า') + button('turn-right', '↷', 'หันขวา') +
     button('left', '←', 'เดินซ้าย') + button('back', '↓', 'ถอยหลัง') + button('right', '→', 'เดินขวา') + '</div>';
 
+  function focusVisible(target) {
+    const { top, bottom } = target.getBoundingClientRect();
+    const headerBottom = document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0;
+    const visibleTop = window.visualViewport?.offsetTop ?? 0;
+    const visibleBottom = visibleTop + (window.visualViewport?.height ?? window.innerHeight);
+    if (top < Math.max(headerBottom, visibleTop) || bottom > visibleBottom) {
+      target.scrollIntoView({ block: 'center', behavior: 'instant' });
+    }
+    target.focus({ preventScroll: true });
+  }
+
   // root: element that receives key events · viewport: focusable canvas wrapper
   // paused(): true while a form or panel replaces walking · onMove(): after each redraw · onInteract(): E, Enter on viewport, or tap
   function attach({ root, viewport, scene, paused = () => false, onMove = () => {}, onInteract = () => {} }) {
@@ -132,5 +143,5 @@
     };
   }
 
-  M.WalkControls = { pad, attach };
+  M.WalkControls = { pad, attach, focusVisible };
 })();
