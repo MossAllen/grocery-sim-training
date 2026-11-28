@@ -19,15 +19,24 @@
   const quadXY = (x1, y1, x2, y2, z) => [[x1, y1, z], [x2, y1, z], [x2, y2, z], [x1, y2, z]];
   const quadXZ = (x1, z1, x2, z2, y) => [[x1, y, z1], [x2, y, z1], [x2, y, z2], [x1, y, z2]];
   const quadYZ = (z1, y1, z2, y2, x) => [[x, y1, z1], [x, y1, z2], [x, y2, z2], [x, y2, z1]];
+  const floorTiles = [];
+  const floorShades = ['#dfc5a5', '#d7b995', '#e7ceb1', '#dabd9a'];
+  for (let row = 0, z = ROOM.near; z < ROOM.far; row++, z += 0.87) {
+    for (let col = 0, x = ROOM.left; x < ROOM.right; col++, x += 0.87) {
+      const corners = quadXZ(x + 0.013, z + 0.013, Math.min(x + 0.856, ROOM.right), Math.min(z + 0.856, ROOM.far), 0);
+      floorTiles.push({ corners, color: floorShades[(row * 5 + col * 3 + Math.floor(col / 3)) % floorShades.length] });
+    }
+  }
 
   // actors: [{ id, x, z, sprite, bubble, bubbleColor, ring, ringColor }] read on every draw, so callers may mutate them
-  // start: { x, z, yaw } · ambience: { tint } washes the whole view, for example evening light
+  // start: { x, z, yaw } · ambience: { tint, stationFocus } for the evening light and shelf interaction markers
   function create(canvas, { stations, actors = [], start, ambience = {} }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     if (!canvas.hasAttribute('width')) canvas.width = 960;
     if (!canvas.hasAttribute('height')) canvas.height = 540;
     const pose = { x: OUTLETS[0].x, z: 4.05, yaw: 0, ...start };
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const sprites = new Map();
     const actorImage = (url) => {
       if (!url) return null;
@@ -95,7 +104,7 @@
       return best;
     }
 
-    let w, h, focal, eye, sine, cosine;
+    let w, h, focal, eye, sine, cosine, edge;
     function camera([x, y, z]) {
       const dx = x - pose.x, dz = z - pose.z;
       return { x: dx * cosine - dz * sine, y: y - EYE_HEIGHT, z: dx * sine + dz * cosine };
@@ -126,8 +135,9 @@
 
     function storeWalls() {
       const { left, right, near, far, height } = ROOM;
-      face(quadXZ(left, near, right, far, height), '#fcf5e8');
-      face(quadXY(left, 0, right, height, far), '#e5d1b5');
+      const evening = !!ambience.tint;
+      face(quadXZ(left, near, right, far, height), evening ? '#eaddd6' : '#faf1df');
+      face(quadXY(left, 0, right, height, far), evening ? '#d5bcaf' : '#e7d4b6');
       face(quadXY(left, 0, right, height, near), '#dfc3a4');
       face(quadYZ(near, 0, far, height, left), '#e8d8bd');
       face(quadYZ(near, 0, far, height, right), '#d7bfa5');
@@ -143,45 +153,62 @@
       for (const z of [0.25, 3.1, 6.0, 8.65]) {
         for (const x of [-3.5, 0, 3.5]) {
           face(quadXZ(x - 0.78, z - 0.17, x + 0.78, z + 0.17, height - 0.025), '#d0c3a9');
-          face(quadXZ(x - 0.66, z - 0.095, x + 0.66, z + 0.095, height - 0.034), '#fffdf6');
+          face(quadXZ(x - 0.66, z - 0.095, x + 0.66, z + 0.095, height - 0.034), evening ? '#ffe4aa' : '#fffdf6');
         }
       }
       face(quadXY(-5.52, 0, -4.73, 2.28, far - 0.015), '#8d6a4e');
       face(quadXY(-5.44, 0.08, -4.81, 2.20, far - 0.025), '#a7b8ac');
-      face(quadXY(-5.43, 0.88, -4.82, 2.13, far - 0.035), '#c7dce0');
+      face(quadXY(-5.43, 0.88, -4.82, 2.13, far - 0.035), evening ? '#849fa8' : '#c7dce0');
+      const glass = far - 0.036;
+      face([[-5.43, 1.64, glass], [-4.82, 2.03, glass], [-4.82, 2.12, glass], [-5.43, 1.75, glass]], 'rgba(255,255,255,.34)');
+      face(quadXY(-5.07, 0.91, -4.87, 0.96, far - 0.04), '#ede0bb');
       face(quadXY(4.92, 1.1, 5.65, 2.22, far - 0.02), '#9b7859');
       face(quadXY(5.01, 1.19, 5.56, 2.13, far - 0.03), '#fbebcb');
       face(quadXY(5.08, 1.9, 5.49, 2.03, far - 0.04), '#9d6042');
+      for (const y of [1.43, 1.56, 1.69]) face(quadXY(5.08, y, 5.49 - (y - 1.43), y + 0.035, far - 0.04), '#ab8768');
     }
 
-    function storeFloor() {
+    function storeFloor(focused) {
       const { left, right, near, far } = ROOM;
       face(quadXZ(left, near, right, far, 0), '#b3977b');
-      const shades = ['#dfc5a5', '#d7b995', '#e7ceb1', '#dabd9a'];
-      for (let row = 0, z = near; z < far; row++, z += 0.87) {
-        for (let col = 0, x = left; x < right; col++, x += 0.87) {
-          face(quadXZ(x + 0.013, z + 0.013, Math.min(x + 0.856, right), Math.min(z + 0.856, far), 0),
-            shades[(row * 5 + col * 3 + Math.floor(col / 3)) % shades.length]);
-        }
-      }
-      for (const { x, z } of displays) {
+      for (const { corners, color } of floorTiles) face(corners, color);
+      face([[-4.8, 0.001, far - 0.1], [-5.5, 0.001, far - 0.1], [-4.1, 0.001, 5.1], [-2.55, 0.001, 5.1]],
+        ambience.tint ? 'rgba(255,197,128,.13)' : 'rgba(255,245,193,.25)');
+      for (const { id, x, z, color, light } of displays) {
         face(quadXZ(x - 1.32, z - 0.73, x + 1.32, z + 0.53, 0.002), 'rgba(67, 40, 23, .17)');
+        face(quadXZ(x - 0.98, z - 1.18, x + 0.98, z - 0.97, 0.003), color);
+        if (id === focused) {
+          face(quadXZ(x - 1.04, z - 1.27, x + 1.04, z - 1.18, 0.003), '#fff0ac');
+          face(quadXZ(x - 0.56, z - 1.14, x + 0.56, z - 1.02, 0.003), light);
+        }
       }
       for (const actor of actors) {
         if (actor.ring) fillFace(circle(actor.x, actor.z, actor.ring, 0.004).map(camera), actor.ringColor || 'rgba(255, 214, 90, .28)');
-        fillFace(circle(actor.x, actor.z, 0.34, 0.006).map(camera), 'rgba(52, 33, 21, .22)');
+        fillFace(circle(actor.x, actor.z, 0.48, 0.005).map(camera), 'rgba(52, 33, 21, .10)');
+        fillFace(circle(actor.x, actor.z, 0.31, 0.006).map(camera), 'rgba(52, 33, 21, .19)');
+        if (actor.motion?.confirm > 0) {
+          const progress = 1 - actor.motion.confirm;
+          fillFace(circle(actor.x, actor.z, 0.42 + progress * 0.45, 0.007).map(camera),
+            `rgba(129, 205, 142, ${0.36 * actor.motion.confirm})`);
+        }
       }
     }
     const circle = (x, z, radius, y) => Array.from({ length: 28 }, (_, i) =>
       [x + radius * Math.sin(i / 28 * TAU), y, z + radius * Math.cos(i / 28 * TAU)]);
 
     function customer(actor) {
+      // ตัวละครที่เดินเฉียดกล้องค่อย ๆ จาง เพื่อให้ผู้เล่นอ่านป้ายและเห็นลูกค้าที่กำลังสังเกตได้
+      const distance = Math.hypot(actor.x - pose.x, actor.z - pose.z);
+      const opacity = Math.min(1, Math.max(0, (distance - 0.58) / 0.72));
+      if (!opacity) return;
       const image = actorImage(actor.sprite);
       const width = ACTOR_HEIGHT * 2 / 3;
       billboard(actor.x, ACTOR_HEIGHT / 2, actor.z, width, ACTOR_HEIGHT, (sx, sy, bw, bh) => {
-        // actor.motion = { flip, lift (0..1), sx, sy, puffs: [{age, side}], sparkle (0..1) } จากผู้เรียกฉาก
+        // การยุบ ยก และเปลี่ยนท่าใช้ข้อมูลจากผู้เรียกฉาก โดยไม่เปลี่ยนตำแหน่งปะทะของลูกค้า
         const motion = actor.motion || {};
         const feet = sy + bh / 2, rise = (motion.lift || 0) * bh * 0.045;
+        ctx.save();
+        ctx.globalAlpha = opacity;
         for (const puff of motion.puffs || []) {
           const k = puff.age / 0.5;
           ctx.fillStyle = 'rgba(214, 196, 168,' + (0.55 * (1 - k)).toFixed(3) + ')';
@@ -190,9 +217,17 @@
           ctx.fill();
         }
         if (image) {
+          const blend = motion.blend ?? 1;
+          const previous = blend < 1 ? actorImage(actor.previousSprite) : null;
           ctx.save();
           ctx.translate(sx, feet - rise);
+          ctx.rotate(motion.lean || 0);
           ctx.scale((motion.flip ? -1 : 1) * (motion.sx || 1), motion.sy || 1);
+          if (previous) {
+            ctx.globalAlpha = opacity * (1 - blend);
+            ctx.drawImage(previous, -bw / 2, -bh, bw, bh);
+            ctx.globalAlpha = opacity * blend;
+          }
           ctx.drawImage(image, -bw / 2, -bh, bw, bh);
           ctx.restore();
           if (motion.sparkle > 0) {
@@ -214,21 +249,23 @@
           ctx.fillStyle = '#f2c9a0';
           ctx.fill();
         }
-        if (!actor.bubble) return;
-        const radius = Math.max(11, Math.min(30, bw * 0.24));
-        const bx = sx + bw * 0.3, by = sy - bh * 0.5 - radius * 0.4;
-        ctx.beginPath();
-        ctx.arc(bx, by, radius, 0, TAU);
-        ctx.fillStyle = actor.bubbleColor || '#ffde59';
-        ctx.fill();
-        ctx.lineWidth = Math.max(1.5, radius * 0.12);
-        ctx.strokeStyle = '#3b2a1e';
-        ctx.stroke();
-        ctx.fillStyle = '#2b1d12';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = '700 ' + Math.round(radius * 1.15) + 'px Sarabun, "Segoe UI Emoji", sans-serif';
-        ctx.fillText(actor.bubble, bx, by + radius * 0.05);
+        if (actor.bubble) {
+          const radius = Math.max(11, Math.min(30, bw * 0.24)) * (1 + (motion.confirm || 0) * 0.18);
+          const bx = sx + bw * 0.3, by = sy - bh * 0.5 - radius * 0.4 - rise * 0.4;
+          ctx.beginPath();
+          ctx.arc(bx, by, radius, 0, TAU);
+          ctx.fillStyle = actor.bubbleColor || '#ffde59';
+          ctx.fill();
+          ctx.lineWidth = Math.max(1.5, radius * 0.12);
+          ctx.strokeStyle = '#3b2a1e';
+          ctx.stroke();
+          ctx.fillStyle = '#2b1d12';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = '700 ' + Math.round(radius * 1.15) + 'px Sarabun, "Segoe UI Emoji", sans-serif';
+          ctx.fillText(actor.bubble, bx, by + radius * 0.05);
+        }
+        ctx.restore();
       });
     }
 
@@ -256,7 +293,7 @@
       depthQueue.push({ depth: point.z, paint: () => painter(screenX, screenY, width * scale, height * scale) });
     }
 
-    function shelf(display) {
+    function shelf(display, focused) {
       const { x, z, station, image, color, light, label } = display;
       const front = z - 0.46, back = z + 0.42;
       const wood = ['#966b48', '#68492f', '#c19264'];
@@ -289,6 +326,7 @@
       studRow(x - 1.0, x + 1.0, 2.34, front + 0.06, 0.5, [color, '#51382a', light]);
       box(x - 1.23, x + 1.23, 2.31, 2.34, front - 0.012, front + 0.12, [light, '#51382a', light]);
       box(x - 1.27, x + 1.27, 0, 0.07, front - 0.03, back + 0.02, ['#3e2a1d', '#2e1f15', '#4e3524']);
+      if (focused) queueFace(quadXY(x - 1.12, 1.974, x + 1.12, 1.996, front - 0.014), '#ffdc8a');
       billboard(x, 2.16, front - 0.03, 1.50, 0.30, (sx, sy, bw, bh) => {
         ctx.fillStyle = '#fff6e7';
         ctx.font = '700 ' + Math.min(45, Math.round(bh * 0.83)) + 'px Sarabun, Tahoma, sans-serif';
@@ -341,25 +379,28 @@
     }
 
     function draw() {
-      w = canvas.width; h = canvas.height;
+      if (canvas.width !== w || canvas.height !== h) {
+        w = canvas.width; h = canvas.height;
+        edge = ctx.createRadialGradient(w / 2, h * 0.49, w * 0.18, w / 2, h * 0.45, w * 0.69);
+        edge.addColorStop(0, 'rgba(53, 30, 22, 0)');
+        edge.addColorStop(1, 'rgba(53, 30, 22, .25)');
+      }
       focal = Math.min(w * 0.51, h * 0.91); eye = h * 0.41;
       sine = Math.sin(pose.yaw); cosine = Math.cos(pose.yaw);
+      const focused = ambience.stationFocus === false ? null : target();
       ctx.fillStyle = '#e5d1b5';
       ctx.fillRect(0, 0, w, h);
       storeWalls();
-      storeFloor();
+      storeFloor(focused);
       for (const display of displays) {
         if (display.id === 'checkout') checkout(display);
-        else shelf(display);
+        else shelf(display, display.id === focused);
       }
       for (const actor of actors) customer(actor);
       depthQueue.sort((a, b) => b.depth - a.depth);
       for (const entry of depthQueue) entry.paint();
       depthQueue.length = 0;
 
-      const edge = ctx.createRadialGradient(w / 2, h * 0.49, w * 0.18, w / 2, h * 0.45, w * 0.69);
-      edge.addColorStop(0, 'rgba(53, 30, 22, 0)');
-      edge.addColorStop(1, 'rgba(53, 30, 22, .25)');
       ctx.fillStyle = edge;
       ctx.fillRect(0, 0, w, h);
       if (ambience.tint) {
@@ -370,28 +411,48 @@
     }
 
     // The pack the player is carrying, drawn as a first-person hand in the lower right corner.
-    let held = null;
+    const PICKUP_MS = 260;
+    let held = null, pickupAt = -Infinity, pickupFrame;
     function heldItem() {
       const size = Math.min(w, h) * 0.36;
-      const x = w - size * 0.62, y = h - size * 0.5;
+      const remaining = Math.max(0, 1 - (performance.now() - pickupAt) / PICKUP_MS);
+      const settle = remaining * remaining;
+      const x = w - size * 0.62 + size * settle * 0.16;
+      const y = h - size * 0.5 + size * settle * 0.7;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(0.13 * settle);
       ctx.fillStyle = '#d9a47c';
       ctx.beginPath();
-      ctx.ellipse(x + size * 0.18, h + size * 0.02, size * 0.3, size * 0.46, -0.45, 0, TAU);
+      ctx.ellipse(size * 0.18, size * 0.52, size * 0.3, size * 0.46, -0.45, 0, TAU);
       ctx.fill();
       const image = actorImage(held.sprite);
-      if (image) ctx.drawImage(image, x - size * 0.3, y - size * 0.36, size * 0.56, size * 0.66);
+      if (image) ctx.drawImage(image, -size * 0.3, -size * 0.36, size * 0.56, size * 0.66);
       else {
         ctx.font = String(Math.round(size * 0.5)) + 'px "Segoe UI Emoji", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(held.icon || '📦', x - size * 0.02, y);
+        ctx.fillText(held.icon || '📦', -size * 0.02, 0);
       }
       ctx.fillStyle = '#e8b892';
       ctx.beginPath();
-      ctx.ellipse(x - size * 0.2, y + size * 0.16, size * 0.13, size * 0.09, 0.35, 0, TAU);
+      ctx.ellipse(-size * 0.2, size * 0.16, size * 0.13, size * 0.09, 0.35, 0, TAU);
       ctx.fill();
+      ctx.restore();
     }
-    const hold = (item) => { held = item ? { sprite: item.sprite, icon: item.icon } : null; draw(); };
+    function hold(item) {
+      cancelAnimationFrame(pickupFrame);
+      held = item ? { sprite: item.sprite, icon: item.icon } : null;
+      pickupAt = held && !reducedMotion ? performance.now() : -Infinity;
+      draw();
+      if (!Number.isFinite(pickupAt)) return;
+      const paintPickup = () => {
+        if (!canvas.isConnected || !held) return;
+        draw();
+        if (performance.now() - pickupAt < PICKUP_MS) pickupFrame = requestAnimationFrame(paintPickup);
+      };
+      pickupFrame = requestAnimationFrame(paintPickup);
+    }
 
     draw();
     return { step, target, draw, place, hold, pose: () => ({ ...pose }), actors, ambience };

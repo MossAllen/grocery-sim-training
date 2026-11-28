@@ -12,7 +12,8 @@ DIST = os.path.join(ROOT, "dist")
 
 RELEASE = "handoff/2026-11-27_codex-to-all_v0.4.md"
 COMMON = ["docs/RESEARCH.md", "docs/ROADMAP.md", "handoff/TEMPLATE.md", RELEASE,
-          "handoff/2026-11-26_claude-to-all_v0.3.md", "docs/HANDOFF.md"]
+          "handoff/2026-11-26_claude-to-all_v0.3.md", "docs/HANDOFF.md",
+          "handoff/2026-11-28_gpt-ai-polish-prompts.md", "handoff/2026-11-28_walk-preview-acceptance.md"]
 BUNDLES = {
     "handoff-chatgpt-sol": {
         "readme": "handoff/to-chatgpt-sol.md",

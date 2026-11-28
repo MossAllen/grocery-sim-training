@@ -303,6 +303,11 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
   const vers = new Set(refs.map((r) => (r.split('?v=')[1] || '(ไม่มี)')));
   if (vers.size !== 1 || vers.has('(ไม่มี)')) err(`index.html: ต้องระบุ ?v= เลขเดียวกันทุกไฟล์ (${[...vers].join(', ')})`);
   for (const ref of refs) if (!fs.existsSync(path.join(GAME, ref.split('?')[0]))) err(`index.html: ไม่พบ ${ref}`);
+  const manifestVersion = /href="manifest\.webmanifest\?v=([^"]+)"/.exec(html)?.[1];
+  const worker = fs.readFileSync(path.join(GAME, 'sw.js'), 'utf8');
+  const offlineVersion = /^const VERSION = '([^']+)'/m.exec(worker)?.[1];
+  checks++;
+  if (!vers.has(manifestVersion) || !vers.has(offlineVersion)) err('index.html: manifest และ sw.js ต้องใช้เวอร์ชันเดียวกับไฟล์เกม');
   for (const f of fs.readdirSync(path.join(GAME, 'js'))) {
     checks++;
     if (!refs.some((r) => r.split('?')[0] === `js/${f}`)) err(`index.html: ไม่ได้โหลด js/${f}`);

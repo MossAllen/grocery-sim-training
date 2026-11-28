@@ -58,6 +58,14 @@
   let stopVoice;
   M.stopSpeaking = () => { if (stopVoice) stopVoice(); };
 
+  // Use CORS mode on local audio so Safari can read cached byte ranges offline.
+  M.createGameAudio = (url) => {
+    const audio = new Audio();
+    audio.crossOrigin = 'anonymous';
+    audio.src = url;
+    return audio;
+  };
+
   // ใช้ไฟล์ในเกมก่อน แล้วใช้ Web Speech API เมื่อไม่มีไฟล์หรือเล่นไม่ได้
   M.speak = (text, lang = 'en-US') => {
     if (!M.State?.data.settings.tts || typeof text !== 'string' || !text.trim()) return Promise.resolve();
@@ -97,7 +105,7 @@
       const id = M.voiceId(text);
       if (lang !== 'en-US' || !window.MTL_VOICE_IDS?.has(id)) { fallback(); return; }
       try {
-        clip = new Audio(`assets/voice/${id}.ogg`);
+        clip = M.createGameAudio(`assets/voice/${id}.ogg`);
         clip.addEventListener('ended', () => { if (!fallbackStarted) stop(); }, { once: true });
         clip.addEventListener('error', fallback, { once: true });
         clip.addEventListener('playing', () => {

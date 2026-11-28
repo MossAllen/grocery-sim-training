@@ -1,0 +1,32 @@
+.install-app {
+  max-width: 1064px;
+  margin: 0 auto calc(28px + env(safe-area-inset-bottom));
+  width: calc(100% - 36px);
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.install-app > summary {
+  min-height: 44px;
+  padding: 11px 15px;
+  cursor: pointer;
+  color: #173f35;
+  font-weight: 700;
+}
+
+.install-app-body {
+  border-top: 1px solid var(--line);
+  padding: 12px 15px 14px;
+}
+
+.install-app-body > p {
+  max-width: 72ch;
+  margin: 0 0 8px;
+}
+
+.install-app-body > :last-child { margin-bottom: 0; }
+.install-app-body .btn { min-height: 44px; margin-bottom: 8px; }
+.install-app-status { color: var(--muted); font-size: .94rem; }
+.install-app [hidden] { display: none; }
