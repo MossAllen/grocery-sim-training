@@ -74,9 +74,10 @@ class Kit:
             f[self.col] = ci
             f[self.glow] = 1 if glow else 0
 
-    def box(self, center, size, colour, bev=None, segs=None, glow=False):
+    def box(self, center, size, colour, bev=None, segs=None, glow=False, rotation=None):
         """A bevelled box. center/size in studs (x, y, z with z up).
-        bev: bevel width (default scales with size: 0.03-0.1). segs: 1 for thin parts, 2 for big ones."""
+        bev: bevel width (default scales with size: 0.03-0.1). segs: 1 for thin parts, 2 for big ones.
+        rotation: optional quaternion applied around the box centre."""
         sx, sy, sz = size
         small = min(size)
         if bev is None:
@@ -86,7 +87,10 @@ class Kit:
         tmp = bmesh.new()
         bmesh.ops.create_cube(tmp, size=1.0)
         for v in tmp.verts:
-            v.co = Vector((v.co.x * sx + center[0], v.co.y * sy + center[1], v.co.z * sz + center[2]))
+            x, y, z = v.co.x * sx, v.co.y * sy, v.co.z * sz
+            if rotation is not None:
+                x, y, z = rotation @ Vector((x, y, z))
+            v.co = Vector((x + center[0], y + center[1], z + center[2]))
         if bev > 0:
             bev = min(bev, small * 0.45)
             bmesh.ops.bevel(tmp, geom=list(tmp.edges), offset=bev, segments=segs, profile=0.5,

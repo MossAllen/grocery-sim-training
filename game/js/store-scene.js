@@ -17,6 +17,8 @@
   }
   const FACES = ['🧑', '👩', '👨', '🧓', '👧'];
   const SHIRTS = ['#e76f51', '#2a9d8f', '#e9c46a', '#577590', '#b5838d'];
+  const SHELF_POSES = { customer_1: 'customer_1_pick', customer_2: 'customer_2_look', customer_4: 'customer_4_look' };
+  const COUNTER_POSES = { customer_3: 'customer_3_pay', customer_5: 'customer_5_pay' };
 
   class StoreScene {
     constructor(canvas, opts = {}) {
@@ -73,6 +75,7 @@
         }
         if (d <= v) {
           c.x = p.x; c.y = p.y; c.wait = p.wait || 0;
+          if (c.wait) c.poseAt = performance.now() / 1000;
           if (this.opts.onArrive) this.opts.onArrive(c, c.step);
           c.step++;
         } else { c.x += (dx / d) * v; c.y += (dy / d) * v; }
@@ -92,15 +95,22 @@
     }
     draw() {
       const g = this.g;
-      // พื้น
-      const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, '#f7e7cf'); grd.addColorStop(1, '#e8d2b0');
+      // แสงร้านช่วงเช้าและเย็นใช้พาเลตเดียวกับฉากเดิน
+      const evening = this.clock % 1440 >= 16 * 60;
+      const grd = g.createLinearGradient(0, 0, 0, H);
+      grd.addColorStop(0, evening ? '#dfb89b' : '#f7e7cf'); grd.addColorStop(1, evening ? '#c69778' : '#e8d2b0');
       g.fillStyle = grd; g.fillRect(0, 0, W, H);
+      const windowLight = g.createRadialGradient(72, 92, 8, 72, 92, 340);
+      windowLight.addColorStop(0, evening ? '#ffd8a4a8' : '#fff4d0cb');
+      windowLight.addColorStop(1, '#fff4d000');
+      g.fillStyle = windowLight; g.fillRect(0, 60, 435, H - 60);
       g.strokeStyle = 'rgba(120,90,50,.12)'; g.lineWidth = 1;
       for (let x = 0; x < W; x += 40) { g.beginPath(); g.moveTo(x, 150); g.lineTo(x, H); g.stroke(); }
       for (let y = 150; y < H; y += 40) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
       // ผนัง
-      g.fillStyle = '#c9b18c'; g.fillRect(0, 0, W, 60);
-      g.fillStyle = '#2a2622'; g.font = 'bold 20px Leelawadee UI, Tahoma, sans-serif'; g.textAlign = 'left';
+      g.fillStyle = evening ? '#463b38' : '#244b3e'; g.fillRect(0, 0, W, 56);
+      g.fillStyle = '#c19a62'; g.fillRect(0, 56, W, 4);
+      g.fillStyle = '#fff0cf'; g.font = 'bold 20px Leelawadee UI, Tahoma, sans-serif'; g.textAlign = 'left';
       g.fillText('🏪 ร้านชำ', 16, 38);
       g.font = 'bold 18px Tahoma, sans-serif'; g.textAlign = 'right'; g.fillText('🕒 ' + this.timeLabel(), W - 16, 38);
       // ชั้นวาง
@@ -151,14 +161,17 @@
         const moving = !still && c.wait <= 0;
         // เดิน 4 จังหวะ สลับเท้าโดยกลับภาพ ตัวเด้งกลางก้าว · ยืนรอหายใจเบา ๆ
         const step = moving && M.StudMotion ? M.StudMotion.walk(c.walked || 0, 2 * WALK_FRAME_DISTANCE) : null;
-        const img = (step && step.frame === 'walk' && sprite(`${c.sprite}_walk`)) || sprite(c.sprite);
+        const action = c.wait > 0 && (c.step === 2 ? SHELF_POSES[c.sprite] : c.step === 3 ? COUNTER_POSES[c.sprite] : null);
+        const actionSprite = action && sprite(action);
+        const img = actionSprite || (step && step.frame === 'walk' && sprite(`${c.sprite}_walk`)) || sprite(c.sprite);
         g.fillStyle = 'rgba(0,0,0,.15)'; g.beginPath(); g.ellipse(c.x, c.y + 4, 16, 5, 0, 0, Math.PI * 2); g.fill();
         if (img) {
           const rise = step ? step.lift * 4 : 0;
+          const pop = actionSprite && !still ? M.StudMotion?.pop(now - c.poseAt) : null;
           const sy = step ? step.squash : still ? 1 : M.StudMotion?.idle(now, c.id) ?? 1;
           g.save();
           g.translate(c.x, c.y + 4 - rise);
-          g.scale(step?.flip ? -1 : 1, sy);
+          g.scale((step?.flip ? -1 : 1) * (pop?.sx ?? 1), sy * (pop?.sy ?? 1));
           g.drawImage(img, -28, -84, 56, 84);
           g.restore();
         }

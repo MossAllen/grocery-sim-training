@@ -12,7 +12,8 @@ DIST = os.path.join(ROOT, "dist")
 
 RELEASE = "handoff/2026-11-27_codex-to-all_v0.4.md"
 COMMON = ["docs/RESEARCH.md", "docs/ROADMAP.md", "handoff/TEMPLATE.md", RELEASE,
-          "handoff/2026-11-26_claude-to-all_v0.3.md", "docs/HANDOFF.md"]
+          "handoff/2026-11-26_claude-to-all_v0.3.md", "docs/HANDOFF.md",
+          "handoff/2026-11-28_gpt-ai-polish-prompts.md", "handoff/2026-11-28_walk-preview-acceptance.md"]
 BUNDLES = {
     "handoff-chatgpt-sol": {
         "readme": "handoff/to-chatgpt-sol.md",
@@ -35,6 +36,7 @@ BUNDLES = {
         "files": ["blender/generate_stud_sprites.py", "blender/stud_kit.py",
                   "blender/generate_store_assets.py", "blender/build_checkout_preview.py",
                   ".agents/skills/grocery-blender-vfx/SKILL.md", "handoff/to-blender.md",
+                  "handoff/2026-11-28_w4-stud-poses.md",
                   "docs/ART_SPEC.md", "docs/AUDIO_SPEC.md",
                   "game/assets/audio/scanner.ogg", "game/assets/fonts/kanit/Kanit-SemiBold.ttf", "game/assets/fonts/kanit/OFL.txt",
                   "game/assets/sprites/manifest.js"]

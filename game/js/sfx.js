@@ -39,7 +39,7 @@
     const url = manifest[key];
     if (typeof url !== 'string' || !url) { fallback(); return; }
     try {
-      const original = cache[key] ||= new Audio(url);
+      const original = cache[key] ||= M.createGameAudio(url);
       const clip = original.cloneNode();
       clip.volume = speechActive ? 0.35 : 0.7;
       active = { key, clip };
@@ -105,7 +105,7 @@
       }
       if (typeof url === 'string' && url) {
         let a = cache[key];
-        if (!a) { a = cache[key] = new Audio(url); a.onerror = () => { manifest[key] = null; }; }
+        if (!a) { a = cache[key] = M.createGameAudio(url); a.onerror = () => { manifest[key] = null; }; }
         const b = a.cloneNode(); b.volume = 0.7;
         b.play().catch(() => synth[key] && synth[key]());
         return;
@@ -114,7 +114,7 @@
     },
     startBgm() {
       if (!M.State || !M.State.data.settings.sound || typeof manifest.bgm_store !== 'string') return;
-      if (!bgm) { bgm = new Audio(manifest.bgm_store); bgm.loop = true; }
+      if (!bgm) { bgm = M.createGameAudio(manifest.bgm_store); bgm.loop = true; }
       bgm.volume = speechActive ? 0.125 : 0.25;
       bgm.play().catch(() => {});
     },

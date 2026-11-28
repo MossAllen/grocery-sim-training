@@ -10,6 +10,7 @@
   const RING = 'rgba(255, 214, 90, .2)';
   const WALK_SPEED = 2.4;     // เมตรต่อวินาที ลูกค้าที่เดินเข้ามาที่เคาน์เตอร์
   const STRIDE_LENGTH = 1.1;  // เมตรต่อหนึ่งรอบก้าว (ซ้ายและขวา)
+  const NOTE_SECONDS = 0.56;
 
   // คิวเสียงตาม docs/AUDIO_SPEC.md: เล่นคีย์ใหม่เมื่อมีใน manifest แล้ว ระหว่างรอไฟล์ใช้เสียงเดิมหรือภาพแทน
   const lastCue = {};
@@ -43,6 +44,7 @@
         ส่วน “ลูกค้าอยากพกง่าย” เป็นเหตุผลที่เราคิดต่อ ใช้ตอนวิเคราะห์</p>
       <div class="ow-hud" role="group" aria-label="สถานะภารกิจ"><span class="ow-tag">จำลอง</span>
         <span class="ow-period"></span><b class="ow-clock"></b><span class="ow-progress"></span>
+        <span class="ow-progress-track" aria-hidden="true"><span></span></span>
         ${State.data.settings.sound ? '' : '<span class="ow-muted">🔇 ปิดเสียงอยู่ อ่านคำบรรยายใต้ภาพได้ครบ</span>'}</div>
       <div class="walk-world"><div class="ow-stage"><div class="walk-viewport" tabindex="0" role="region"
           aria-label="ร้านมุมมองบุคคลที่หนึ่ง ใช้ลูกศรหรือ WASD เดิน Q หรือ R หัน และ E จดหลักฐาน">
@@ -64,6 +66,7 @@
     const level = (sense) => !sense ? 'none' : sense.ready ? 'ready' : sense.heard ? 'heard' : sense.seen ? 'seen' : 'none';
 
     const viewport = $('.walk-viewport', el), caption = $('.ow-caption', el), hint = $('.walk-hint', el);
+    const progressTrack = $('.ow-progress-track', el);
     const recordButton = $('[data-ow-record]', el), replayButton = $('[data-ow-replay]', el), next = $('.ow-next', el);
     $('[data-walk-classic]', el).onclick = classic;
 
@@ -83,7 +86,7 @@
       { id: 'b', price: product.big.price, sizeText: product.big.name, icon: product.emoji.big, sprite: sprites[`item_${product.id}_big`] },
       { id: 'checkout' },
     ];
-    const scene = M.ShelfWalkScene.create($('canvas', viewport), { stations, start: START,
+    const scene = M.ShelfWalkScene.create($('canvas', viewport), { stations, start: START, ambience: { stationFocus: false },
       actors: session.periodEvents(periods[0].id).map(actorFor) });
     if (!scene) {
       caption.textContent = 'เครื่องนี้เปิดฉากร้านไม่ได้ กด “ใช้แบบรายการเดิม” เพื่อเล่นรอบนี้';
@@ -163,9 +166,14 @@
       let changed = false;
       for (const actor of scene.actors) {
         if (actor.arriving) continue;
-        const sprite = spriteOf(session.get(actor.id));
+        const event = session.get(actor.id);
+        const sprite = spriteOf(event);
         if (actor.sprite !== sprite) {
-          if (sprite === sprites[session.get(actor.id).pose]) actor.popAt = performance.now() / 1000;
+          if (!reducedMotion && sprite === sprites[event.pose]) {
+            actor.popAt = performance.now() / 1000;
+            actor.previousSprite = actor.sprite;
+            (actor.motion ||= { puffs: [] }).blend = 0;
+          }
           actor.sprite = sprite;
           changed = true;
         }
@@ -191,11 +199,15 @@
         const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
         const t = now / 1000;
         last = now;
-        let moving = false;
+        let moving = false, effects = false, settled = false;
         scene.actors.forEach((actor, n) => {
           const event = session.get(actor.id);
           const motion = actor.motion || (actor.motion = { puffs: [] });
           motion.puffs = motion.puffs.filter((puff) => (puff.age += dt) < 0.5);
+          const noteAge = t - (actor.noteAt ?? -Infinity);
+          const confirm = Math.max(0, 1 - Math.max(0, noteAge) / NOTE_SECONDS);
+          settled ||= motion.confirm > 0 && confirm === 0;
+          motion.confirm = confirm;
           if (actor.arriving) {
             moving = true;
             const [goal] = actor.path;
@@ -213,14 +225,22 @@
             const step = M.StudMotion.walk(actor.walked, STRIDE_LENGTH);
             actor.sprite = sprites[step.frame === 'walk' && sprites[event.walk] ? event.walk : event.sprite];
             if (step.step !== motion.step) motion.puffs.push({ age: 0, side: step.step ? 1 : -1 });
-            Object.assign(motion, { step: step.step, flip: step.flip, lift: step.lift, sx: 1, sy: step.squash, sparkle: 0 });
+            const lean = Math.sin(actor.walked * 2 * Math.PI / STRIDE_LENGTH) * 0.034;
+            Object.assign(motion, { step: step.step, flip: step.flip, lift: step.lift, sx: 1, sy: step.squash, sparkle: 0, lean });
           } else {
-            const pop = M.StudMotion.pop(t - (actor.popAt ?? -9));
-            Object.assign(motion, { flip: false, lift: 0, sx: pop.sx, sy: pop.sy * M.StudMotion.idle(t, n), sparkle: pop.sparkle });
+            const age = Math.max(0, t - (actor.popAt ?? -Infinity));
+            const pop = M.StudMotion.pop(age);
+            const blend = Math.min(1, age / 0.16);
+            effects ||= confirm > 0 || pop.sparkle > 0 || motion.puffs.length > 0;
+            settled ||= motion.sparkle > 0 && pop.sparkle === 0;
+            if (blend === 1) actor.previousSprite = null;
+            const lean = Math.sin(t * 1.75 + n) * 0.012;
+            Object.assign(motion, { flip: false, lift: 0, sx: pop.sx, sy: pop.sy * M.StudMotion.idle(t, n),
+              sparkle: pop.sparkle, blend, lean });
           }
         });
-        // เดินอยู่วาดทุกเฟรม ยืนเฉย ๆ วาดราว 20 ภาพต่อวินาที
-        if (moving || now - drawn > 50) {
+        // วาดทุกเฟรมระหว่างเดิน และลดการวาดเมื่อผู้เล่นไม่ได้สังเกตลูกค้าหรือไม่มีเอฟเฟกต์
+        if (moving || settled || ((focus || effects) && now - drawn > 50)) {
           scene.draw();
           drawn = now;
         }
@@ -267,7 +287,9 @@
       const { added } = session.record(event.id);
       if (added) {
         cue('notebook', 'note', 0.2);
-        Object.assign(scene.actors.find((actor) => actor.id === event.id), { bubble: '✓', bubbleColor: '#cdeccf', ring: 0 });
+        const actor = actorOf(event.id);
+        Object.assign(actor, { bubble: '✓', bubbleColor: '#cdeccf', ring: 0 });
+        if (!reducedMotion) actor.noteAt = performance.now() / 1000;
         scene.draw();
       }
       fillNotebook(event.id);
@@ -311,7 +333,9 @@
       const current = period();
       $('.ow-period', el).textContent = current.label;
       $('.ow-clock', el).textContent = timeLabel(clock);
-      $('.ow-progress', el).textContent = `จด ${session.recordedCount(current.id)}/${events().length} · รวม ${session.recordedCount()}/${session.events.length}`;
+      const recorded = session.recordedCount();
+      $('.ow-progress', el).textContent = `จด ${session.recordedCount(current.id)}/${events().length} · รวม ${recorded}/${session.events.length}`;
+      progressTrack.style.setProperty('--ow-progress', recorded / session.events.length);
       const last = periodIndex === periods.length - 1;
       const ready = last ? session.allRecorded() : session.periodDone(current.id);
       next.textContent = last ? 'ไปวิเคราะห์ในสมุด' : 'ไปช่วงเย็น';

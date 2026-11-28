@@ -109,6 +109,10 @@ async function verifyObserveWalk(browser, url, axeScript) {
       await open();
       assert.equal(await page.locator('.lesson-wrap .lesson').count(), 0, product + ': the walk should open directly');
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width, product + ': viewport overflow');
+      if (height === 568) {
+        const headerHeight = await page.locator('.topbar').evaluate((header) => header.getBoundingClientRect().height);
+        assert.ok(headerHeight <= 64, `Compact header wrapped to ${headerHeight}px`);
+      }
       assert.equal(await page.locator('.ow-tag').innerText(), 'จำลอง');
       assert.equal(await page.locator('.ow-clock').innerText(), '07:00');
       assert.equal(await page.locator('.ow-muted').count(), seed.settings.sound ? 0 : 1, product + ': muted notice');

@@ -20,7 +20,7 @@ async function verifyW4R3Walk(browser, url, axeScript) {
   for (const sc of scenarios) {
     const compact = sc.width === 320;
     const context = await browser.newContext({ viewport: { width: sc.width, height: compact ? 568 : sc.touch ? 760 : 880 }, isMobile: sc.touch,
-      hasTouch: sc.touch, reducedMotion: sc.motion ? 'no-preference' : 'reduce' });
+      hasTouch: sc.touch, reducedMotion: sc.motion ? 'no-preference' : 'reduce', serviceWorkers: 'block' });
     await context.addInitScript((pid) => {
       if (!sessionStorage.getItem('seeded')) {
         localStorage.setItem('mtl-save-v1', JSON.stringify({ version: 1, product: pid, player: '', rounds: {}, sim: {}, portfolio: {},
