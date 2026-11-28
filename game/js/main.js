@@ -11,7 +11,8 @@
   const scriptLoads = new Map();
   let currentScreen = 0;
   // ลิงก์ฉากเดินเปิดรอบทดลองหลังเลือกสินค้า
-  const previewRound = { '#shelf-walk': [1, 1], '#observe-walk': [0, 1], '#promo-walk': [3, 2] }[location.hash];
+  // #report-desk เปิดโต๊ะอ่านผลประกอบการ W6R5 (ยังผ่านบทเรียนและคำถามเช็กก่อนเล่นของรอบเดิม)
+  const previewRound = { '#shelf-walk': [1, 1], '#observe-walk': [0, 1], '#promo-walk': [3, 2], '#report-desk': [5, 4] }[location.hash];
   State.load();
 
   const product = () => M.PRODUCTS[State.data.product];
@@ -350,6 +351,7 @@
       if (a === 'drop' && confirm('ลบข้อมูลร้านและใบงานที่เกี่ยวข้องของ ' + product().th + '? ดาวที่ได้จะยังอยู่')) {
         M.RealW4.drop(pid);
         M.RealWorksheets.drop(pid);
+        M.ReportDesk?.drop(pid);
         mapScreen();
       }
       if (a === 'reset' && confirm('ล้างดาว ผลจำลอง และแฟ้มผลงานทั้งหมด? (ย้อนกลับไม่ได้)')) { State.reset(); titleScreen(); }

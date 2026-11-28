@@ -249,6 +249,8 @@
   M.RealWorksheets = {
     run(el, round, ctx, finish) {
       if (ctx.week === 7 && ctx.idx === 1) { review(el, round, ctx, finish); return true; }
+      // W6R5: โต๊ะอ่านผลประกอบการก่อนคำถามเดิม (ไม่นับดาว) ถ้าโหลดโต๊ะไม่ได้ให้เล่นคำถามเดิมตรง ๆ
+      if (ctx.week === 5 && ctx.idx === 4 && M.ReportDesk) { M.ReportDesk.run(el, round, ctx, finish); return true; }
       const inventory = ctx.week === 2 && ctx.idx < 4;
       if (!inventory && !(ctx.week === 4 && ctx.idx === 2)) return false;
       const key = inventory ? 'stock' : 'post';

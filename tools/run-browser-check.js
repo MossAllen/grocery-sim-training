@@ -257,6 +257,26 @@ async function phasedScenario(browser, url, file, phases) {
   }
 }
 
+// W6R5 โต๊ะอ่านผลประกอบการ: เข้าทาง #report-desk บนจอ 320×568 แบบสัมผัส แล้วตรวจ axe และความกว้างหน้าจอ
+async function verifyReportDesk(browser, url, axeScript) {
+  const problems = [];
+  const context = await browser.newContext({ viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce', serviceWorkers: 'block' });
+  try {
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.goto(`${url}#report-desk`);
+    try { await page.evaluate(require('./browser-check-report-desk.js'), 'hash'); }
+    catch (error) { throw new Error('browser-check-report-desk.js hash', { cause: error }); }
+    if (axeScript) problems.push(...await axe(page, axeScript, 'W6R5 report desk'));
+    if (errors.length) throw new Error(`report desk hash entry: ${errors.join(', ')}`);
+    console.log('browser-check-report-desk.js: #report-desk on 320px passed');
+  } finally {
+    await context.close();
+  }
+  return problems;
+}
+
 async function withGameServer(run, basePath = '/') {
   const server = http.createServer((req, res) => respond(req, res, basePath));
   server.listen(0, '127.0.0.1');
@@ -287,6 +307,8 @@ async function main() {
       checks.push(...await verifyW4R3Walk(browser, url, axeScript));
       await phasedScenario(browser, url, 'browser-check-w4.js', ['seed', 'exercise', 'reload']);
       await phasedScenario(browser, url, 'browser-check-worksheets.js', ['exercise', 'reload']);
+      checks.push(...await verifyReportDesk(browser, url, axeScript));
+      await phasedScenario(browser, url, 'browser-check-report-desk.js', ['states', 'reload']);
     }
     finally { await browser.close(); }
     if (!mode) checks.push(...await lighthouse(url, dependency('lighthouse/cli/index.js'), chromium));

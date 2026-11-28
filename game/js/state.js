@@ -41,8 +41,10 @@
       }
       this.save();
     },
-    addPortfolio(id, week, title, text) {
-      this.data.portfolio[id] = { week, title, text };
+    addPortfolio(id, week, title, text, data) {
+      const entry = { week, title, text };
+      if (data !== undefined) entry.data = data;
+      this.data.portfolio[id] = entry;
       this.save();
     },
     // ชุดข้อมูลโปรสัปดาห์ 4 ตาม GDD §11 แยกตามสินค้า (เซฟ v0.1 ที่ยังไม่มีฟิลด์นี้โหลดได้ตามเดิม)

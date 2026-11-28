@@ -1,0 +1,39 @@
+/* โต๊ะอ่านผลประกอบการ W6R5 — เริ่มจากจอ 320 พิกเซล ปุ่มและตัวเลือกสูงอย่างน้อย 44 พิกเซล */
+.report-desk{display:grid;gap:14px;min-width:0}
+.report-desk h3,.report-desk h4,.report-desk h5{margin:0 0 6px}
+.rd-card{min-width:0;padding:14px}
+.rd-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px}
+.rd-col{min-width:0;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.rd-col dl,.rd-doc{display:grid;grid-template-columns:minmax(0,max-content) minmax(0,1fr);gap:2px 10px;margin:0}
+.rd-col dt,.rd-doc dt{color:var(--muted)}
+.rd-col dd,.rd-doc dd{margin:0;overflow-wrap:anywhere}
+.rd-period{margin:0 0 6px}
+.rd-verdict{margin:10px 0 0}
+.rd-ids{overflow-wrap:anywhere}
+.rd-walk summary{min-height:44px;display:flex;align-items:center;cursor:pointer}
+.rd-files [role=tablist]{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.rd-tab{min-height:44px;flex:1 1 14rem;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);padding:8px 12px;font-weight:700;text-align:left}
+.rd-tab[aria-selected=true]{border-color:var(--brand);background:#fff4ea}
+.rd-tab:focus-visible,.rd-panel:focus-visible,.rd-table:focus-visible,.rd-opt:focus-within{outline:3px solid var(--info);outline-offset:2px}
+.rd-page{margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.rd-page p{margin:4px 0}
+.rd-table{overflow-x:auto}
+.rd-table th{white-space:normal}
+.rd-form{display:grid;gap:10px;margin-top:12px}
+.rd-instruction{margin:0}
+.rd-group{min-width:0;margin:0;padding:10px;border:1px solid var(--line);border-radius:10px}
+.rd-group legend{padding:0 6px;font-weight:700}
+.rd-opt{display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 6px;border-radius:8px}
+.rd-opt input{flex:none;width:22px;height:22px;margin:0}
+.rd-opt span{min-width:0;overflow-wrap:anywhere}
+.report-desk .err{display:block;color:var(--bad)}
+.report-desk .err:empty{display:none}
+.report-desk .rd-ok{color:var(--ok)}
+.rd-row-list{margin:0;padding-left:20px}
+.rd-row-list li{margin:6px 0;overflow-wrap:anywhere}
+.rd-pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:10px;margin-bottom:10px}
+.rd-mini{min-width:0;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.rd-mini p{margin:4px 0;overflow-wrap:anywhere}
+.rd-actions .btn{min-height:44px}
+.rd-go,.rd-row-list .btn{min-height:44px}
+@media (prefers-reduced-motion:reduce){.report-desk *{scroll-behavior:auto;transition:none}}

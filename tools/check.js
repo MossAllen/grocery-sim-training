@@ -296,6 +296,140 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
   }
 }
 
+// ---- 3f) โต๊ะอ่านผลประกอบการ W6R5 (GDD §8): รายงานสมมติ ผลร้านที่ผูกชุดเดียวกัน ตัวอย่าง seed 4001 และแฟ้มผลงาน ----
+{
+  const PM = require(path.join(GAME, 'js/promo-model.js'));
+  const RD = require(path.join(GAME, 'js/report-desk-model.js'));
+  M.PromoModel = PM; M.State = {};
+  try { vm.runInContext(fs.readFileSync(path.join(GAME, 'js/real-w4.js'), 'utf8'), sandbox, { filename: 'js/real-w4.js' }); } catch (e) { err(`load js/real-w4.js: ${e.message}`); }
+  const bad = /undefined|NaN|\[object/;
+  checks++;
+  if (M.RealW4?.real !== RD.REAL) err('W6R5: ป้ายที่มา "จริง" ของโต๊ะต้องตรงกับ M.RealW4.real');
+
+  // รายงานสมมติ: ตัวอย่างใน spec = 56-1 ปี 2025 หน่วยล้านบาท หน้า 24 รายได้ 124 กำไรสุทธิ 14 เงินสดจากการดำเนินงาน 19
+  const th = RD.reportOf('th'), us = RD.reportOf('us');
+  const thOk = (metric) => RD.checkReading(th, { metric, page: RD.expected(th, metric).pageId, period: 'fy2025', unit: metric === 'risk' ? 'none' : 'million-thb' });
+  checks += 6;
+  const thEntry = thOk('netProfit').entry;
+  if (!thEntry || thEntry.page !== 24 || thEntry.periodEnd !== '2025-12-31' || thEntry.currency !== 'THB' || thEntry.unit !== 'ล้านบาท' || thEntry.docId !== 'SIM-TH-56-1-2025') err('W6R5: รายการกำไรสุทธิของบริษัทไทยตัวอย่างต้องเป็นหน้า 24 งวด 2025-12-31 THB ล้านบาท');
+  if ([124, 14, 19].join() !== ['revenue', 'netProfit', 'opCash'].map((m) => RD.expected(th, m).value).join()) err('W6R5: ตัวเลขรายงานไทยต้องเป็น 124 / 14 / 19');
+  const sameKinds = th.periods.every((p, i) => p.id === us.periods[i].id);
+  if (!sameKinds || th.docId === us.docId || th.periods[0].end === us.periods[0].end) err('W6R5: สองรายงานต้องมีรหัสเอกสารและวันสิ้นงวดต่างกัน');
+  const thC = RD.contrastFor(th), usC = RD.contrastFor(us);
+  if (thC.relation !== 'สูงกว่า' || usC.relation !== 'ต่ำกว่า' || thC.gap !== 5 || usC.gap !== -88) err('W6R5: กำไรกับเงินสดของสองบริษัทต้องต่างทิศ (ไทย +5 สหรัฐ −88)');
+  if (RD.checkContrast({ profit: 'netProfit', cash: 'opCash' }).ok !== true || RD.checkContrast({ profit: 'opCash', cash: 'opCash' }).ok || RD.checkContrast({}).ok) err('W6R5: ตรวจข้อเทียบกำไรกับเงินสดผิด');
+  for (const report of RD.REPORTS) {
+    for (const metric of RD.METRICS) {
+      checks += 5;
+      const want = RD.expected(report, metric.id);
+      const picks = { metric: metric.id, page: want.pageId, period: want.periodId, unit: want.unitId };
+      const good = RD.checkReading(report, picks);
+      if (!good.ok || !good.entry || bad.test(RD.entryText(good.entry))) { err(`W6R5 ${report.key} ${metric.id}: คำตอบถูกต้องต้องผ่านและเรียงข้อความได้`); continue; }
+      for (const [field, wrong] of [['page', report.pages.find((p) => p.id !== want.pageId).id], ['period', report.periods.find((p) => p.id !== want.periodId).id], ['unit', report.units.find((u) => u.id !== want.unitId).id]]) {
+        const r = RD.checkReading(report, { ...picks, [field]: wrong });
+        if (r.ok || !r.errors[field] || r.entry || bad.test(r.errors[field])) err(`W6R5 ${report.key} ${metric.id}: เลือก ${field} ผิดต้องไม่ผ่านและชี้ข้อที่ต้องตรวจ`);
+      }
+      if (RD.checkReading(report, { ...picks, page: '' }).ok) err(`W6R5 ${report.key} ${metric.id}: ไม่เลือกหน้าต้องไม่ผ่าน`);
+    }
+  }
+
+  // ตัวอย่างฝึก seed 4001: น้ำดื่ม 25 → 32 ชิ้น ยอดขาย 500 → 604 บาท ผลหลังค่าโปร 200 → 190 บาท คำตัดสิน ปรับ
+  for (const pid of Object.keys(M.PRODUCTS)) {
+    const s = RD.sampleStore(M.PRODUCTS[pid]), n = s.columns.normal, p = s.columns.promo;
+    checks += 3;
+    if (s.type !== 'sample' || s.runId !== null || s.baselineId !== null || s.seed !== 4001 || /^จริง/.test(s.columns.normal.provenance)) err(`W6R5 ${pid}: ตัวอย่างฝึกต้องกำกับว่าไม่ใช่ผลผู้เล่นและไม่มีรหัสชุด`);
+    if (![n.qty, n.sales, n.cogs, n.result, p.qty, p.sales, p.cogs, p.expense, p.result, s.delta].every(Number.isSafeInteger) || bad.test(RD.portfolioEntry(M.PRODUCTS[pid], s, {}, [thC, usC], 0).text)) err(`W6R5 ${pid}: ตัวอย่างฝึกต้องเป็นสตางค์จำนวนเต็มและแสดงผลได้`);
+    if (pid === 'water') {
+      const got = [n.qty, p.qty, n.sales, p.sales, n.result, p.result, s.verdict.label, n.minutes].join('/');
+      if (got !== '25/32/50000/60400/20000/19000/ปรับ/30') err(`W6R5 น้ำดื่ม seed 4001 ไม่ตรง GDD §8: ได้ ${got}`);
+    }
+  }
+
+  // ผลร้านที่เป็นของผู้เล่น: ต้องมีรหัสฐาน แผน ผลครบและตรงกัน ใช้ M.RealW4.evidence ตัวจริงเลือกชุดปัจจุบัน
+  const water = M.PRODUCTS.water;
+  const pick = (store) => RD.resolveStore(water, M.RealW4.evidence({ product: water, state: { sim: { promoV2: { water: store } } } }), store);
+  const base = { id: 'base-a', version: 2, source: 'จำลอง', seed: 7, slot: 'pm', event: 'none', T: 30, K0: 60, P: 2000, C: 1200, N0: 20, R0: 40000, COGS0: 24000, G0: 16000 };
+  const plan = { id: 'plan-a', baselineId: 'base-a', practiceBase: false, B: 3600, F: 3000 };
+  const run = { id: 'run-a', baselineId: 'base-a', planId: 'plan-a', source: 'จำลอง', B: 3600, F: 3000, S: 8, U: 13, N1: 29, R1: 54800, COGS1: 34800, G1: 17000, G0: 16000, delta: 1000, decision: 'ทำต่อ', route: 'list', practiceBase: false };
+  const sim = pick({ baseline: base, plan, run });
+  checks += 8;
+  if (!sim.ok || sim.card.type !== 'player' || sim.card.runId !== 'run-a' || sim.card.verdict.label !== 'ทำต่อ' || sim.card.columns.promo.qty !== 29 || RD.baht(sim.card.columns.promo.sales) !== '548' || sim.card.walkEvidence.length) err('W6R5: ผลจำลองของผู้เล่นที่ผูกชุดเดียวกัน (ไม่มีหลักฐานฉากเดิน) ต้องแสดงได้');
+  const walked = pick({ baseline: base, plan, run: { ...run, route: 'walk', evidence: [{ id: 'w4r3-sign', text: '<b>x</b>' }, { id: 'w4r3-stock', text: 'สต็อกเปิด 60' }, null, { text: 'ไม่มีรหัส' }] } });
+  if (!walked.ok || walked.card.walkEvidence.map((e) => e.id).join() !== 'w4r3-sign,w4r3-stock') err('W6R5: หลักฐานฉากเดินที่ไม่มีรหัสต้องถูกข้าม ไม่ทำให้ล้ม');
+  const rejects = {
+    'no-baseline': pick(undefined), 'no-baseline-empty': pick({ baseline: null, plan: null, run: null }),
+    practice: pick({ baseline: null, plan: { ...plan, baselineId: 'practice-4002', practiceBase: true }, run: { ...run, baselineId: 'practice-4002', practiceBase: true } }),
+    'no-plan': pick({ baseline: { ...base, id: 'base-b' }, plan, run }),
+    'no-run': pick({ baseline: base, plan, run: { ...run, planId: null } }),
+    'no-run-malformed': pick({ baseline: {}, plan: {} }),
+    unlinked: pick({ baseline: { ...base, id: '' }, plan: { ...plan, baselineId: '' }, run: { ...run, baselineId: '' } }),
+    legacy: pick({ baseline: { ...base, source: 'เก่า' }, plan, run }),
+    numbers: pick({ baseline: base, plan, run: { ...run, R1: 548.5 } }),
+  };
+  const want = { 'no-baseline': 'no-baseline', 'no-baseline-empty': 'no-baseline', practice: 'practice', 'no-plan': 'no-plan', 'no-run': 'no-run', 'no-run-malformed': 'no-run', unlinked: 'unlinked', legacy: 'legacy', numbers: 'numbers' };
+  for (const [name, reason] of Object.entries(want)) {
+    checks++;
+    const r = rejects[name];
+    if (r.ok || r.reason !== reason || !r.message || !Array.isArray(r.go)) err(`W6R5 เหตุปฏิเสธ ${name}: ต้องไม่รับเป็นผลของผู้เล่นและให้เหตุผล ${reason}`);
+  }
+  if (rejects['no-plan'].go.join() !== '3,1' || rejects['no-baseline'].go.join() !== '3,0' || rejects.practice.go.join() !== '3,2') err('W6R5: ปุ่มกลับต้องพาไป W4R1/W4R2/W4R3 ตามชุดที่ขาด');
+
+  // ผลจริง: เทียบไม่ได้ต้องไม่สรุปผลโปร ส่วนผลคาดการณ์ comparable=false ต้องกำกับตามแบบจำลองและยังรับได้
+  const period = { day: '2026-11-01', start: '09:00', duration: 30, endDay: '2026-11-01', end: '09:30' };
+  const inputs = { origin: 'บันทึกยอดขายร้าน', reference: 'OBS-1', weather: 'ปกติ', supply: 'มีสินค้าตลอด', competitor: 'ไม่มี', duration: 30, start: '09:00' };
+  const realBase = { ...base, id: 'base-r', source: RD.REAL, period, inputs };
+  const realPlan = { ...plan, id: 'plan-r', baselineId: 'base-r', practiceBase: undefined };
+  const realRun = { ...run, id: 'run-r', baselineId: 'base-r', planId: 'plan-r', source: RD.REAL, kind: 'observed', period, inputs: { ...inputs, weather: 'ฝนตก', matches: true }, comparable: false, decision: null, route: undefined, practiceBase: undefined, sourceByField: { R1: 'คำนวณจากข้อมูลจริง', F: RD.REAL } };
+  const inc = pick({ baseline: realBase, plan: realPlan, run: realRun });
+  checks += 6;
+  if (!inc.ok || inc.card.verdict.decision !== null || inc.card.verdict.label !== RD.INSUFFICIENT || inc.card.comparable !== false || !inc.card.reasons.some((x) => /อากาศ/.test(x)) || inc.card.columns.promo.expenseSource !== RD.REAL) err('W6R5: ผลจริงที่เทียบไม่ได้ต้องแสดง "หลักฐานยังไม่พอ" พร้อมเงื่อนไขที่ต่าง');
+  const comp = pick({ baseline: realBase, plan: realPlan, run: { ...realRun, inputs: { ...inputs, matches: true }, comparable: true, decision: 'ทำต่อ' } });
+  if (!comp.ok || comp.card.verdict.label !== 'ทำต่อ' || comp.card.comparable !== true || comp.card.columns.promo.provenance !== 'คำนวณจากข้อมูลจริง') err('W6R5: ผลจริงที่เทียบได้ต้องแสดงคำตัดสินและที่มาของคอลัมน์');
+  const fc = pick({ baseline: realBase, plan: realPlan, run: { ...realRun, kind: 'forecast', source: RD.SIM, comparable: false, decision: 'ปรับ', sourceByField: { F: RD.PLAN } } });
+  if (!fc.ok || fc.card.verdict.label !== 'ปรับ ตามแบบจำลอง' || fc.card.comparable !== false || fc.card.columns.promo.title !== 'ผลโปรจำลอง' || fc.card.columns.normal.provenance !== RD.REAL || fc.card.columns.promo.expenseSource !== RD.PLAN) err('W6R5: ผลคาดการณ์ต้องเป็น "ตามแบบจำลอง" แยกยอดปกติจริงกับผลโปรจำลอง แม้ comparable=false');
+  if (fc.card.columns.normal.period !== '2026-11-01 09:00–09:30' || fc.card.columns.normal.minutes !== 30) err('W6R5: ช่วงของฐานจริงต้องแสดงวันที่ เวลา และจำนวนนาที');
+
+  const invalidStores = [
+    [{ baseline: realBase, plan: realPlan, run: { ...realRun, kind: undefined } }, 'legacy'],
+    [{ baseline: realBase, plan: realPlan, run: { ...realRun, kind: 'forecast' } }, 'legacy'],
+    [{ baseline: realBase, plan: realPlan, run: { ...realRun, source: RD.SIM } }, 'legacy'],
+    [{ baseline: base, plan, run: { ...run, kind: 'forecast' } }, 'legacy'],
+    [{ baseline: { ...realBase, period: null }, plan: realPlan, run: realRun }, 'baseline-period'],
+    [{ baseline: realBase, plan: realPlan, run: { ...realRun, period: undefined } }, 'period'],
+    [{ baseline: realBase, plan: realPlan, run: { ...realRun, period: { ...period, end: '09:50' } } }, 'period'],
+  ];
+  for (const [store, reason] of invalidStores) {
+    checks++;
+    if (pick(store).reason !== reason) err(`W6R5: ชุดผลที่มีที่มาหรือช่วงเวลาขัดกันต้องถูกปฏิเสธ (${reason})`);
+  }
+  const lateRun = { ...realRun, period: { day: '2026-11-02', start: '23:55', duration: 15, endDay: '2026-11-03', end: '00:10' },
+    inputs: { ...inputs, origin: 'นับที่ร้าน', reference: 'OBS-PROMO', start: '23:55', duration: 15, matches: true }, comparable: true, decision: 'ทำต่อ' };
+  const late = pick({ baseline: realBase, plan: realPlan, run: lateRun });
+  checks += 4;
+  if (!late.ok || late.card.columns.promo.period !== '2026-11-02 23:55–2026-11-03 00:10' ||
+      late.card.columns.normal.origin !== 'บันทึกยอดขายร้าน (OBS-1)' || late.card.columns.promo.origin !== 'นับที่ร้าน (OBS-PROMO)') err('W6R5: ช่วงโปรข้ามวันและแหล่งอ้างอิงของทั้งสองช่วงต้องอยู่คนละคอลัมน์');
+  if (late.card.verdict.decision !== null || !late.card.reasons.some((x) => /30 กับ 15/.test(x)) || !late.card.reasons.some((x) => /09:00 กับ 23:55/.test(x))) err('W6R5: เวลาของสองช่วงที่ต่างกันต้องเตือนแม้เซฟเดิมระบุว่าเทียบได้');
+  const missingFactors = pick({ baseline: realBase, plan: realPlan, run: { ...lateRun, inputs: undefined } });
+  if (!missingFactors.ok || missingFactors.card.verdict.decision !== null || bad.test(missingFactors.card.reasons.join()) || !missingFactors.card.reasons.includes('อากาศยังไม่ทราบ')) err('W6R5: ข้อมูลสภาพแวดล้อมที่ขาดต้องแสดงว่ายังไม่ทราบ');
+  if (fc.card.columns.promo.origin !== null || fc.card.columns.normal.origin !== 'บันทึกยอดขายร้าน (OBS-1)') err('W6R5: ผลคาดการณ์อ้างรหัสของยอดปกติจริงได้เฉพาะฝั่งปกติ');
+
+  // แฟ้มผลงาน: ผลร้านกับรายการอ้างอิงรายงานต้องมีรหัสครบ ไม่มีค่าว่างหรือ NaN และเก็บโครงสร้างไว้ตรวจซ้ำ
+  const rows = { th: ['netProfit', 'opCash'].map((m) => thOk(m).entry), us: [RD.checkReading(us, { metric: 'risk', page: 'risk', period: 'fy2025', unit: 'none' }).entry] };
+  const out = RD.portfolioEntry(water, sim.card, rows, [thC, usC], 1);
+  checks += 4;
+  const need = ['base-a', 'plan-a', 'run-a', 'SIM-TH-56-1-2025', 'SIM-US-10K-FY2025', 'หน้า 24', '2025-12-31', 'THB', 'ล้านบาท', 'Item 1A'];
+  if (out.key !== 'w6-report-desk-water' || need.some((t) => !out.text.includes(t)) || bad.test(out.text)) err('W6R5: แฟ้มผลงานต้องมีรหัสฐาน แผน ผล รหัสเอกสาร หน้า งวด สกุลเงิน และหน่วย');
+  if (out.data.store.runId !== 'run-a' || out.data.store.baselineId !== 'base-a' || out.data.reports.length !== 2 || out.data.reports[0].entries[0].page !== 24 || out.data.reports[0].entries[0].currency !== 'THB') err('W6R5: ข้อมูลโครงสร้างในแฟ้มผลงานไม่ครบ');
+  const outLate = RD.portfolioEntry(water, late.card, rows, [thC, usC], 1);
+  checks++;
+  if (outLate.data.store.runSource !== RD.REAL || outLate.data.store.origins.normal !== 'บันทึกยอดขายร้าน (OBS-1)' ||
+      outLate.data.store.origins.promo !== 'นับที่ร้าน (OBS-PROMO)' || outLate.data.store.periods.promo !== late.card.columns.promo.period ||
+      !outLate.text.includes('แหล่งข้อมูล นับที่ร้าน (OBS-PROMO)')) err('W6R5: แฟ้มผลงานต้องเก็บที่มาและช่วงเวลาของผลจริงแยกกัน');
+  const outSample = RD.portfolioEntry(water, RD.sampleStore(water), { th: [], us: [] }, [thC, usC], 1);
+  if (!/ตัวอย่างฝึก/.test(outSample.text) || outSample.data.store.runId !== null) err('W6R5: แฟ้มผลงานที่ใช้ตัวอย่างต้องกำกับว่าเป็นตัวอย่างและไม่อ้างรหัสผลของผู้เล่น');
+  if (JSON.stringify(out.data) !== JSON.stringify(JSON.parse(JSON.stringify(out.data)))) err('W6R5: ข้อมูลโครงสร้างต้องเป็น JSON ที่บันทึกลง localStorage ได้');
+}
+
 // ---- 3c) index.html โหลดทุกไฟล์ใน game/js ด้วยเลขเวอร์ชันเดียวกัน (กันแคชเก่าปนใหม่) ----
 {
   const html = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8');

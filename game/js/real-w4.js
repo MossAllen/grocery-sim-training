@@ -108,7 +108,7 @@
     const store = ctx.state.sim?.promoV2?.[ctx.product.id];
     const baseline = store?.baseline || null;
     const plan = baseline && store.plan?.baselineId === baseline.id ? store.plan : null;
-    const run = plan && store.run?.baselineId === baseline.id && store.run.planId === plan.id ? store.run : null;
+    const run = plan && store.run && store.run.baselineId === baseline.id && store.run.planId === plan.id ? store.run : null;
     return { baseline, plan, run };
   }
 

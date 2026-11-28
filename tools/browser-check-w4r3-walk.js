@@ -22,10 +22,9 @@ async function verifyW4R3Walk(browser, url, axeScript) {
     const context = await browser.newContext({ viewport: { width: sc.width, height: compact ? 568 : sc.touch ? 760 : 880 }, isMobile: sc.touch,
       hasTouch: sc.touch, reducedMotion: sc.motion ? 'no-preference' : 'reduce', serviceWorkers: 'block' });
     await context.addInitScript((pid) => {
-      if (!sessionStorage.getItem('seeded')) {
+      if (!localStorage.getItem('mtl-save-v1')) {
         localStorage.setItem('mtl-save-v1', JSON.stringify({ version: 1, product: pid, player: '', rounds: {}, sim: {}, portfolio: {},
           lessons: { '3-2': true }, settings: { sound: true, tts: false, unlockAll: true } }));
-        sessionStorage.setItem('seeded', '1');
       }
     }, sc.product);
     try {
@@ -128,6 +127,23 @@ async function verifyW4R3Walk(browser, url, axeScript) {
       assert.deepEqual([run.route, run.S, run.U, run.COGS1, run.G1, run.decision, run.baselineId, run.planId, run.seed],
         ['walk', model.S, model.U, model.COGS1, model.G1, model.decision, 'base-test', 'plan-test', sc.seed]);
       assert.deepEqual(run.evidence.map((e) => e.id), ['w4r3-sign', 'w4r3-stock', 'w4r3-counter']);
+
+      if (sc.product === 'water' && sc.seed === 4001) {
+        const desk = await context.newPage();
+        try {
+          desk.on('pageerror', (error) => errors.push(error.message));
+          await desk.goto(`${url}#report-desk`);
+          await desk.evaluate(require('./browser-check-report-desk.js'), 'hash');
+          assert.ok((await desk.locator('.rd-ids').innerText()).includes(run.id), 'W6R5 did not open the saved W4R3 run');
+          const amounts = await desk.locator('.rd-cols dd b').allTextContents();
+          assert.deepEqual(amounts, ['200 บาท', '190 บาท']);
+          await desk.locator('.rd-walk summary').click();
+          assert.deepEqual(await desk.locator('.rd-walk li small').allTextContents(), run.evidence.map((e) => e.id));
+          console.log('W4R3 saved walk → W6R5: matching run, 200/190 baht and three evidence points');
+        } finally {
+          await desk.close();
+        }
+      }
 
       // List route with the same base and plan: same numbers and the same 3/3.
       await use('#modal [data-a="again"]');
