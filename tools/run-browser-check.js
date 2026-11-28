@@ -277,6 +277,26 @@ async function verifyReportDesk(browser, url, axeScript) {
   return problems;
 }
 
+// W5R5 โต๊ะคำสั่ง Limit: เข้าทาง #limit-desk บนจอ 320×568 แบบสัมผัส ส่งคำสั่งแล้วเดินเวลา ตรวจ axe และความกว้างหน้าจอ
+async function verifyLimitDesk(browser, url, axeScript) {
+  const problems = [];
+  const context = await browser.newContext({ viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce', serviceWorkers: 'block' });
+  try {
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.goto(`${url}#limit-desk`);
+    try { await page.evaluate(require('./browser-check-limit-desk.js'), 'hash'); }
+    catch (error) { throw new Error('browser-check-limit-desk.js hash', { cause: error }); }
+    if (axeScript) problems.push(...await axe(page, axeScript, 'W5R5 limit desk'));
+    if (errors.length) throw new Error(`limit desk hash entry: ${errors.join(', ')}`);
+    console.log('browser-check-limit-desk.js: #limit-desk on 320px passed');
+  } finally {
+    await context.close();
+  }
+  return problems;
+}
+
 async function withGameServer(run, basePath = '/') {
   const server = http.createServer((req, res) => respond(req, res, basePath));
   server.listen(0, '127.0.0.1');
@@ -309,6 +329,8 @@ async function main() {
       await phasedScenario(browser, url, 'browser-check-worksheets.js', ['exercise', 'reload']);
       checks.push(...await verifyReportDesk(browser, url, axeScript));
       await phasedScenario(browser, url, 'browser-check-report-desk.js', ['states', 'reload']);
+      checks.push(...await verifyLimitDesk(browser, url, axeScript));
+      await phasedScenario(browser, url, 'browser-check-limit-desk.js', ['states', 'reload']);
     }
     finally { await browser.close(); }
     if (!mode) checks.push(...await lighthouse(url, dependency('lighthouse/cli/index.js'), chromium));

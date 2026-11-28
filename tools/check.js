@@ -430,6 +430,90 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
   if (JSON.stringify(out.data) !== JSON.stringify(JSON.parse(JSON.stringify(out.data)))) err('W6R5: ข้อมูลโครงสร้างต้องเป็น JSON ที่บันทึกลง localStorage ได้');
 }
 
+// ---- 3g) โต๊ะคำสั่ง Limit W5R5 (GDD §7, §8): กติกาฝึก การตรวจคำสั่ง การจับคู่ และแฟ้มผลงาน ----
+{
+  const LD = require(path.join(GAME, 'js/limit-desk-model.js'));
+  const bad = /undefined|NaN|\[object|null/;
+  const m1 = LD.missionOf(1), m2 = LD.missionOf(2), m3 = LD.missionOf(3);
+  checks += 6;
+  if (LD.PRACTICE !== 'ค่าฝึกในเกม' || !/เงินสมมติ/.test(LD.SAFETY) || !/ไม่ส่งเข้าตลาดจริง/.test(LD.SAFETY) || !/ไม่ใช่คำแนะนำการลงทุน/.test(LD.SAFETY)) err('W5R5: ต้องกำกับค่าฝึกในเกมและข้อความเงินสมมติ ไม่ส่งเข้าตลาดจริง ไม่ใช่คำแนะนำการลงทุน');
+  if (LD.BAND.floor !== 700 || LD.BAND.ceiling !== 1300 || LD.LOT !== 100 || LD.CASH0 !== 1000000) err('W5R5: กติกาฝึกต้องเป็นกรอบ 7.00–13.00 หน่วย 100 หุ้น และเงินเริ่มต้น 10,000 บาท');
+  if (LD.tickFor(995) !== 5 || LD.tickFor(1000) !== 10 || LD.stepUp(995) !== 1000 || LD.stepDown(1000) !== 995 || LD.stepDown(1010) !== 1000 || LD.stepUp(1000) !== 1010) err('W5R5: ช่วงราคาต้องเปลี่ยนจาก 0.05 เป็น 0.10 ที่ 10.00 บาท');
+  if (LD.band(980).ceiling !== 1270 || LD.band(980).floor !== 690) err('W5R5: กรอบราคาต้องปัดเข้าในกรอบให้ตรงช่วงราคา (ปิด 9.80 → 6.90–12.70)');
+  if (Object.keys(M.PRODUCTS).some((pid) => !LD.COMPANIES[pid] || !/^SIM-[A-Z]{3}$/.test(LD.COMPANIES[pid].code))) err('W5R5: ทุกกลุ่มสินค้าต้องมีบริษัทสมมติที่ชื่อย่อขึ้นต้น SIM-');
+  if (!LD.LINKS.every((link) => /^https:\/\/www\.set\.or\.th\/th\/market\/information\/trading-procedure\//.test(link.url)) || LD.LINKS.length !== 3) err('W5R5: ลิงก์ตรวจค่าจริงต้องเป็นหน้าทางการของ SET 3 หน้าตาม GDD §7');
+
+  // ตัวอย่างที่คำนวณซ้ำได้: ภารกิจ 1 จับคู่ทันที · ภารกิจ 2 รอ → บางส่วน → ครบ · ภารกิจ 3 คิวราคาเดียวกันแล้วสิ้นสุด
+  const r1 = LD.simulate(m1, { price: 1000, qty: 100 }), r2 = LD.simulate(m2, { price: 995, qty: 200 }), r3 = LD.simulate(m3, { price: 990, qty: 300 });
+  const got = (r) => [r.status, r.filled, r.expired, r.cost, r.cause, r.seen.join('>')].join('/');
+  checks += 4;
+  if (got(r1) !== 'filled/100/0/100000/filled/filled') err(`W5R5 ภารกิจ 1: ต้องจับคู่ครบ 100 หุ้นที่ 10.00 ทันที ได้ ${got(r1)}`);
+  if (got(r2) !== 'filled/200/0/199000/filled/open>partial>filled' || r2.trades.map((t) => `${t.at}:${t.qty}@${t.price}`).join() !== '10:20:100@995,10:50:100@995') err(`W5R5 ภารกิจ 2: ต้องรอ แล้วจับคู่ 100 + 100 หุ้นที่ 9.95 ได้ ${got(r2)}`);
+  if (got(r3) !== 'expired/100/200/99000/queue/open>partial>expired' || !r3.queueHit) err(`W5R5 ภารกิจ 3: คิวที่ 9.90 ต้องได้ 100 หุ้นแล้วสิ้นสุด 200 หุ้น ได้ ${got(r3)}`);
+  const runs = [r1, r2, r3].map((result, i) => ({ missionId: i + 1, attempts: 1, result }));
+  const w = LD.wallet(runs);
+  if (w.cash !== 602000 || w.shares !== 400 || w.spent !== 398000) err(`W5R5: พอร์ตหลัง 3 ภารกิจต้องเหลือ 6,020 บาท และถือ 400 หุ้น ได้ ${LD.baht(w.cash)} / ${w.shares}`);
+
+  // ทุกคำสั่งที่ถูกกติกา: ผลไม่ล้ม ไม่มีค่าว่าง เหตุผลอยู่ในรายการ และภารกิจที่ต้องได้ครบจะไม่ผ่านถ้ายังเหลือ
+  for (const m of LD.MISSIONS) {
+    for (let p = LD.BAND.floor; p <= m.goal.cap; p = LD.stepUp(p)) {
+      checks++;
+      const check = LD.validateOrder(m, { price: LD.price(p), qty: String(m.goal.qty) }, LD.CASH0);
+      if (!check.ok) { err(`W5R5 ภารกิจ ${m.id}: ราคา ${LD.price(p)} ตามกติกาต้องส่งได้`); continue; }
+      const r = LD.simulate(m, check.order);
+      const texts = r.steps.map((s) => s.text).join(' ') + LD.runLine({ missionId: m.id, attempts: 1, result: r });
+      if (bad.test(texts) || !LD.CAUSES.some((c) => c.id === r.cause) || !['filled', 'expired'].includes(r.status) || r.filled + r.expired !== m.goal.qty) err(`W5R5 ภารกิจ ${m.id} ราคา ${LD.price(p)}: ผลไม่ครบหรือข้อความผิด`);
+      if (m.goal.needFill && r.status !== 'filled' && (LD.passed(m, r, true) || r.trades.length || !LD.retryHint(m, r))) err(`W5R5 ภารกิจ ${m.id} ราคา ${LD.price(p)}: คำสั่งที่ยังไม่ครบต้องไม่ผ่าน ไม่มีรายการจับคู่ และมีคำแนะนำให้ส่งใหม่`);
+      const wrong = LD.CAUSES.find((c) => c.id !== r.cause).id;
+      if (!LD.checkCause(r, r.cause).ok || LD.checkCause(r, wrong).ok || !LD.checkCause(r, wrong).error || bad.test(LD.checkCause(r, wrong).error) || LD.checkCause(r, '').ok) err(`W5R5 ภารกิจ ${m.id} ราคา ${LD.price(p)}: ตรวจเหตุผลผิด`);
+    }
+  }
+  checks += 3;
+  if (LD.simulate(m1, { price: 995, qty: 100 }).cause !== 'no-seller' || LD.simulate(m2, { price: 990, qty: 200 }).cause !== 'no-seller' || LD.simulate(m3, { price: 985, qty: 300 }).cause !== 'no-seller') err('W5R5: ราคาที่ต่ำกว่าผู้ขายทั้งวันต้องสิ้นสุดเพราะไม่มีคนเสนอขายที่ราคานั้น');
+  if (!LD.passed(m3, r3, true) || LD.passed(m3, r3, false) || !LD.passed(m1, r1, true)) err('W5R5: ภารกิจ 3 ผ่านเมื่ออธิบายถูกแม้ได้ไม่ครบ ภารกิจอื่นต้องได้ครบ');
+  if (LD.simulate(m2, { price: 995, qty: 200 }).steps.some((s, i, all) => i && s.status === 'open' && all[i - 1].status !== 'open')) err('W5R5: สถานะต้องไม่ย้อนจากจับคู่กลับไปรอ');
+
+  // ตรวจคำสั่งก่อนส่ง: แต่ละกติกาต้องชี้ช่องที่ผิด
+  const v = (order, cash = LD.CASH0) => LD.validateOrder(m2, order, cash).errors;
+  const cases = [
+    [{ price: '9.93', qty: '200' }, 'price', /0\.05/], [{ price: '10.05', qty: '200' }, 'price', /0\.10/],
+    [{ price: '6.95', qty: '200' }, 'price', /กรอบราคา/], [{ price: '13.10', qty: '200' }, 'price', /กรอบราคา/],
+    [{ price: '10.00', qty: '200' }, 'price', /ไม่เกิน 9\.95/], [{ price: 'abc', qty: '200' }, 'price', /ตัวเลข/], [{ price: '9.955', qty: '200' }, 'price', /ตัวเลข/],
+    [{ price: '9.95', qty: '150' }, 'qty', /ทวีคูณของ 100/], [{ price: '9.95', qty: '100' }, 'qty', /200 หุ้น/], [{ price: '9.95', qty: '' }, 'qty', /จำนวนเต็ม/],
+    [{ price: '9.95', qty: '200', cash: 100000 }, 'cash', /1,990.*1,000/],
+  ];
+  for (const [order, field, re] of cases) {
+    checks++;
+    const errors = v(order, order.cash);
+    if (!errors[field] || !re.test(errors[field]) || bad.test(errors[field])) err(`W5R5: คำสั่ง ${JSON.stringify(order)} ต้องชี้ช่อง ${field}`);
+  }
+  checks += 2;
+  if (!LD.validateOrder(m2, { price: '๙.๙๕', qty: '๒๐๐' }, LD.CASH0).ok || LD.validateOrder(m2, { price: '9.95', qty: '200' }, LD.CASH0).order.reserve !== 199000) err('W5R5: ต้องรับเลขไทยและกันเงินเท่าราคา × จำนวน');
+  if (LD.validateOrder(m3, { price: '9.90', qty: '300' }, 296999).ok || !LD.validateOrder(m3, { price: '9.90', qty: '300' }, 297000).ok) err('W5R5: เงินพอดีต้องส่งได้ และขาด 1 สตางค์ต้องส่งไม่ได้');
+
+  // คำถามสรุปและช่องจดค่าจาก SET
+  checks += 6;
+  if (!LD.checkFinal({ level: 'at-or-below', unmatched: 'no-seller' }).ok || LD.checkFinal({ level: 'exact', unmatched: 'no-seller' }).ok || Object.keys(LD.checkFinal({}).errors).length !== 2) err('W5R5: ตรวจคำถามสรุปผิด');
+  const today = '2026-11-28';
+  if (LD.checkSetNote({}, today).note !== null || !LD.checkSetNote({}, today).ok) err('W5R5: ไม่จดค่าจาก SET ต้องบันทึกได้');
+  if (LD.checkSetNote({ hours: '10:00' }, today).ok || LD.checkSetNote({ date: today }, today).ok) err('W5R5: จดค่าจาก SET ต้องมีทั้งวันที่และค่าอย่างน้อยหนึ่งช่อง');
+  if (LD.checkSetNote({ date: '2026-11-29', lot: '100' }, today).ok || LD.checkSetNote({ date: '2026-02-30', lot: '100' }, today).ok) err('W5R5: วันที่ตรวจต้องเป็นวันจริงและไม่เกินวันนี้');
+  const note = LD.checkSetNote({ date: today, hours: '  ' + 'ก'.repeat(100), lot: '100 หุ้น' }, today).note;
+  if (!note || note.hours.length !== 80 || note.lot !== '100 หุ้น' || note.band !== '') err('W5R5: ค่าที่จดต้องตัดช่องว่างและยาวไม่เกิน 80 ตัวอักษร');
+  if (LD.isoDay(new Date(2026, 0, 5)) !== '2026-01-05') err('W5R5: วันที่วันนี้ต้องอยู่ในรูป YYYY-MM-DD');
+
+  // แฟ้มผลงานสัปดาห์ 5: รหัสคำสั่ง รายการจับคู่ พอร์ต และป้ายเงินสมมติครบ ข้อความที่ผู้เล่นจดไม่ทำให้ข้อมูลเสีย
+  for (const pid of Object.keys(M.PRODUCTS)) {
+    checks += 2;
+    const out = LD.portfolioEntry(M.PRODUCTS[pid], runs, pid === 'water' ? note : null, 1);
+    const need = [LD.SAFETY, LD.COMPANIES[pid].code, 'ค่าฝึกในเกม', 'SIM-ORD-1', 'SIM-ORD-3-T1', '6,020 บาท', '400 หุ้น', 'รอจับคู่ → จับคู่บางส่วน → สิ้นสุด', pid === 'water' ? 'วันที่ตรวจ 2026-11-28' : 'ยังไม่ได้จดค่าจริงจากเว็บ SET'];
+    if (out.key !== `w5-limit-desk-${pid}` || need.some((t) => !out.text.includes(t)) || /undefined|NaN|\[object/.test(out.text)) err(`W5R5 ${pid}: แฟ้มผลงานต้องมีป้ายเงินสมมติ รหัสคำสั่ง รายการจับคู่ และพอร์ต`);
+    if (JSON.stringify(out.data) !== JSON.stringify(JSON.parse(JSON.stringify(out.data))) || out.data.runs.length !== 3 || out.data.wallet.cash !== 602000 || out.data.runs[2].cause !== 'queue' || out.data.practice !== true) err(`W5R5 ${pid}: ข้อมูลโครงสร้างในแฟ้มผลงานไม่ครบ`);
+  }
+  checks++;
+  if (!/โต๊ะคำสั่ง Limit/.test(M.WEEKS[4].rounds[4].task) || M.WEEKS[4].rounds[4].engine !== 'mcq' || M.WEEKS[4].rounds[4].questions().length !== 4) err('W5R5: รอบเดิมต้องยังเป็นคำถาม 4 ข้อ และบอกให้เปิดโต๊ะคำสั่ง Limit');
+}
+
 // ---- 3c) index.html โหลดทุกไฟล์ใน game/js ด้วยเลขเวอร์ชันเดียวกัน (กันแคชเก่าปนใหม่) ----
 {
   const html = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8');
