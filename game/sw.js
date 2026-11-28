@@ -1,5 +1,5 @@
 /* Keep this version in step with the ?v= values in index.html. */
-const VERSION = '0.6.0-preview';
+const VERSION = '0.6.1-preview';
 const base = new URL(self.registration.scope);
 const cachePrefix = `grocery-training:${base.pathname}:`;
 const cacheName = cachePrefix + VERSION;

@@ -269,6 +269,13 @@ main {
   .campaign-card { grid-template-columns: 1fr; }
   .campaign-action { justify-self: start; }
 }
+@media (max-width: 360px) {
+  .topbar { flex-wrap: nowrap; }
+  .top-right { flex: none; }
+  .brand { min-width: 0; }
+  .brand-mark { display: none; }
+  .brand > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
 @media (prefers-reduced-motion: reduce) {
   .shop-guest, .modal-card, .result-stars .earned, .result-sparks i { animation: none; }
   .result-sparks { display: none; }

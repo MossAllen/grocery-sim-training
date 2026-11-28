@@ -1,10 +1,11 @@
 """
 generate_stud_sprites.py — ภาพสไปรต์ร้านชำแบบ stud (บล็อกลบมุม เฉดสี 3–4 ขั้น ปุ่ม stud สี่เหลี่ยมห่าง ๆ เงาฐาน)
-ตามสกิล stud-model-style ใช้ตัวช่วย blender/stud_kit.py · รอบแรก 13 ภาพ: ชั้นวาง เคาน์เตอร์ สินค้า 6 และลูกค้ายืน 5
+ตามสกิล stud-model-style ใช้ตัวช่วย blender/stud_kit.py · โหมดปกติสร้าง 22 ภาพตาม ART_SPEC
 
 วิธีรัน (จากโฟลเดอร์ marketing-training-lab):
     blender -b -P blender/generate_stud_sprites.py -- --out dist/stud-preview
     blender -b -P blender/generate_stud_sprites.py -- --out game/assets/sprites      # เขียนทับภาพในเกม (คีย์เดิม)
+    blender -b -P blender/generate_stud_sprites.py -- --w4-preview                  # สามท่าสำหรับ W4R3
 
 คีย์ ขนาด และกรอบกล้องเหมือน generate_store_assets.py จึงสลับใช้แทนกันได้โดยไม่แก้โค้ดเกม
 """
@@ -13,6 +14,7 @@ import os
 import sys
 
 import bpy
+from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(HERE)
@@ -183,6 +185,7 @@ def build_item(product, size):
 
 # ท่ากระทำ W1R2 (ART_SPEC): ของถืออยู่หน้าลำตัวเพราะกล้อง ortho ไม่เห็นแขนที่ยื่นเข้าหากล้อง
 POSES = [(0, "pick"), (3, "look"), (1, "look"), (2, "pay"), (4, "pay")]
+W4_POSES = [(0, "enter"), (1, "carry_basket"), (3, "hesitate")]
 
 
 def held_arm(k, x, s, hand_x, hand_z, colour):
@@ -198,21 +201,84 @@ def pack(k, x, z, w, h, body, label="CREAM_L"):
     k.flat((x, -0.42, z - h * 0.12), (w * 0.7, 0.02, h * 0.22), label)
 
 
+def limb(k, start, end, width, depth, colour):
+    start, end = Vector(start), Vector(end)
+    direction = end - start
+    k.box((start + end) / 2, (width, depth, direction.length + 0.06), colour,
+          rotation=direction.to_track_quat("Z", "Y"))
+
+
+def articulated_arm(k, shoulder, elbow, hand, colour):
+    limb(k, shoulder, elbow, 0.16, 0.2, colour)
+    limb(k, elbow, hand, 0.15, 0.17, colour)
+    k.box(hand, (0.15, 0.15, 0.13), "SKIN")
+
+
+def entry_legs(k, pants, pants_d):
+    # ฝ่าเท้าหน้าแตะพื้น เข่าหลังย่อและส้นลอยเพื่อให้เห็นจังหวะก้าวจากกล้องหน้าตรง
+    stride = [((-0.13, 0, 0.86), (-0.17, -0.19, 0.48), (-0.20, -0.36, 0.13)),
+              ((0.13, 0, 0.86), (0.17, 0.21, 0.52), (0.24, 0.35, 0.26))]
+    for hip, knee, ankle in stride:
+        limb(k, hip, knee, 0.24, 0.26, pants)
+        limb(k, knee, ankle, 0.22, 0.25, pants_d)
+        x, y, z = ankle
+        k.box((x, y - 0.06, z - 0.08), (0.26, 0.37, 0.1), "INK", segs=1)
+
+
+def glasses(k, head_x):
+    for x in (-0.11, 0.11):
+        k.flat((head_x + x, -0.235, 1.88), (0.16, 0.02, 0.13), "INK")
+        k.flat((head_x + x, -0.245, 1.88), (0.1, 0.02, 0.07), "WATER_L")
+
+
+def w4_pose(k, mode, arm, head_x):
+    if mode == "enter":
+        articulated_arm(k, (-0.38, 0, 1.45), (-0.47, 0.18, 1.13), (-0.49, 0.27, 0.91), arm)
+        articulated_arm(k, (0.38, 0, 1.45), (0.42, -0.18, 1.17), (0.38, -0.36, 1.11), arm)
+        k.box((0.48, 0.04, 0.97), (0.22, 0.3, 0.35), "BAG")
+        k.flat((0.07, -0.19, 1.31), (0.66, 0.02, 0.05), "BAG")
+    elif mode == "carry_basket":
+        # ตะกร้าเปิดมีขอบและหูจับ มือสองข้างอยู่ตรงด้ามและอยู่ต่ำกว่าคาง
+        k.box((0, -0.48, 0.80), (0.64, 0.36, 0.08), "BASKET_D")
+        for y in (-0.67, -0.30):
+            k.box((0, y, 0.94), (0.65, 0.06, 0.24), "BASKET")
+            k.box((0, y, 1.06), (0.68, 0.08, 0.07), "RED_L")
+        for x in (-0.31, 0.31):
+            k.box((x, -0.48, 0.94), (0.06, 0.36, 0.24), "BASKET_D")
+            limb(k, (x, -0.48, 1.04), (x * 0.84, -0.52, 1.24), 0.064, 0.075, "BASKET_D")
+        k.box((0, -0.52, 1.24), (0.56, 0.08, 0.07), "BASKET_D")
+        for x in (-0.19, 0, 0.19):
+            k.flat((x, -0.705, 0.94), (0.055, 0.02, 0.14), "BASKET_D")
+        for side in (-1, 1):
+            articulated_arm(k, (0.43 * side, 0, 1.44), (0.47 * side, -0.12, 1.13),
+                            (0.18 * side, -0.55, 1.24), arm)
+    elif mode == "hesitate":
+        glasses(k, head_x)
+        articulated_arm(k, (0.38, 0, 1.44), (0.40, -0.22, 1.16),
+                        (head_x + 0.08, -0.27, 1.58), arm)
+        articulated_arm(k, (-0.38, 0, 1.44), (-0.53, -0.02, 1.10), (-0.58, -0.31, 1.20), arm)
+    else:
+        raise ValueError(f"no W4 pose {mode}")
+
+
 def build_customer(i, mode=None):
-    """mode: None = ยืน · 'walk' = ก้าว (เกมสลับซ้ายขวาเอง) · 'pick' 'look' 'pay' = ท่ากระทำ"""
+    """mode: ยืน เดิน ท่าของ W1R2 หรือท่าพรีวิวของ W4R3"""
     k = Kit(f"Customer_{i + 1}_{mode or 'stand'}", ao_floor=0.6, ao_height=0.7)
     shirt, shirt_d = SHIRTS[i]
     s = 0.88 if i == 2 else 1.0
     wide = 1.18 if i == 1 else 1.0
     pants, pants_d = ("NAVY", "NAVY_D") if i == 2 else ("DENIM", "DENIM_D")
     # ขาและรองเท้า: บล็อกลบมุม 2 ข้าง (ไม่ใช่ทรงกระบอกเดียว)
-    for side, x in ((-1, -0.13), (1, 0.13)):
-        # ท่าก้าว: ขาซ้ายก้าวหน้ายกเท้า ขาขวาถีบหลัง
-        dy = -0.32 * side if mode == "walk" else 0.0
-        lift = 0.16 if mode == "walk" and side < 0 else 0.0
-        k.box((x * wide, dy, 0.47 * s + lift), (0.24 * wide, 0.3, 0.86 * s - lift), pants)
-        k.flat((x * wide, dy, 0.84 * s), (0.25 * wide, 0.31, 0.04), pants_d)
-        k.box((x * wide, dy - 0.04, 0.05 + lift), (0.27 * wide, 0.38, 0.1), "INK", segs=1)
+    if mode == "enter":
+        entry_legs(k, pants, pants_d)
+    else:
+        for side, x in ((-1, -0.13), (1, 0.13)):
+            # ท่าก้าว: ขาซ้ายก้าวหน้ายกเท้า ขาขวาถีบหลัง
+            dy = -0.32 * side if mode == "walk" else 0.0
+            lift = 0.16 if mode == "walk" and side < 0 else 0.0
+            k.box((x * wide, dy, 0.47 * s + lift), (0.24 * wide, 0.3, 0.86 * s - lift), pants)
+            k.flat((x * wide, dy, 0.84 * s), (0.25 * wide, 0.31, 0.04), pants_d)
+            k.box((x * wide, dy - 0.04, 0.05 + lift), (0.27 * wide, 0.38, 0.1), "INK", segs=1)
     # ลำตัว: บล็อกใหญ่ + ปกเสื้อเฉดมืด + เข็มขัด
     k.box((0, 0, 1.2 * s), (0.62 * wide, 0.36, 0.7 * s), shirt)
     k.flat((0, -0.19, 0.9 * s), (0.6 * wide, 0.02, 0.06), shirt_d)
@@ -225,14 +291,17 @@ def build_customer(i, mode=None):
             k.box((x * wide, dy, 1.17 * s + up), (0.16, 0.24, 0.62 * s), shirt_d)
             k.box((x * wide, dy - 0.01, 0.82 * s + up), (0.15, 0.2, 0.12), "SKIN")
     # หัว: บล็อกลบมุมใหญ่ ผม 2 ชั้น ตาเป็นบล็อกเข้มเล็ก
-    k.box((0, 0, 1.86 * s), (0.5, 0.44, 0.5), "SKIN", bev=0.08, segs=2)
-    k.box((0, 0.04, 2.13 * s), (0.54, 0.48, 0.14), "HAIR", bev=0.05)
-    k.box((0, 0.2, 1.98 * s), (0.54, 0.1, 0.36), "HAIR_D")
+    head_x = 0.08 if mode == "hesitate" else 0
+    k.box((head_x, 0, 1.86 * s), (0.5, 0.44, 0.5), "SKIN", bev=0.08, segs=2)
+    k.box((head_x, 0.04, 2.13 * s), (0.54, 0.48, 0.14), "HAIR", bev=0.05)
+    k.box((head_x, 0.2, 1.98 * s), (0.54, 0.1, 0.36), "HAIR_D")
     for x in (-0.11, 0.11):
-        k.flat((x, -0.225, 1.88 * s), (0.07, 0.02, 0.09), "INK")
-    k.flat((0, -0.225, 1.74 * s), (0.14, 0.02, 0.03), "SKIN_D")
+        k.flat((head_x + x, -0.225, 1.88 * s), (0.07, 0.02, 0.09), "INK")
+    k.flat((head_x, -0.225, 1.74 * s), (0.14, 0.02, 0.03), "SKIN_D")
     # ของประจำกลุ่ม (GDD §5): 1 กระเป๋าสะพาย · 2 ตะกร้า · 3 เป้ · 4 แว่น+ถือสินค้า · 5 ทั่วไป
-    if mode in ("pick", "look", "pay"):
+    if (i, mode) in W4_POSES:
+        w4_pose(k, mode, shirt_d, head_x)
+    elif mode in ("pick", "look", "pay"):
         build_pose(k, i, mode, s, wide, shirt_d)
     elif i == 0:
         k.box((0.45, -0.02, 0.98), (0.2, 0.3, 0.34), "BAG")
@@ -245,12 +314,10 @@ def build_customer(i, mode=None):
         k.box((0, 0.3, 1.25 * s), (0.5, 0.26, 0.56), "PACK")
         k.flat((0, 0.44, 1.18 * s), (0.36, 0.02, 0.2), "PACK_D")
     elif i == 3:
-        for x in (-0.11, 0.11):
-            k.flat((x, -0.235, 1.88), (0.16, 0.02, 0.13), "INK")
-            k.flat((x, -0.245, 1.88), (0.1, 0.02, 0.07), "WATER_L")
+        glasses(k, head_x)
         k.box((0.2, -0.36, 1.42), (0.22, 0.12, 0.32), "SNACK_R")
         k.flat((0.2, -0.43, 1.38), (0.14, 0.02, 0.08), "GOLD")
-    studs = k.studs((0, 0.04, 2.2 * s), 1, 1, "HAIR", pitch=0.5, size=0.26, height=0.07)
+    studs = k.studs((head_x, 0.04, 2.2 * s), 1, 1, "HAIR", pitch=0.5, size=0.26, height=0.07)
     return [k, studs], 2.3 * s
 
 
@@ -292,8 +359,7 @@ def build_pose(k, i, pose, s, wide, arm):
 
 
 # ---------- main ----------
-def main(out_dir):
-    os.makedirs(out_dir, exist_ok=True)
+def standard_jobs():
     jobs = [("shelf", build_shelf, "shelf", 3.4), ("counter", build_counter, "counter", 4.4)]
     jobs += [(f"item_{p}_{z}", (lambda p=p, z=z: build_item(p, z)), "item", 1.0)
              for p in ("water", "snack", "household") for z in ("small", "big")]
@@ -301,6 +367,13 @@ def main(out_dir):
     jobs += [(f"customer_{i + 1}_walk", (lambda i=i: build_customer(i, "walk")), "customer", 1.25) for i in range(4)]
     jobs += [(f"customer_{i + 1}_{pose}", (lambda i=i, pose=pose: build_customer(i, pose)), "customer_pose", 1.25)
              for i, pose in POSES]
+    return jobs
+
+
+def main(out_dir, preview_w4):
+    os.makedirs(out_dir, exist_ok=True)
+    jobs = [(f"w4_{pose}", (lambda i=i, pose=pose: build_customer(i, pose)), "customer_pose", 1.25)
+            for i, pose in W4_POSES] if preview_w4 else standard_jobs()
     for key, build, size_key, width in jobs:
         scn = reset_scene()
         kits, h = build()
@@ -308,8 +381,13 @@ def main(out_dir):
         print(f"INFO {key}: {sum(k.tris() for k in kits)} tris")
         camera_and_light(scn, 2.2 if size_key.startswith("customer") else h, size_key, width)
         render(scn, out_dir, key)
+        if preview_w4:
+            bpy.context.preferences.filepaths.save_version = 0
+            bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir, f"{key}.blend"), copy=True)
 
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-OUT = argv[argv.index("--out") + 1] if "--out" in argv else os.path.join(HERE, "..", "dist", "stud-preview")
-main(os.path.abspath(OUT))
+PREVIEW_W4 = "--w4-preview" in argv
+DEFAULT_DIR = "w4-stud-preview" if PREVIEW_W4 else "stud-preview"
+OUT = argv[argv.index("--out") + 1] if "--out" in argv else os.path.join(HERE, "..", "dist", DEFAULT_DIR)
+main(os.path.abspath(OUT), PREVIEW_W4)
