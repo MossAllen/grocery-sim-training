@@ -90,6 +90,26 @@ module.exports = async ({ week, idx, playRound, stopAtNumericLesson }) => {
     healthy('.stage');
     if (!playRound) return;
 
+    if (week === 5 && idx === 4) {
+      // W6R5 เปิดโต๊ะอ่านผลประกอบการก่อนคำถามเดิม: จดแฟ้มละหนึ่งรายการ ตอบข้อเทียบกำไรกับเงินสด แล้วบันทึกไปคำถาม
+      const D = M.ReportDeskModel;
+      healthy('.report-desk');
+      for (const report of D.REPORTS) {
+        stage(`.rd-tab[data-report="${report.key}"]`);
+        const want = D.expected(report, 'netProfit');
+        for (const [group, value] of [['metric', 'netProfit'], ['page', want.pageId], ['period', want.periodId], ['unit', want.unitId]]) {
+          stage(`input[name="rd-${report.key}-${group}"][value="${value}"]`);
+        }
+        stage(`.rd-record[data-report="${report.key}"]`);
+        check(all(`#rd-panel-${report.key} .rd-row-list [data-del]`).length === 1, `Report ${report.key} row was not recorded`);
+      }
+      stage('input[name="rd-contrast-profit"][value="netProfit"]');
+      stage('input[name="rd-contrast-cash"][value="opCash"]');
+      stage('.rd-save');
+      check(State.data.portfolio[D.portfolioKey(ctx.product.id)], 'Report desk entry was not saved');
+      await waitFor(() => get('.stage .opt'), 'original quiz after the report desk');
+    }
+
     if (round.engine === 'mcq') {
       for (const question of generated) {
         stage(`.opt[data-k="${question.answer}"]`);
