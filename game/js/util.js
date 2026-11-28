@@ -58,6 +58,14 @@
   let stopVoice;
   M.stopSpeaking = () => { if (stopVoice) stopVoice(); };
 
+  // Use CORS mode on local audio so Safari can read cached byte ranges offline.
+  M.createGameAudio = (url) => {
+    const audio = new Audio();
+    audio.crossOrigin = 'anonymous';
+    audio.src = url;
+    return audio;
+  };
+
   // ใช้ไฟล์ในเกมก่อน แล้วใช้ Web Speech API เมื่อไม่มีไฟล์หรือเล่นไม่ได้
   M.speak = (text, lang = 'en-US') => {
     if (!M.State?.data.settings.tts || typeof text !== 'string' || !text.trim()) return Promise.resolve();
@@ -69,12 +77,14 @@
       const stop = () => {
         if (stopVoice !== stop) return;
         stopVoice = null;
+        M.sfx?.setSpeechActive?.(false);
         clearTimeout(timer);
         clip?.pause();
         if (utterance) speech.cancel();
         resolve();
       };
       stopVoice = stop;
+      M.sfx?.setSpeechActive?.(true);
       const fallback = () => {
         if (stopVoice !== stop || fallbackStarted) return;
         fallbackStarted = true;
@@ -95,7 +105,7 @@
       const id = M.voiceId(text);
       if (lang !== 'en-US' || !window.MTL_VOICE_IDS?.has(id)) { fallback(); return; }
       try {
-        clip = new Audio(`assets/voice/${id}.ogg`);
+        clip = M.createGameAudio(`assets/voice/${id}.ogg`);
         clip.addEventListener('ended', () => { if (!fallbackStarted) stop(); }, { once: true });
         clip.addEventListener('error', fallback, { once: true });
         clip.addEventListener('playing', () => {
@@ -107,6 +117,26 @@
         clip.play().catch(fallback);
       } catch (error) { fallback(); }
     });
+  };
+
+  // ท่าทางลูกค้าแบบ stud ใช้ร่วมกันทั้งฉาก 2 มิติและ 3 มิติ (ไม่แตะ DOM)
+  // walk: ก้าวละ 4 จังหวะ ยืน → ก้าว → ยืน → ก้าวกลับข้าง ตัวเด้งขึ้นกลางก้าว ยุบเล็กน้อยตอนเท้าแตะ
+  // idle: หายใจเบา ๆ · pop: เด้งยืดยุบตอนเปลี่ยนเป็นท่ากระทำ (0.45 วินาที)
+  M.StudMotion = {
+    POP_SECONDS: 0.45,
+    walk(distance, strideLength) {
+      const phase = ((distance / strideLength) % 1 + 1) % 1;
+      const quarter = Math.floor(phase * 4);
+      const lift = Math.abs(Math.sin(phase * 4 * Math.PI));
+      return { frame: quarter % 2 ? 'walk' : 'stand', flip: quarter === 3, lift,
+        squash: 1 - 0.07 * (1 - lift), step: Math.floor(phase * 2) };
+    },
+    idle(seconds, seed = 0) { return 1 + 0.018 * Math.sin(seconds * 2.4 + seed * 1.7); },
+    pop(age) {
+      if (!(age >= 0 && age < M.StudMotion.POP_SECONDS)) return { sx: 1, sy: 1, sparkle: 0 };
+      const u = age / M.StudMotion.POP_SECONDS, wave = Math.sin(u * Math.PI * 2.5) * (1 - u);
+      return { sx: 1 - 0.12 * wave, sy: 1 + 0.18 * wave, sparkle: 1 - u };
+    },
   };
 
   M.download = (filename, text) => {

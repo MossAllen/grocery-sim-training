@@ -10,12 +10,12 @@
 หรือรันในเครื่อง:
 
 ```powershell
-python -m http.server 8765 --directory game
+python tools/serve-preview.py
 ```
 
-แล้วเปิด <http://localhost:8765> (หรือดับเบิลคลิก `game/index.html` ก็เล่นได้ แต่เสียงไฟล์จริงอาจไม่โหลด)
+เปิดหน้าเกมที่ <http://127.0.0.1:8787/> หรือเข้าฉากตรงที่ [เดินสังเกตลูกค้า](http://127.0.0.1:8787/#observe-walk) และ [เดินเทียบราคา](http://127.0.0.1:8787/#shelf-walk)
 
-ไม่ต้องติดตั้งอะไรเพิ่ม เป็น HTML/CSS/JavaScript ล้วน ความคืบหน้าบันทึกในเบราว์เซอร์ (localStorage)
+เกมใช้ HTML/CSS/JavaScript และบันทึกความคืบหน้าในเบราว์เซอร์ รุ่นพรีวิวรองรับติดตั้งบนหน้าจอโฮมและเตรียมบทเรียนกับฉากเดินไว้เล่นออฟไลน์ ดูวิธีติดตั้งจากเว็บ HTTPS และขั้นตรวจบนมือถือใน [คู่มือเล่นและตรวจรับ](handoff/2026-11-28_walk-preview-acceptance.md)
 
 ## มีอะไรในเกม
 
@@ -59,8 +59,8 @@ marketing-training-lab/
 │  ├─ js/engines.js                ← กลไกเล่นแต่ละแบบ
 │  ├─ js/store-scene.js            ← ฉากร้านบน canvas
 │  ├─ assets/audio/manifest.js     ← Gemini ใส่ไฟล์เสียง
-│  └─ assets/sprites/manifest.js   ← Blender เขียนทับอัตโนมัติ
-├─ blender/generate_store_assets.py
+│  └─ assets/sprites/manifest.js   ← คีย์ภาพที่เกมโหลด
+├─ blender/generate_stud_sprites.py
 ├─ docs/  GDD · HANDOFF · AUDIO_SPEC · ART_SPEC · RESEARCH · ROADMAP
 ├─ handoff/                        ← ใบส่งต่องานแต่ละรอบ
 └─ .github/                        ← template PR/issue + deploy GitHub Pages
@@ -81,7 +81,7 @@ python tools/make_bundles.py
 ## สร้างภาพใหม่จาก Blender
 
 ```powershell
-& "C:\Program Files\Blender Foundation\Blender 5.3\blender.exe" -b -P blender/generate_store_assets.py
+& "C:\Program Files\Blender Foundation\Blender 5.3\blender.exe" -b -P blender/generate_stud_sprites.py -- --out dist/stud-preview
 ```
 
 > ตัวเลขยอดขาย ผลโพสต์ และผลโปรในเกมเป็น **ข้อมูลจำลอง** ให้ผู้ฝึกกำกับในใบงานเสมอว่าข้อมูลใดจริง ข้อมูลใดจำลอง ตามที่เอกสารต้นฉบับกำหนด

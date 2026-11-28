@@ -18,3 +18,4 @@
 - สถานะและขั้นต่อไป: `STATUS.md`
 - ขั้นตอนส่งต่องาน: `docs/HANDOFF.md` · ชุดส่งงาน: `handoff/to-*.md`, `dist/*.zip`
 - แผนเฟส: `docs/ROADMAP.md` · แหล่งอ้างอิง: `docs/RESEARCH.md`
+- งานแสง เอฟเฟกต์ และตรวจท่าทางใน Blender ให้เริ่มที่ [สกิล Grocery Blender VFX](.agents/skills/grocery-blender-vfx/SKILL.md) และ [ใบส่งงาน Blender](handoff/to-blender.md)

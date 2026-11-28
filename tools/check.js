@@ -165,6 +165,137 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
   checks += 4;
 }
 
+// ---- 3d) กลไกสังเกตลูกค้า W1R2 (GDD §9) ใช้ได้โดยไม่ผูกหน้าจอ ทั้งฉากเดินและแบบรายการ ----
+{
+  const OM = require(path.join(GAME, 'js/observe-walk-model.js'));
+  const gddEvents = 'am-carry 422 am carry/am-fast 426 am carry/am-price 429 am value/pm-stock 1024 pm home/pm-stock-more 1028 pm home';
+  for (const pid of Object.keys(M.PRODUCTS)) {
+    const product = M.PRODUCTS[pid];
+    const tag = `${pid} W1R2 สังเกต`;
+    const events = OM.buildEvents(product);
+    checks++;
+    if (events.map((e) => `${e.id} ${e.minute} ${e.period} ${e.group}`).join('/') !== gddEvents) err(`${tag}: ชุดเหตุการณ์ไม่ตรง GDD §9`);
+    for (const e of events) {
+      checks += 4;
+      if (/undefined|NaN|[{}]/.test([e.place, e.seen, e.heard, e.observedText, e.supported, e.alternative, e.explanation].join('|'))) err(`${tag} ${e.id}: ข้อความไม่สมบูรณ์`);
+      const front = OM.approachPose(e);
+      if (!OM.perceive(front, e).ready) err(`${tag} ${e.id}: ยืนที่จุดฟังแล้วจดไม่ได้`);
+      const away = OM.perceive({ ...front, yaw: Math.PI }, e);
+      if (!away.heard || away.ready === e.needsSight) err(`${tag} ${e.id}: หันหลังแล้วต้องได้ยิน และจดได้เฉพาะเหตุการณ์ที่ไม่ต้องเห็น`);
+      if (OM.perceive({ x: e.spot.x, z: e.spot.z - OM.SENSE.hear - 0.3, yaw: 0 }, e).heard) err(`${tag} ${e.id}: ได้ยินไกลเกินระยะ`);
+      for (const other of events) {
+        if (other !== e && other.period === e.period && OM.perceive(front, other).heard) err(`${tag}: จุดฟัง ${e.id} ได้ยิน ${other.id} ปนกัน`);
+      }
+    }
+    // จดสลับลำดับและจดซ้ำ: หนึ่งแถวต่อรหัส สมุดเรียงตามเวลา ไปเย็นเมื่อเช้าครบ 3 ไปวิเคราะห์เมื่อครบ 5
+    const s = OM.createSession(product);
+    s.record('am-price'); s.record('am-carry');
+    checks += 5;
+    if (s.record('am-carry').added || s.recordedCount() !== 2) err(`${tag}: จดซ้ำแล้วได้แถวเพิ่ม`);
+    if (s.periodDone('am')) err(`${tag}: ไปช่วงเย็นได้ก่อนจดเช้าครบ`);
+    s.record('am-fast');
+    if (s.notebook().map((e) => e.id).join() !== 'am-carry,am-fast,am-price') err(`${tag}: สมุดไม่เรียงตามเวลา`);
+    if (!s.periodDone('am') || s.allRecorded()) err(`${tag}: เงื่อนไขไปช่วงเย็นหรือไปวิเคราะห์ผิด`);
+    s.record('pm-stock-more'); s.record('pm-stock');
+    if (!s.allRecorded()) err(`${tag}: จดครบ 5 แล้วยังไปวิเคราะห์ไม่ได้`);
+    for (const e of events) { s.answerObservation(e.id, 'fact'); s.answerReason(e.id, `${e.id}-supported`); }
+    s.answerObservation('am-carry', 'inference'); // คำตอบหลังครั้งแรกไม่เปลี่ยนคะแนน
+    const ratios = [];
+    for (const period of OM.PERIODS) {
+      const q = s.comparisonQuestion(period.id);
+      const row = q.rows.find((entry) => entry.group.id === q.answer);
+      ratios.push(`${row.count}/${row.denominator}`);
+      checks++;
+      if (!q.explain.includes(`${row.count} ÷ ${row.denominator}`) || !q.explain.includes(`ตัวอย่างจำลอง ${events.length} เหตุการณ์`)) err(`${tag}: คำอธิบายเทียบช่วงต้องอ้างตัวหารและขอบเขตตัวอย่าง`);
+      s.answerComparison(period.id, q.answer);
+    }
+    checks += 4;
+    if (ratios.join(' ') !== '2/3 2/2') err(`${tag}: ตัวหารเทียบช่วงต้องเป็น 2/3 และ 2/2 ได้ ${ratios.join(' ')}`);
+    const full = s.score();
+    if (full.correct !== 12 || full.total !== 12 || full.score !== 1) err(`${tag}: ตอบถูกทั้งหมดต้องได้ 12/12 ได้ ${full.correct}/${full.total}`);
+    s.propose('pm-stock', 'shelf');
+    const saved = s.result('walk');
+    const okShape = saved.source === 'simulated' && saved.route === 'walk' && saved.events.length === 5 &&
+      saved.events.every((e) => Number.isInteger(e.minute) && e.selectedObservationId === 'fact' && e.selectedReasonId === `${e.id}-supported`) &&
+      saved.comparison.map((c) => `${c.period}:${c.sampleCount}:${c.selectedGroupId}`).join() === 'am:3:carry,pm:2:home' &&
+      saved.proposal?.eventId === 'pm-stock' && !/[{}]/.test(saved.proposal.text);
+    if (!okShape) err(`${tag}: รูปแบบเซฟไม่ตรง GDD §9`);
+    if (!/pm-stock/.test(s.portfolioText()) || /undefined|NaN/.test(s.portfolioText())) err(`${tag}: แฟ้มผลงานต้องอ้างรหัสเหตุการณ์ที่เสนอ`);
+    // ตัวอย่างคะแนน GDD §9: ข้อสังเกตถูก 4 การตีความถูก 4 เทียบช่วงถูก 1 = 9 ÷ 12 = 0.75 (2 ดาว)
+    const t = OM.createSession(product);
+    events.forEach((e, i) => {
+      t.record(e.id);
+      t.answerObservation(e.id, i === 0 ? 'inference' : 'fact');
+      t.answerReason(e.id, i === 1 ? `${e.id}-alternative` : `${e.id}-supported`);
+    });
+    t.answerComparison('am', 'carry'); t.answerComparison('pm', 'value');
+    if (t.score().score !== 0.75) err(`${tag}: ตัวอย่าง 9/12 ต้องได้ 0.75 ได้ ${t.score().score}`);
+  }
+}
+
+// ---- 3e) เคาน์เตอร์ W2R2: ราคาต่อหน่วย สองชุดราคา × 3 สินค้า หยิบ สแกน จ่ายเงิน และเงินทอน ----
+{
+  const CM = require(path.join(GAME, 'js/checkout-model.js'));
+  // ราคาต่อหน่วย (สตางค์) ของชั้น A/B และชั้นที่คุ้มกว่า: ชุดแรกแพ็กใหญ่คุ้ม ชุดเล่นซ้ำแพ็กเล็กคุ้ม
+  const expect = {
+    water: ['2000/1333 b 25', '1500/1600 a 29'],
+    snack: ['4000/3333 b 30', '3200/3600 a 32'],
+    household: ['1200/983 b 64', '900/1000 a 65'],
+  };
+  for (const [pid, cases] of Object.entries(expect)) {
+    cases.forEach((want, caseIndex) => {
+      const tag = `${pid} W2R2 เคาน์เตอร์ ชุด ${caseIndex + 1}`;
+      const plan = CM.mission(M.PRODUCTS[pid], caseIndex);
+      const got = `${plan.items.map((item) => item.perSatang).join('/')} ${plan.best.id} ${plan.budget}`;
+      checks += 3;
+      if (got !== want) err(`${tag}: ราคาต่อหน่วย/ชั้นที่คุ้ม/งบ ได้ ${got} ต้องเป็น ${want}`);
+      const purse = CM.wallet(plan.budget);
+      if (purse.reduce((a, b) => a + b, 0) !== plan.budget || purse.some((v) => !CM.DENOMINATIONS.includes(v))) err(`${tag}: กระเป๋าเงินไม่เท่างบ`);
+      if (plan.items.some((item) => /undefined|NaN/.test(item.name + item.sizeText))) err(`${tag}: ข้อความป้ายไม่สมบูรณ์`);
+
+      for (const choice of ['a', 'b']) {
+        const c = CM.createCounter(plan, { transactionId: 'test' });
+        const item = plan.items.find((entry) => entry.id === choice);
+        checks += 11;
+        if (c.scan().accepted) err(`${tag}: สแกนได้ทั้งที่มือว่าง`);
+        c.pick(choice === 'a' ? 'b' : 'a');
+        if (!c.pick(choice).picked || c.hand() !== item) err(`${tag}: หยิบเปลี่ยนแพ็กไม่ได้`);
+        if (c.pick(choice).picked) err(`${tag}: หยิบแพ็กเดิมซ้ำแล้วนับเป็นการหยิบใหม่`);
+        if (c.scan().accepted) err(`${tag}: สแกนได้ก่อนกรอกราคาต่อหน่วย`);
+        c.setUnits([item.perSatang]);
+        if (c.scan().accepted) err(`${tag}: ต้องมีราคาต่อหน่วยครบทั้งสองชั้น`);
+        c.setUnits(plan.items.map((entry) => entry.perSatang));
+        const scan = c.scan();
+        if (!scan.accepted || scan.total !== item.price || c.lines.length !== 1 || c.hand() !== null) err(`${tag}: สแกนต้องย้ายแพ็กจากมือเข้าใบเสร็จ 1 รายการตามราคาป้าย`);
+        if (c.setUnits([0, 0])) err(`${tag}: ต้องล็อกราคาต่อหน่วยเมื่อสแกนสำเร็จ`);
+        if (c.scan().accepted || c.lines.length !== 1 || c.pick(choice === 'a' ? 'b' : 'a').picked) err(`${tag}: สแกนซ้ำหรือเปลี่ยนแพ็กหลังสแกนต้องถูกปฏิเสธ`);
+        // จ่ายไม่พอ จ่ายเงินนอกกระเป๋า แล้วจ่ายจากธนบัตรใหญ่ลงมาจนพอ: เงินทอน = เงินที่จ่าย − ยอด
+        const smallest = purse.length - 1;
+        if (purse[smallest] < item.price && c.pay([smallest]).paid) err(`${tag}: จ่ายไม่พอแต่ระบบรับ`);
+        if (c.pay([purse.length]).paid || c.pay([0, 0]).paid) err(`${tag}: รับเงินที่ไม่มีในกระเป๋า`);
+        const hand = []; let given = 0;
+        for (let i = 0; given < item.price; i++) { hand.push(i); given += purse[i]; }
+        const paid = c.pay(hand);
+        if (!paid.paid || paid.change !== given - item.price) { err(`${tag}: เงินทอนผิด`); continue; }
+        if (c.answerChange(paid.change + 1) || !c.answerChange(paid.change)) err(`${tag}: ตรวจคำตอบเงินทอนผิด`);
+        if (c.receiveChange() !== paid.change > 0 || c.receiveChange()) err(`${tag}: เสียงเงินทอนต้องเล่นครั้งเดียวเมื่อทอนมากกว่า 0`);
+        const r = c.result();
+        if (r.points !== 2 + Number(choice === plan.best.id) || r.changeCorrect || r.changeAnswer !== paid.change + 1) err(`${tag}: คะแนนหรือคำตอบแรกของเงินทอนผิด`);
+      }
+      // จ่ายพอดี: ไม่มีเงินทอนและไม่เล่นเสียงเงินทอน
+      const exact = CM.createCounter(plan);
+      exact.pick('a'); exact.setUnits([0, 0]); exact.scan();
+      const coins = []; let sum = 0;
+      purse.forEach((value, i) => { if (sum + value <= plan.items[0].price) { coins.push(i); sum += value; } });
+      checks++;
+      if (sum === plan.items[0].price) {
+        const p = exact.pay(coins);
+        if (!p.paid || p.change !== 0 || exact.receiveChange()) err(`${tag}: จ่ายพอดีต้องไม่มีเงินทอน`);
+      }
+    });
+  }
+}
+
 // ---- 3c) index.html โหลดทุกไฟล์ใน game/js ด้วยเลขเวอร์ชันเดียวกัน (กันแคชเก่าปนใหม่) ----
 {
   const html = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8');
@@ -172,6 +303,11 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
   const vers = new Set(refs.map((r) => (r.split('?v=')[1] || '(ไม่มี)')));
   if (vers.size !== 1 || vers.has('(ไม่มี)')) err(`index.html: ต้องระบุ ?v= เลขเดียวกันทุกไฟล์ (${[...vers].join(', ')})`);
   for (const ref of refs) if (!fs.existsSync(path.join(GAME, ref.split('?')[0]))) err(`index.html: ไม่พบ ${ref}`);
+  const manifestVersion = /href="manifest\.webmanifest\?v=([^"]+)"/.exec(html)?.[1];
+  const worker = fs.readFileSync(path.join(GAME, 'sw.js'), 'utf8');
+  const offlineVersion = /^const VERSION = '([^']+)'/m.exec(worker)?.[1];
+  checks++;
+  if (!vers.has(manifestVersion) || !vers.has(offlineVersion)) err('index.html: manifest และ sw.js ต้องใช้เวอร์ชันเดียวกับไฟล์เกม');
   for (const f of fs.readdirSync(path.join(GAME, 'js'))) {
     checks++;
     if (!refs.some((r) => r.split('?')[0] === `js/${f}`)) err(`index.html: ไม่ได้โหลด js/${f}`);
@@ -179,9 +315,11 @@ for (let k = 0; k < 200; k++) M.FINAL.gen({}, false).fields.forEach((f) => { if 
 }
 
 // ---- 4) manifest เสียง/ภาพ ----
-const AUDIO_KEYS = ['click', 'correct', 'wrong', 'coin', 'star', 'door', 'levelup', 'tick', 'whoosh', 'note', 'bgm_store', 'rain', 'lesson_step'];
+const AUDIO_KEYS = ['click', 'correct', 'wrong', 'coin', 'star', 'door', 'levelup', 'tick', 'whoosh', 'note', 'bgm_store', 'rain', 'lesson_step',
+  'step_shop', 'shelf_pick', 'notebook', 'scanner', 'cash_change'];
 const SPRITE_KEYS = ['shelf', 'counter', 'customer_1', 'customer_2', 'customer_3', 'customer_4', 'customer_5',
   'customer_1_walk', 'customer_2_walk', 'customer_3_walk', 'customer_4_walk',
+  'customer_1_pick', 'customer_4_look', 'customer_2_look', 'customer_3_pay', 'customer_5_pay',
   'item_water_small', 'item_water_big', 'item_snack_small', 'item_snack_big', 'item_household_small', 'item_household_big'];
 const checkManifest = (name, man, keys) => {
   if (!man) return err(`ไม่พบ ${name}`);
@@ -200,6 +338,14 @@ const checkManifest = (name, man, keys) => {
 };
 checkManifest('audio/manifest.js', sandbox.MTL_AUDIO_MANIFEST, AUDIO_KEYS);
 checkManifest('sprites/manifest.js', sandbox.MTL_SPRITE_MANIFEST, SPRITE_KEYS);
+// ท่ากระทำ W1R2 ต้องเป็น PNG โปร่งใส 176×264 (2 เท่าของท่ายืน) ตาม ART_SPEC
+for (const key of SPRITE_KEYS.filter((k) => /_(?:pick|look|pay)$/.test(k))) {
+  const file = path.join(GAME, 'assets/sprites', `${key}.png`);
+  checks++;
+  if (!fs.existsSync(file)) continue;
+  const head = fs.readFileSync(file).subarray(0, 26);
+  if (head.toString('latin1', 1, 4) !== 'PNG' || head.readUInt32BE(16) !== 176 || head.readUInt32BE(20) !== 264 || head[25] !== 6) err(`sprites: ${key} ต้องเป็น PNG RGBA 176×264`);
+}
 
 const voiceIds = sandbox.MTL_VOICE_IDS || new Set();
 const voiceDoc = fs.readFileSync(path.join(ROOT, 'docs/VOICE_LINES.md'), 'utf8');

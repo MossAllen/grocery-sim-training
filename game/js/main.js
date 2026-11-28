@@ -5,8 +5,13 @@
   const app = $('#app');
   const titleIntro = $('.hero', app);
   const lessonScripts = $$('script[src]', $('#lesson-scripts').content);
-  const weekLoads = new Map();
+  const shelfWalkScripts = $$('script[src]', $('#shelf-walk-scripts').content);
+  const observeWalkScripts = $$('script[src]', $('#observe-walk-scripts').content);
+  const w4r3WalkScripts = $$('script[src]', $('#w4r3-walk-scripts').content);
+  const scriptLoads = new Map();
   let currentScreen = 0;
+  // ลิงก์ฉากเดินเปิดรอบทดลองหลังเลือกสินค้า
+  const previewRound = { '#shelf-walk': [1, 1], '#observe-walk': [0, 1], '#promo-walk': [3, 2] }[location.hash];
   State.load();
 
   const product = () => M.PRODUCTS[State.data.product];
@@ -29,6 +34,8 @@
     $('#starBadge').textContent = `⭐ ${State.totalStars()} / ${M.WEEKS.length * 15 + 3}`;
     $('#soundBtn').classList.toggle('off', !State.data.settings.sound);
     $('#ttsBtn').classList.toggle('off', !State.data.settings.tts);
+    $('#soundBtn').setAttribute('aria-pressed', String(State.data.settings.sound));
+    $('#ttsBtn').setAttribute('aria-pressed', String(State.data.settings.tts));
   }
 
   // ---------- หน้าเริ่ม ----------
@@ -36,18 +43,44 @@
     leave();
     if (titleIntro.parentNode !== app) app.replaceChildren(titleIntro);
     $('.card', app)?.remove();
+    titleIntro.dataset.entry = previewRound ? 'mission' : 'campaign';
+    const disabled = product() ? '' : 'disabled';
     app.insertAdjacentHTML('beforeend', `
-      <div class="card"><h2>1. เลือกสินค้าที่จะใช้ตลอดแผน</h2>
-      <p class="muted">ใช้กลุ่มเดิมตั้งแต่สังเกตลูกค้าไปจนถึงทำแผนการตลาด</p>
-      <div class="product-pick">${Object.values(M.PRODUCTS).map((p) => `<button data-p="${p.id}" class="${State.data.product === p.id ? 'sel' : ''}"><span class="e">${p.icon}</span><b>${p.th}</b><br><small class="muted">${esc(p.small.name)} · ${esc(p.big.name)}</small></button>`).join('')}</div>
-      <h2><label for="pname">2. ชื่อผู้ฝึก <small class="muted">(ไม่บังคับ ใช้ในแฟ้มผลงาน)</small></label></h2>
-      <input id="pname" maxlength="40" value="${esc(State.data.player)}" style="padding:10px;border:1px solid var(--line);border-radius:10px;width:min(360px,100%)">
-      <div class="row"><button class="btn primary" id="startBtn" ${State.data.product ? '' : 'disabled'}>เริ่มฝึก →</button></div></div>`);
+      <section class="card shop-setup" aria-labelledby="product-title"><h2 id="product-title">เลือกสินค้าที่จะใช้ฝึก</h2>
+      <div class="product-pick" aria-labelledby="product-title" role="group">${Object.values(M.PRODUCTS).map((p) => {
+        const selected = State.data.product === p.id;
+        return `<button type="button" data-p="${p.id}" class="${selected ? 'sel' : ''}" aria-pressed="${selected}">
+          <img src="assets/sprites/item_${p.id}_big.png" alt="" width="48" height="56">
+          <span><b>${p.th}</b><small class="muted">${esc(p.small.name)} · ${esc(p.big.name)}</small></span></button>`;
+      }).join('')}</div>
+      <div class="shop-start">
+        <label class="player-field" for="pname">ชื่อผู้ฝึก <small class="muted">(ใช้ในแฟ้มผลงาน)</small>
+          <input id="pname" maxlength="40" value="${esc(State.data.player)}" placeholder="เว้นว่างได้" autocomplete="off"></label>
+        <button type="button" class="btn primary shop-start-button" id="startBtn" ${disabled}>${previewRound ? 'เข้าร้าน →' : 'เริ่มแผนฝึก →'}</button>
+      </div>
+      ${previewRound ? '' : `<div class="shop-missions"><h3>ลองภารกิจเดินในร้าน</h3>
+        <div class="mission-links"><button type="button" class="btn" data-mission="0" ${disabled}>เดินสังเกตลูกค้า <span aria-hidden="true">→</span></button>
+        <button type="button" class="btn" data-mission="1" ${disabled}>เทียบราคาและจ่ายเงิน <span aria-hidden="true">→</span></button>
+        <button type="button" class="btn" data-mission="3" data-round="2" ${disabled}>ทดลองโปรในร้าน <span aria-hidden="true">→</span></button></div></div>`}
+      </section>`);
     $$('.product-pick button').forEach((b) => (b.onclick = () => {
       sfx.play('click'); State.data.product = b.dataset.p; State.save();
-      $$('.product-pick button').forEach((x) => x.classList.toggle('sel', x === b)); $('#startBtn').disabled = false; header();
+      $$('.product-pick button').forEach((x) => {
+        x.classList.toggle('sel', x === b);
+        x.setAttribute('aria-pressed', String(x === b));
+      });
+      $$('#startBtn, [data-mission]', app).forEach((button) => { button.disabled = false; });
+      header();
     }));
-    $('#startBtn').onclick = () => { State.data.player = $('#pname').value.trim(); State.save(); sfx.play('door'); mapScreen(); };
+    const enter = (round) => {
+      State.data.player = $('#pname').value.trim(); State.save(); sfx.play('door');
+      if (round) playScreen(round[0], round[1]);
+      else mapScreen();
+    };
+    $('#startBtn').onclick = () => enter(previewRound);
+    $$('[data-mission]', app).forEach((button) => {
+      button.onclick = () => enter([Number(button.dataset.mission), Number(button.dataset.round ?? 1)]);
+    });
   }
 
   // ---------- แผนที่ 8 สัปดาห์ ----------
@@ -69,11 +102,20 @@
     leave(); header();
     if (!product()) return titleScreen();
     const rb = rubric();
+    const nextWeek = M.WEEKS.findIndex((_, week) => weekOpen(week) && !weekDone(week));
+    const nextRound = nextWeek < 0 ? null : M.WEEKS[nextWeek].rounds.findIndex((_, round) => !State.round(nextWeek, round));
+    const nextTitle = nextRound === null ? 'แบบทดสอบท้ายแผน' : M.WEEKS[nextWeek].rounds[nextRound].title;
+    const totalRounds = M.WEEKS.reduce((count, week) => count + week.rounds.length, 0);
+    const playedRounds = M.WEEKS.reduce((count, week, w) => count + week.rounds.filter((_, r) => State.round(w, r)).length, 0);
     app.innerHTML = `<div class="play-head"><div><h1>แผนฝึก 8 สัปดาห์</h1><p class="muted">สัปดาห์ละ 5 รอบ · รอบที่ 1–4 การตลาดและภาษาอังกฤษ · รอบที่ 5 การเงิน บัญชี ภาษี หรือการลงทุน</p></div>
       <div class="row" style="margin:0"><button class="btn" id="pfBtn">📁 แฟ้มผลงาน</button><button class="btn" id="finalBtn">📝 แบบทดสอบท้ายแผน</button></div></div>
+      <section class="campaign-card" aria-labelledby="campaign-next"><div><small>${nextRound === null ? 'ฝึกครบแผนแล้ว' : `สัปดาห์ ${nextWeek + 1} · รอบ ${nextRound + 1}`}</small>
+        <h2 id="campaign-next">${esc(nextTitle)}</h2><label class="campaign-count" for="campaign-progress">เล่นจบ ${playedRounds} / ${totalRounds} รอบ</label>
+        <progress id="campaign-progress" value="${playedRounds}" max="${totalRounds}"></progress></div>
+        <button type="button" class="btn campaign-action" id="continueBtn">${nextRound === null ? 'เปิดแบบทดสอบ' : playedRounds ? 'เล่นต่อ' : 'เริ่มรอบแรก'} →</button></section>
       <div class="weeks">${M.WEEKS.map((W, w) => {
         const open = weekOpen(w), st = weekStars(w);
-        return `<button class="week" data-w="${w}" ${open ? '' : 'disabled'}>${open ? '' : '<span class="lock">🔒</span>'}<div class="wk">สัปดาห์ ${w + 1}</div><h3>${esc(W.title)}</h3>
+        return `<button class="week" data-w="${w}" ${w === nextWeek ? 'aria-current="step"' : ''} ${open ? '' : 'disabled'}>${open ? '' : '<span class="lock" aria-hidden="true">🔒</span>'}<div class="wk">สัปดาห์ ${w + 1}</div><h3>${esc(W.title)}</h3>
           <div class="stars">⭐ ${st} / 15</div><div class="progress"><i style="width:${(st / 15) * 100}%"></i></div></button>`;
       }).join('')}</div>
       <div class="grid g2" style="margin-top:18px">
@@ -83,6 +125,7 @@
         <p>📖 <b>8 นาที</b> อ่านหลักการ ลองอธิบายด้วยภาษาตัวเอง</p><p>🛠️ <b>17 นาที</b> เล่นรอบในเกม + ทำใบงานจริงกับร้านใกล้บ้าน</p><p>✅ <b>5 นาที</b> ตรวจผล จดสิ่งที่ต้องแก้</p>
         <p class="muted">ตัวเลขในเกมเป็นข้อมูลจำลอง ให้กำกับในใบงานเสมอว่าข้อมูลใดจริง ข้อมูลใดจำลอง</p></div></div>`;
     $$('.week').forEach((b) => (b.onclick = () => { sfx.play('click'); weekScreen(+b.dataset.w); }));
+    $('#continueBtn').onclick = () => nextRound === null ? playScreen('final', 0) : playScreen(nextWeek, nextRound);
     $('#pfBtn').onclick = portfolioScreen;
     $('#finalBtn').onclick = () => playScreen('final', 0);
   }
@@ -104,18 +147,19 @@
   }
 
   // ---------- หน้าเล่น ----------
-  function loadWeek(w) {
-    if (!weekLoads.has(w)) {
+  function loadScript(reference) {
+    const src = reference.getAttribute('src');
+    if (!scriptLoads.has(src)) {
       const pending = new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = lessonScripts[w].getAttribute('src');
+        script.src = src;
         script.onload = resolve;
         script.onerror = () => { script.remove(); reject(new Error('โหลดบทเรียนไม่ได้')); };
         document.head.appendChild(script);
-      }).catch((error) => { weekLoads.delete(w); throw error; });
-      weekLoads.set(w, pending);
+      }).catch((error) => { scriptLoads.delete(src); throw error; });
+      scriptLoads.set(src, pending);
     }
-    return weekLoads.get(w);
+    return scriptLoads.get(src);
   }
 
   async function playScreen(w, r, opts = {}) {
@@ -123,22 +167,51 @@
     const screen = currentScreen;
     const isFinal = w === 'final';
     const R = isFinal ? M.FINAL : M.WEEKS[w].rounds[r];
-    if (!isFinal && !R.lesson) {
+    // ฉากเดินในร้าน: แต่ละรอบระบุไฟล์ที่โหลดทีหลัง ฟังก์ชันเริ่มภารกิจ และทางกลับไปแบบเดิม
+    const walks = {
+      '0-1': { scripts: observeWalkScripts, start: () => M.playObserveWalk, title: 'เดินสังเกตลูกค้าในร้าน',
+        classicLabel: 'ใช้แบบรายการเดิม', replay: 'เล่นซ้ำได้ด้วยเหตุการณ์ชุดเดิมเพื่อทบทวน' },
+      '1-1': { scripts: shelfWalkScripts, start: () => M.CheckoutModel && M.playShelfWalk, title: 'เทียบราคาบนชั้นวาง',
+        classicLabel: 'ฝึกคำนวณแบบเดิม', replay: 'เล่นซ้ำเพื่อเจอป้ายราคาชุดถัดไป' },
+      // W4R3 เดินในร้านเฉพาะรอบจำลอง ฐานจากข้อมูลร้านใช้เส้นทางโหมดข้อมูลร้านเดิม
+      '3-2': { scripts: w4r3WalkScripts, start: () => M.playW4R3Walk, title: 'ทดลองโปรในร้าน',
+        classicLabel: 'เล่นแบบเดิม', replay: 'เล่นซ้ำได้ด้วยฐานและแผนชุดเดิม',
+        available: () => State.promo(State.data.product).baseline?.source !== M.RealW4?.real },
+    };
+    const candidate = opts.classic || isFinal ? null : walks[`${w}-${r}`] || null;
+    const walk = candidate && (!candidate.available || candidate.available()) ? candidate : null;
+    const walking = !!walk;
+    const toClassic = () => playScreen(w, r, { classic: true });
+    if (walking ? !(walk.start() && M.ShelfWalkScene && M.WalkControls) : !isFinal && !R.lesson) {
       app.innerHTML = `<button class="btn ghost small" id="back">← สัปดาห์ ${w + 1}</button>
-        <p class="muted" role="status">กำลังเปิดบทเรียน…</p>`;
+        <p class="muted" role="status">${walking ? 'กำลังเปิดฉากร้าน…' : 'กำลังเปิดบทเรียน…'}</p>`;
       $('#back').onclick = () => weekScreen(w);
-      try { await loadWeek(w); }
+      try {
+        if (walking) await Promise.all(walk.scripts.map(loadScript));
+        else await loadScript(lessonScripts[w]);
+      }
       catch (error) {
         if (screen === currentScreen) {
-          $('[role="status"]', app).textContent = 'โหลดบทเรียนไม่ได้ ลองอีกครั้ง';
+          $('[role="status"]', app).textContent = walking ? 'โหลดฉากร้านไม่ได้ ลองอีกครั้ง' : 'โหลดบทเรียนไม่ได้ ลองอีกครั้ง';
           app.insertAdjacentHTML('beforeend', '<button class="btn primary" id="retryLesson">ลองอีกครั้ง</button>');
           $('#retryLesson').onclick = () => playScreen(w, r, opts);
+          if (walking) {
+            app.insertAdjacentHTML('beforeend', ` <button class="btn ghost" data-walk-classic>${walk.classicLabel}</button>`);
+            $('[data-walk-classic]', app).onclick = toClassic;
+          }
         }
         return;
       }
       if (screen !== currentScreen) return;
     }
     const ctx = ctxFor(isFinal ? 8 : w, r);
+    if (walking) {
+      app.innerHTML = `<button class="btn ghost small" id="back">← สัปดาห์ ${w + 1}</button>
+        <div class="play-head"><h2>${walk.title}</h2></div><div class="stage card walk-stage"></div>`;
+      $('#back').onclick = () => weekScreen(w);
+      walk.start()($('.stage'), ctx, finish, toClassic);
+      return;
+    }
     app.innerHTML = `<button class="btn ghost small" id="back">← ${isFinal ? 'แผนที่' : 'สัปดาห์ ' + (w + 1)}</button>
       <div class="play-head"><h2>${isFinal ? '📝 ' : `สัปดาห์ ${w + 1} · รอบ ${r + 1} — `}${esc(R.title)} <span class="tag">${M.SKILLS[R.skill]}</span></h2></div>
       <div class="theory"><b>📖 ทฤษฎี</b> ${R.theory}${isFinal ? '' : ' <button class="btn small ghost rd">📚 อ่านประกอบ</button>'}</div>
@@ -150,14 +223,15 @@
     if (!isFinal) $('.rd').onclick = () => readingPanel(w, r, R);
     const begin = () => {
       $('.task').classList.remove('hidden'); $('.stage').classList.remove('hidden');
-      runEngine();
+      const stage = $('.stage');
+      if (!M.RealWorksheets.run(stage, R, ctx, finish)) M.engines[R.engine](stage, R, ctx, finish);
     };
     const afterLesson = () => { if (R.check && !isFinal) precheck(R, w, r, begin); else begin(); };
     // บทเรียนก่อนเล่น: ครั้งแรกเปิดเอง · เรียนแล้วย่อเป็นแถบให้กดทบทวน
     const lkey = `${w}-${r}`, seen = !!(State.data.lessons || {})[lkey];
     const lessonBar = () => {
       $('.lesson-wrap').innerHTML = `<div class="lesson-bar">📖 <b>บทเรียนก่อนเล่น</b> <span class="muted">เรียนแล้ว ✓</span> <button class="btn small ghost relesson">ทบทวนบทเรียน</button></div>`;
-      $('.relesson').onclick = () => { sfx.play('click'); playScreen(w, r, { lesson: true }); };
+      $('.relesson').onclick = () => { sfx.play('click'); playScreen(w, r, { ...opts, lesson: true }); };
     };
     if (R.lesson && !isFinal && (!seen || opts.lesson)) {
       M.playLesson($('.lesson-wrap'), R.lesson(ctx), () => {
@@ -169,9 +243,7 @@
       if (R.lesson && !isFinal) lessonBar();
       afterLesson();
     }
-    function runEngine() {
-    const stage = $('.stage');
-    const finish = (score, summary) => {
+    function finish(score, summary) {
       leave();
       const stars = score >= 0.999 ? 3 : score >= 0.66 ? 2 : score > 0 ? 1 : 0;
       const wasDone = isFinal ? false : weekDone(w);
@@ -180,21 +252,21 @@
       sfx.play(stars ? 'star' : 'wrong');
       const weekNow = !isFinal && !wasDone && weekDone(w);
       const hasNext = !isFinal && r < M.WEEKS[w].rounds.length - 1;
-      modal(`<div class="bigstars" style="color:var(--gold)">${starStr(stars)}</div>
+      modal(`<div class="result-stars">
+        <div class="bigstars" role="img" aria-label="${stars} จาก 3 ดาว">${Array.from({ length: 3 }, (_, i) => `<span aria-hidden="true" class="${i < stars ? 'earned' : ''}">${i < stars ? '★' : '☆'}</span>`).join('')}</div>
+        ${stars === 3 ? '<div class="result-sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>' : ''}</div>
         <h2>${stars === 3 ? 'ยอดเยี่ยม!' : stars === 2 ? 'ดีมาก' : stars === 1 ? 'ผ่าน — ฝึกซ้ำได้' : 'ลองอีกครั้ง'}</h2>
         <p>${esc(summary)}</p>${weekNow ? `<p>🎉 <b>จบสัปดาห์ ${w + 1}!</b> ${w < 7 ? 'ปลดล็อกสัปดาห์ถัดไปแล้ว' : 'ปลดล็อกครบทุกสัปดาห์ ลองทำแบบทดสอบท้ายแผน'}</p>` : ''}
-        <p class="muted">เก็บคะแนนที่ดีที่สุดไว้ เล่นซ้ำได้เสมอ (โจทย์ตัวเลขจะสุ่มใหม่)</p>
+        <p class="muted">เก็บคะแนนที่ดีที่สุดไว้ ${walking ? walk.replay : 'เล่นซ้ำได้เสมอ (โจทย์ตัวเลขจะสุ่มใหม่)'}</p>
         <div class="row" style="justify-content:center">
           <button class="btn" data-a="again">↻ เล่นซ้ำ</button>
           ${hasNext ? '<button class="btn primary" data-a="next">รอบต่อไป →</button>' : `<button class="btn primary" data-a="back">${isFinal ? 'กลับแผนที่' : 'กลับหน้าสัปดาห์'}</button>`}
         </div>`, (a) => {
-        if (a === 'again') playScreen(w, r);
+        if (a === 'again') playScreen(w, r, { classic: opts.classic });
         else if (a === 'next') playScreen(w, r + 1);
         else isFinal ? mapScreen() : weekScreen(w);
       });
       if (weekNow) setTimeout(() => sfx.play('levelup'), 600);
-    };
-    if (!M.RealWorksheets.run(stage, R, ctx, finish)) M.engines[R.engine](stage, R, ctx, finish);
     }
   }
 
@@ -247,9 +319,25 @@
   // ---------- modal / settings ----------
   function modal(html, onAction, left) {
     const m = $('#modal'), c = $('#modalCard');
+    const trigger = document.activeElement;
     c.className = 'modal-card' + (left ? ' left' : '');
-    c.innerHTML = html; m.classList.remove('hidden');
-    $$('[data-a]', c).forEach((b) => (b.onclick = () => { m.classList.add('hidden'); sfx.play('click'); onAction && onAction(b.dataset.a); }));
+    c.innerHTML = html;
+    $('h2', c).id = 'modal-title';
+    m.classList.remove('hidden');
+    $$('[data-a]', c).forEach((b) => (b.onclick = () => {
+      m.classList.add('hidden'); sfx.play('click'); onAction?.(b.dataset.a);
+      if (trigger?.isConnected && m.classList.contains('hidden')) trigger.focus({ preventScroll: true });
+    }));
+    c.onkeydown = (event) => {
+      if (event.key === 'Escape') $('[data-a="close"]', c)?.click();
+      if (event.key !== 'Tab') return;
+      const items = $$('button:not(:disabled), input:not(:disabled), a[href]', c);
+      const edge = event.shiftKey ? items[0] : items.at(-1);
+      if (document.activeElement !== edge && !(event.shiftKey && document.activeElement === c)) return;
+      event.preventDefault();
+      (event.shiftKey ? items.at(-1) : items[0])?.focus();
+    };
+    c.focus({ preventScroll: true });
   }
   function settings() {
     const s = State.data.settings;
@@ -271,6 +359,12 @@
   }
 
   M.nav = { play: playScreen, week: weekScreen };
+  $('#showInstall', titleIntro).onclick = () => {
+    const install = $('#install-app');
+    if (!install) return;
+    install.open = true;
+    $('summary', install).focus();
+  };
   $('#homeBtn').onclick = () => (product() ? mapScreen() : titleScreen());
   $('#soundBtn').onclick = () => { State.data.settings.sound = !State.data.settings.sound; State.save(); header(); if (!State.data.settings.sound) sfx.stopBgm(); else sfx.play('click'); };
   $('#ttsBtn').onclick = () => {
@@ -282,5 +376,5 @@
   if ('speechSynthesis' in window) speechSynthesis.getVoices();
 
   header();
-  product() ? mapScreen() : titleScreen();
+  product() && !previewRound ? mapScreen() : titleScreen();
 })();

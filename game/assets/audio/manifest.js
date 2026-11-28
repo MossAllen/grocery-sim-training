@@ -22,6 +22,11 @@ window.MTL_AUDIO_MANIFEST = {
   whoosh:     [0.3,0.05,260,0.06,0.06,0.15,4,1,6,-1,0,0,0,0.8,0,0,0,0.65,0.03,0,-900],
   note:       [0.24,0.08,420,0.015,0.05,0.11,4,1,4,0,0,0,0.06,0.6,0,0,0,0.55,0.025,0.2,-1400],
   bgm_store:  'assets/audio/bgm_store.ogg',
+  step_shop: 'assets/audio/step_shop.ogg',
+  shelf_pick: 'assets/audio/shelf_pick.ogg',
+  notebook: 'assets/audio/notebook.ogg',
+  scanner: 'assets/audio/scanner.ogg',
+  cash_change: 'assets/audio/cash_change.ogg',
   rain:       [0.28,0.04,300,0.15,0.35,0.38,4,1,0,0,0,0,0,1,0,0,0,0.7,0.1,0.15,-1100],
   lesson_step: [0.22,0,523,0.01,0.03,0.09,0,1,0,0,131,0.04,0,0,0,0,0,0.6,0.02,0,-1800]
 };

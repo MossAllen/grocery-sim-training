@@ -7,19 +7,28 @@ const path = require('node:path');
 const { once } = require('node:events');
 const { gzipSync } = require('node:zlib');
 const scenario = require('./browser-check.js');
+const verifyShelfWalk = require('./browser-check-shelf-walk.js');
+const verifyObserveWalk = require('./browser-check-observe-walk.js');
+const verifyApp = require('./browser-check-app.js');
+const verifyW4R3Walk = require('./browser-check-w4r3-walk.js');
 
 const game = path.resolve(__dirname, '..', 'game');
 const products = ['water', 'snack', 'household'];
 const chromeArgs = ['--disable-crashpad-for-testing'];
 const types = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.png': 'image/png', '.ogg': 'audio/ogg', '.ttf': 'font/ttf', '.woff2': 'font/woff2',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
+  '.png': 'image/png', '.webp': 'image/webp', '.ogg': 'audio/ogg', '.ttf': 'font/ttf', '.woff2': 'font/woff2',
 };
 const gzipCache = new Map();
 
-function respond(req, res) {
+function respond(req, res, basePath) {
   const url = new URL(req.url, 'http://localhost');
-  const file = path.resolve(game, `.${decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname)}`);
+  if (!url.pathname.startsWith(basePath)) {
+    res.writeHead(404).end();
+    return;
+  }
+  const file = path.resolve(game, `./${decodeURIComponent(url.pathname.slice(basePath.length)) || 'index.html'}`);
   const stat = file.startsWith(game + path.sep) && statSync(file, { throwIfNoEntry: false });
   if (!stat || !stat.isFile()) {
     res.writeHead(404).end();
@@ -59,7 +68,7 @@ async function verifyGame(browser, url, axeScript) {
   for (const product of products) {
     for (const playRound of [true, false]) {
       const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true,
-        hasTouch: true, reducedMotion: 'reduce' });
+        hasTouch: true, reducedMotion: 'reduce', serviceWorkers: 'block' });
       try {
         if (!playRound) {
           // Reopen a previously losing save, with no access to a live user profile.
@@ -203,9 +212,34 @@ async function lighthouse(url, cliPath, chromium) {
   return [`Lighthouse mobile performance below 80 (${scores.performance})`];
 }
 
+async function verifyCheckoutRetry(browser, url) {
+  const page = await browser.newPage({ serviceWorkers: 'block' });
+  try {
+    let requests = 0;
+    await page.route('**/checkout-model.js?*', (route) => {
+      requests++;
+      return requests === 1 ? route.abort() : route.continue();
+    });
+    await page.goto(`${url}#shelf-walk`);
+    await page.locator('[data-p="water"]').click();
+    await page.locator('#startBtn').click();
+    // Exercise retry when the model alone failed and the other walk scripts have already loaded.
+    await page.waitForFunction(() => {
+      const { playShelfWalk, ShelfWalkScene, WalkControls } = window.MTL;
+      return playShelfWalk && ShelfWalkScene && WalkControls;
+    }, null, { timeout: 5000 });
+    await page.locator('#retryLesson').click({ timeout: 5000 });
+    await page.locator('.shelf-walk canvas').waitFor({ timeout: 5000 });
+    if (requests !== 2) throw new Error(`Expected one checkout model retry, got ${requests} requests`);
+    console.log('W2R2 checkout model request retry: passed');
+  } finally {
+    await page.close();
+  }
+}
+
 async function phasedScenario(browser, url, file, phases) {
   const run = require(path.join(__dirname, file));
-  const context = await browser.newContext();
+  const context = await browser.newContext({ serviceWorkers: 'block' });
   try {
     const page = await context.newPage();
     const errors = [];
@@ -223,11 +257,11 @@ async function phasedScenario(browser, url, file, phases) {
   }
 }
 
-async function withGameServer(run) {
-  const server = http.createServer(respond);
+async function withGameServer(run, basePath = '/') {
+  const server = http.createServer((req, res) => respond(req, res, basePath));
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
-  try { return await run(`http://127.0.0.1:${server.address().port}/`); }
+  try { return await run(`http://127.0.0.1:${server.address().port}${basePath}`); }
   finally { server.close(); }
 }
 
@@ -239,12 +273,18 @@ async function main() {
   const modulesPath = path.resolve(modules);
   const dependency = (entry) => path.join(modulesPath, entry);
   const { chromium } = require(dependency('playwright'));
+  const axeScript = mode ? null : dependency('axe-core/axe.min.js');
   process.chdir(os.tmpdir());
   const problems = await withGameServer(async (url) => {
     const browser = await chromium.launch({ args: chromeArgs });
     let checks;
     try {
-      checks = await verifyGame(browser, url, mode ? null : dependency('axe-core/axe.min.js'));
+      await verifyCheckoutRetry(browser, url);
+      checks = await verifyGame(browser, url, axeScript);
+      checks.push(...await withGameServer((appUrl) => verifyApp(browser, appUrl, axeScript), '/grocery-sim-training/'));
+      checks.push(...await verifyShelfWalk(browser, url, axeScript));
+      checks.push(...await verifyObserveWalk(browser, url, axeScript));
+      checks.push(...await verifyW4R3Walk(browser, url, axeScript));
       await phasedScenario(browser, url, 'browser-check-w4.js', ['seed', 'exercise', 'reload']);
       await phasedScenario(browser, url, 'browser-check-worksheets.js', ['exercise', 'reload']);
     }
