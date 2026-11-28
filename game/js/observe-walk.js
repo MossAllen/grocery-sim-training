@@ -30,6 +30,7 @@
     const { periods, timeLabel } = session;
     const sprites = window.MTL_SPRITE_MANIFEST || {};
     let periodIndex = 0, clock = periods[0].start, captionKey = '', focus = null, walker = 0;
+    let replayTimer;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     // ลูกค้าเริ่มด้วยท่ายืน เมื่อผู้เล่นเห็นหรือได้ยินครั้งแรกจึงเปลี่ยนเป็นท่ากระทำของเหตุการณ์และคงท่านั้นไว้
     const performed = new Set();
@@ -92,6 +93,7 @@
     const controls = M.WalkControls.attach({ root: el, viewport, scene, onMove: sense, onInteract: interact });
     M.onLeave = () => {
       cancelAnimationFrame(walker);
+      clearTimeout(replayTimer);
       controls.destroy();
       M.stopSpeaking();
     };
@@ -131,6 +133,7 @@
     }
 
     function renderCaption() {
+      clearTimeout(replayTimer);
       if (!focus) {
         caption.innerHTML = `<p class="ow-line muted">ยังไม่มีลูกค้าอยู่ใกล้ ดูทิศทางใต้ปุ่มเดิน หรือใช้รายการลูกค้า</p>`;
         return;
@@ -254,7 +257,8 @@
       const { sound, tts } = State.data.settings;
       if (sound && tts) M.speak(focus.event.heard, 'th-TH');
       caption.textContent = '';
-      setTimeout(renderCaption, 60);
+      clearTimeout(replayTimer);
+      replayTimer = setTimeout(renderCaption, 60);
     }
 
     function record() {
@@ -333,7 +337,7 @@
       fillNotebook();
       fillList();
       updateProgress();
-      captionKey = '';
+      captionKey = null;
       sense();
       caption.insertAdjacentHTML('afterbegin', `<p class="ow-line"><b>${current.label} ${timeLabel(current.start)}</b> ลูกค้า ${events().length} คนอยู่ในร้าน มองหาเครื่องหมาย ! เหนือศีรษะ</p>`);
     }
@@ -349,6 +353,7 @@
         return;
       }
       cancelAnimationFrame(walker);
+      clearTimeout(replayTimer);
       controls.destroy();
       M.onLeave = null;
       done();

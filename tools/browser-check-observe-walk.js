@@ -161,8 +161,15 @@ async function verifyObserveWalk(browser, url, axeScript) {
         await page.locator('.walk-viewport').focus();
         await page.keyboard.press('e');
         await page.locator('.ow-book tr[data-row="am-price"]').waitFor();
-        await page.keyboard.press('e');
-        await use('[data-ow-record][data-target="am-price"]');
+        const replayQueued = await page.locator('[data-ow-record][data-target="am-price"]').evaluate((button) => {
+          // Follow a keyboard replay immediately with the record button, before the replay redraw.
+          button.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+          const clearedForReplay = document.querySelector('.ow-caption').textContent === '';
+          button.click();
+          return clearedForReplay;
+        });
+        assert.ok(replayQueued, 'E should replay an already recorded conversation');
+        await page.waitForTimeout(100);
         assert.match(await page.locator('.ow-caption').innerText(), /มีแถวนี้ในสมุดแล้ว/);
         assert.deepEqual(await rows(), ['am-price'], 'repeat notes must not add rows');
         assert.equal(await cues('notebook'), 1, 'the notebook cue must play once per new note');
