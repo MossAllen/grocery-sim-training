@@ -30,9 +30,10 @@ BUNDLES = {
     },
     "handoff-blender": {
         "readme": "handoff/to-blender.md",
-        "version": "ต้นแบบเคาน์เตอร์",
-        "intro": "เริ่มที่คู่มือด้านล่างสำหรับฉากเคาน์เตอร์ Blender และเกณฑ์ตรวจภาพของต้นแบบ",
-        "files": ["blender/generate_store_assets.py", "blender/build_checkout_preview.py",
+        "version": "ต้นแบบเคาน์เตอร์และภาพ stud",
+        "intro": "เริ่มที่คู่มือด้านล่างสำหรับฉากเคาน์เตอร์และภาพลูกค้าทรง stud",
+        "files": ["blender/generate_stud_sprites.py", "blender/stud_kit.py",
+                  "blender/generate_store_assets.py", "blender/build_checkout_preview.py",
                   ".agents/skills/grocery-blender-vfx/SKILL.md", "handoff/to-blender.md",
                   "docs/ART_SPEC.md", "docs/AUDIO_SPEC.md",
                   "game/assets/audio/scanner.ogg", "game/assets/fonts/kanit/Kanit-SemiBold.ttf", "game/assets/fonts/kanit/OFL.txt",

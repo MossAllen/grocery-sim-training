@@ -1,6 +1,6 @@
 # 📦 ชุดส่งงาน → Blender (ภาพและโมเดล 3D)
 
-> อัปเดต 2026-11-27 · ต้นแบบฉากเคาน์เตอร์ชุดใหม่และภาพสำหรับบทเรียน
+> อัปเดต 2026-11-28 · ต้นแบบฉากเคาน์เตอร์และภาพทรง stud
 
 ## ฉากเคาน์เตอร์สำหรับทดสอบภาพและเอฟเฟกต์
 
@@ -37,12 +37,12 @@
 ## ไฟล์ที่ใช้
 อยู่ในไฟล์ `dist/handoff-blender.zip` แล้ว
 
-1. `blender/generate_store_assets.py` — สคริปต์สร้างโมเดล + render + เขียน manifest
+1. `blender/generate_stud_sprites.py` และ `blender/stud_kit.py` — สคริปต์สร้างและเรนเดอร์ภาพทรง stud ใช้ `blender/generate_store_assets.py` เมื่อต้องการเปิดงานทรงเดิมเพื่อเทียบ
 2. `docs/ART_SPEC.md` — คีย์ ขนาด สไตล์ และสิ่งที่ควรทำต่อ
-3. `game/assets/sprites/*` — ภาพเวอร์ชัน 0.1 (ใช้เทียบ)
+3. `game/assets/sprites/*` — ภาพทรง stud 22 คีย์ที่ใช้ในพรีวิว
 4. `docs/RESEARCH.md` §2 (คลิป Blender) และ §4 (คู่มือ bpy, Kenney CC0, awesome-blender)
 5. `docs/ROADMAP.md` เฟส 3 — ฉาก isometric และลูกค้า 4 แบบ 2 ท่า
-6. `handoff/2026-11-26_claude-to-all_v0.3.md` — สถานะล่าสุด
+6. `handoff/2026-11-27_codex-to-all_v0.4.md` — ใบส่งมอบรุ่นที่เผยแพร่
 
 > ตามข้อ 2: ถ้าจะนำโมเดล Kenney (CC0) มาใช้ ให้ import .glb/.fbx เข้าสคริปต์แล้ว render ด้วยกล้องและแสงเดิม
 > และเพิ่มแถวใน THIRD_PARTY.md ทุกครั้ง
@@ -56,10 +56,10 @@
 3. Render:
 
 ```powershell
-& "C:\Program Files\Blender Foundation\Blender 5.3\blender.exe" -b -P blender/generate_store_assets.py
+& "C:\Program Files\Blender Foundation\Blender 5.3\blender.exe" -b -P blender/generate_stud_sprites.py -- --out dist/stud-preview
 ```
 
-4. ตรวจ: ภาพไม่ถูกตัดขอบ พื้นหลังโปร่งใส แล้วเปิดเกมดูสัปดาห์ 1 รอบ 2 (ฉากร้าน)
+4. ตรวจภาพใน `dist/stud-preview` ให้เห็นใบหน้า รูปทรงของถือ และขอบภาพที่ขนาดในเกม เมื่อตกลงใช้ชุดภาพแล้วให้เรนเดอร์ไป `game/assets/sprites` และตรวจฉาก W1R2
 
 ```powershell
 node tools/check.js
@@ -67,12 +67,15 @@ node tools/check.js
 
 5. บันทึกไฟล์ภาพและผลตรวจไว้ในใบส่งงาน เพื่อให้ผู้รับช่วงเปิดในเกมและตรวจขนาดจริงซ้ำได้
 
+## คิวท่าลูกค้าสำหรับ W4R3
+
+เมื่อเริ่มสร้าง W4R3 ให้ลองท่าเดินเข้า หิ้วตะกร้า และลังเลจากชุดภาพเดิมในฉากก่อน ถ้าต้องเพิ่มท่าให้ Claude ระบุจังหวะและคีย์ที่จะใช้ สร้างภาพโปร่งใสในกรอบกล้องเดียวกับท่ายืน ส่งภาพ PNG สคริปต์ที่แก้ และภาพเทียบที่ขนาดแสดงจริงกลับให้ Claude เพื่อทดลองในฉาก
+
 ## ถ้าใช้ AI ช่วยเขียนโมเดล
 
-แนบ `generate_store_assets.py` + `ART_SPEC.md` แล้วสั่ง:
+แนบ `generate_stud_sprites.py`, `stud_kit.py` และ `ART_SPEC.md` พร้อมโจทย์ของท่าที่ตกลงใช้
 
 ```
-ปรับฟังก์ชัน build_* ในสคริปต์ Blender นี้ให้โมเดลร้านชำไทยแบบ low-poly สวยขึ้นตาม ART_SPEC.md
-ห้ามเปลี่ยนชื่อคีย์ ขนาดในตาราง SIZES และฟังก์ชัน main/render/camera_and_light
-ต้องรันได้ด้วย blender -b -P (ไม่มีหน้าจอ) บน Blender 5.x ส่งกลับสคริปต์ทั้งไฟล์
+สร้างท่าลูกค้าทรง stud ตามโจทย์และ ART_SPEC.md โดยใช้โครงจาก build_customer และ build_pose
+รักษาคีย์ ขนาด และกรอบกล้องของภาพที่เกมใช้อยู่ ส่ง PNG โปร่งใสและสคริปต์ที่รันได้ด้วย blender -b -P บน Blender 5.3
 ```
