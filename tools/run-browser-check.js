@@ -9,6 +9,7 @@ const { gzipSync } = require('node:zlib');
 const scenario = require('./browser-check.js');
 const verifyShelfWalk = require('./browser-check-shelf-walk.js');
 const verifyObserveWalk = require('./browser-check-observe-walk.js');
+const verifyW4R3Walk = require('./browser-check-w4r3-walk.js');
 
 const game = path.resolve(__dirname, '..', 'game');
 const products = ['water', 'snack', 'household'];
@@ -276,6 +277,7 @@ async function main() {
       checks = await verifyGame(browser, url, axeScript);
       checks.push(...await verifyShelfWalk(browser, url, axeScript));
       checks.push(...await verifyObserveWalk(browser, url, axeScript));
+      checks.push(...await verifyW4R3Walk(browser, url, axeScript));
       await phasedScenario(browser, url, 'browser-check-w4.js', ['seed', 'exercise', 'reload']);
       await phasedScenario(browser, url, 'browser-check-worksheets.js', ['exercise', 'reload']);
     }

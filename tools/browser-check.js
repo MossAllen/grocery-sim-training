@@ -57,7 +57,7 @@ module.exports = async ({ week, idx, playRound, stopAtNumericLesson }) => {
     else {
       click(`.week[data-w="${week}"]`);
       click(`.round[data-r="${idx}"]`);
-      if ((week === 0 || week === 1) && idx === 1) {
+      if (((week === 0 || week === 1) && idx === 1) || (week === 3 && idx === 2 && State.promo(State.data.product).baseline?.source !== M.RealW4.real)) {
         await waitFor(() => get('[data-walk-classic]'), 'classic practice choice');
         click('[data-walk-classic]');
       }

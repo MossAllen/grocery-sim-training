@@ -7,6 +7,7 @@
   const lessonScripts = $$('script[src]', $('#lesson-scripts').content);
   const shelfWalkScripts = $$('script[src]', $('#shelf-walk-scripts').content);
   const observeWalkScripts = $$('script[src]', $('#observe-walk-scripts').content);
+  const w4r3WalkScripts = $$('script[src]', $('#w4r3-walk-scripts').content);
   const scriptLoads = new Map();
   let currentScreen = 0;
   // ฉากเดินในร้านรุ่นทดลอง: W1R2 สังเกตลูกค้า และ W2R2 เทียบราคา · #observe-walk หรือ #shelf-walk เปิดรอบนั้นหลังเลือกสินค้า
@@ -138,8 +139,13 @@
         classicLabel: 'ใช้แบบรายการเดิม', replay: 'เล่นซ้ำได้ด้วยเหตุการณ์ชุดเดิมเพื่อทบทวน' },
       '1-1': { scripts: shelfWalkScripts, start: () => M.CheckoutModel && M.playShelfWalk, title: 'เทียบราคาบนชั้นวาง',
         classicLabel: 'ฝึกคำนวณแบบเดิม', replay: 'เล่นซ้ำเพื่อเจอป้ายราคาชุดถัดไป' },
+      // W4R3 เดินในร้านเฉพาะรอบจำลอง ฐานจากข้อมูลร้านใช้เส้นทางโหมดข้อมูลร้านเดิม
+      '3-2': { scripts: w4r3WalkScripts, start: () => M.playW4R3Walk, title: 'ทดลองโปรในร้าน',
+        classicLabel: 'เล่นแบบเดิม', replay: 'เล่นซ้ำได้ด้วยฐานและแผนชุดเดิม',
+        available: () => State.promo(State.data.product).baseline?.source !== M.RealW4?.real },
     };
-    const walk = opts.classic || isFinal ? null : walks[`${w}-${r}`] || null;
+    const candidate = opts.classic || isFinal ? null : walks[`${w}-${r}`] || null;
+    const walk = candidate && (!candidate.available || candidate.available()) ? candidate : null;
     const walking = !!walk;
     const toClassic = () => playScreen(w, r, { classic: true });
     if (walking ? !(walk.start() && M.ShelfWalkScene && M.WalkControls) : !isFinal && !R.lesson) {

@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ร้านชำจำลอง — Marketing Training Lab</title>
-<link rel="stylesheet" href="css/style.css?v=0.5.6-preview">
-<link rel="stylesheet" href="css/lesson.css?v=0.5.6-preview">
-<link rel="stylesheet" href="css/worksheets.css?v=0.5.6-preview">
-<link rel="stylesheet" href="css/shelf-walk.css?v=0.5.6-preview">
-<link rel="stylesheet" href="css/observe-walk.css?v=0.5.6-preview">
+<link rel="stylesheet" href="css/style.css?v=0.5.7-preview">
+<link rel="stylesheet" href="css/lesson.css?v=0.5.7-preview">
+<link rel="stylesheet" href="css/worksheets.css?v=0.5.7-preview">
+<link rel="stylesheet" href="css/shelf-walk.css?v=0.5.7-preview">
+<link rel="stylesheet" href="css/observe-walk.css?v=0.5.7-preview">
 </head>
 <body>
 <header class="topbar">
@@ -28,47 +28,52 @@
 <div class="modal hidden" id="modal"><div class="modal-card" id="modalCard"></div></div>
 
 <!-- ไฟล์ส่งต่องาน: Gemini (เสียง) และ Blender (ภาพ) แก้แค่ manifest สองไฟล์นี้ -->
-<script defer src="assets/audio/manifest.js?v=0.5.6-preview"></script>
-<script defer src="assets/voice/manifest.js?v=0.5.6-preview"></script>
-<script defer src="assets/sprites/manifest.js?v=0.5.6-preview"></script>
+<script defer src="assets/audio/manifest.js?v=0.5.7-preview"></script>
+<script defer src="assets/voice/manifest.js?v=0.5.7-preview"></script>
+<script defer src="assets/sprites/manifest.js?v=0.5.7-preview"></script>
 <!-- ไลบรารีภายนอก (MIT — vendor/zzfx/LICENSE) -->
-<script defer src="vendor/zzfx/ZzFXMicro.js?v=0.5.6-preview"></script>
+<script defer src="vendor/zzfx/ZzFXMicro.js?v=0.5.7-preview"></script>
 <!-- โค้ดเกม (Claude) -->
-<script defer src="js/util.js?v=0.5.6-preview"></script>
-<script defer src="js/sfx.js?v=0.5.6-preview"></script>
-<script defer src="js/state.js?v=0.5.6-preview"></script>
-<script defer src="js/store-scene.js?v=0.5.6-preview"></script>
-<script defer src="js/curriculum.js?v=0.5.6-preview"></script>
-<script defer src="js/reading.js?v=0.5.6-preview"></script>
-<script defer src="js/lesson-kit.js?v=0.5.6-preview"></script>
+<script defer src="js/util.js?v=0.5.7-preview"></script>
+<script defer src="js/sfx.js?v=0.5.7-preview"></script>
+<script defer src="js/state.js?v=0.5.7-preview"></script>
+<script defer src="js/store-scene.js?v=0.5.7-preview"></script>
+<script defer src="js/curriculum.js?v=0.5.7-preview"></script>
+<script defer src="js/reading.js?v=0.5.7-preview"></script>
+<script defer src="js/lesson-kit.js?v=0.5.7-preview"></script>
 <template id="lesson-scripts">
-  <script src="js/lessons-w1.js?v=0.5.6-preview"></script>
-  <script src="js/lessons-w2.js?v=0.5.6-preview"></script>
-  <script src="js/lessons-w3.js?v=0.5.6-preview"></script>
-  <script src="js/lessons-w4.js?v=0.5.6-preview"></script>
-  <script src="js/lessons-w5.js?v=0.5.6-preview"></script>
-  <script src="js/lessons-w6.js?v=0.5.6-preview"></script>
-  <script src="js/lessons-w7.js?v=0.5.6-preview"></script>
-  <script src="js/lessons-w8.js?v=0.5.6-preview"></script>
+  <script src="js/lessons-w1.js?v=0.5.7-preview"></script>
+  <script src="js/lessons-w2.js?v=0.5.7-preview"></script>
+  <script src="js/lessons-w3.js?v=0.5.7-preview"></script>
+  <script src="js/lessons-w4.js?v=0.5.7-preview"></script>
+  <script src="js/lessons-w5.js?v=0.5.7-preview"></script>
+  <script src="js/lessons-w6.js?v=0.5.7-preview"></script>
+  <script src="js/lessons-w7.js?v=0.5.7-preview"></script>
+  <script src="js/lessons-w8.js?v=0.5.7-preview"></script>
 </template>
 <template id="shelf-walk-scripts">
-  <script src="js/shelf-walk-scene.js?v=0.5.6-preview"></script>
-  <script src="js/checkout-model.js?v=0.5.6-preview"></script>
-  <script src="js/walk-controls.js?v=0.5.6-preview"></script>
-  <script src="js/shelf-walk.js?v=0.5.6-preview"></script>
+  <script src="js/shelf-walk-scene.js?v=0.5.7-preview"></script>
+  <script src="js/checkout-model.js?v=0.5.7-preview"></script>
+  <script src="js/walk-controls.js?v=0.5.7-preview"></script>
+  <script src="js/shelf-walk.js?v=0.5.7-preview"></script>
+</template>
+<template id="w4r3-walk-scripts">
+  <script src="js/shelf-walk-scene.js?v=0.5.7-preview"></script>
+  <script src="js/walk-controls.js?v=0.5.7-preview"></script>
+  <script src="js/w4r3-walk.js?v=0.5.7-preview"></script>
 </template>
 <template id="observe-walk-scripts">
-  <script src="js/shelf-walk-scene.js?v=0.5.6-preview"></script>
-  <script src="js/walk-controls.js?v=0.5.6-preview"></script>
-  <script src="js/observe-walk.js?v=0.5.6-preview"></script>
+  <script src="js/shelf-walk-scene.js?v=0.5.7-preview"></script>
+  <script src="js/walk-controls.js?v=0.5.7-preview"></script>
+  <script src="js/observe-walk.js?v=0.5.7-preview"></script>
 </template>
-<script defer src="js/observe-walk-model.js?v=0.5.6-preview"></script>
-<script defer src="js/time-compare.js?v=0.5.6-preview"></script>
-<script defer src="js/engines.js?v=0.5.6-preview"></script>
-<script defer src="js/promo-model.js?v=0.5.6-preview"></script>
-<script defer src="js/real-w4.js?v=0.5.6-preview"></script>
-<script defer src="js/sim-w4.js?v=0.5.6-preview"></script>
-<script defer src="js/real-worksheets.js?v=0.5.6-preview"></script>
-<script defer src="js/main.js?v=0.5.6-preview"></script>
+<script defer src="js/observe-walk-model.js?v=0.5.7-preview"></script>
+<script defer src="js/time-compare.js?v=0.5.7-preview"></script>
+<script defer src="js/engines.js?v=0.5.7-preview"></script>
+<script defer src="js/promo-model.js?v=0.5.7-preview"></script>
+<script defer src="js/real-w4.js?v=0.5.7-preview"></script>
+<script defer src="js/sim-w4.js?v=0.5.7-preview"></script>
+<script defer src="js/real-worksheets.js?v=0.5.7-preview"></script>
+<script defer src="js/main.js?v=0.5.7-preview"></script>
 </body>
 </html>

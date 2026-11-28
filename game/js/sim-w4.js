@@ -309,28 +309,34 @@
   }
 
   // ================= รอบ 3 run =================
-  function runRound(el, round, ctx, finish) {
+  // ฉากเดิน W4R3 (w4r3-walk.js) และแบบเดิมใช้ runSetup กับ runSummary ชุดเดียวกัน ผลและคะแนนจึงตรงกันทุกทาง
+  function runSetup(ctx) {
     const pm = productMoney(ctx), store = State.promo(ctx.product.id);
     const { b, practice } = ensureBaseline(ctx);
     let p = store.plan, stale = '';
     // GDD §11: ฐานของผู้เล่นเปลี่ยนแล้ว ต้องคำนวณแผนใหม่ก่อนเทียบผล
-    if (!practice && (!p || p.baselineId !== b.id)) {
-      el.innerHTML = `<div class="calc-intro"><span class="warn">📌 ยอดปกติชุดล่าสุด (${esc(b.id)}) ยังไม่มีแผนโปร — คำนวณแผนในรอบ 2 ก่อน แล้วจึงทดลองเทียบผล</span>
-        <div class="row"><button class="btn primary toPlan">ไปรอบ 2 ออกแบบโปร →</button></div></div>`;
-      $('.toPlan', el).onclick = () => M.nav && M.nav.play(ctx.week, 1);
-      return;
-    }
+    if (!practice && (!p || p.baselineId !== b.id)) return { blocked: true, b };
     if (!p) stale = 'ยังไม่มีแผนจากรอบ 2 — ใช้ราคาชุดตั้งต้น (ส่วนลด 10%)';
     else if (p.baselineId !== b.id) { p = null; stale = 'แผนเดิมอ้างฐานชุดอื่น — ใช้ราคาชุดตั้งต้น (ส่วนลด 10%)'; }
     const B = p ? p.B : pm.B, F = p ? p.F : pm.F;
     const pair = PM.simulatePair({ seed: b.seed, P: pm.P, C: pm.C, B, T, K0: b.K0, K1: K, slot: b.slot, event: b.event });
-    const r = pair.promo;
-    el.innerHTML = `<div class="calc-intro"><b>ทดลองโปร 2 ชิ้น ${bt(B)} บาท</b> ${LBL.plan} · ค่าทำโปร ${bt(F)} บาท · ช่วงเวลา ระยะเวลา เหตุการณ์ และสต็อกเปิดช่วงเดียวกับช่วงปกติ ${LBL.sim}
-      ${stale ? `<br><span class="warn">${stale}</span>` : ''}${practice ? `<br><span class="warn">ฐานเป็นโจทย์ฝึก — เล่นรอบ 1 เพื่อใช้ยอดของตัวเอง</span>` : ''}</div><div class="scn"></div><div class="after"></div>`;
-    play($('.scn', el), ctx, pair, true, B, () => {
-      const v = PM.evaluate({ P: pm.P, C: pm.C, B, F, N0: b.N0, S: r.S, U: r.U });
-      const after = $('.after', el);
-      after.innerHTML = `<div class="calc-intro"><b>เทียบสองช่วง</b> ${LBL.sim}
+    return { pm, store, b, practice, p, stale, B, F, pair, r: pair.promo };
+  }
+
+  function blockedRun(el, ctx, b) {
+    el.innerHTML = `<div class="calc-intro"><span class="warn">📌 ยอดปกติชุดล่าสุด (${esc(b.id)}) ยังไม่มีแผนโปร — คำนวณแผนในรอบ 2 ก่อน แล้วจึงทดลองเทียบผล</span>
+      <div class="row"><button class="btn primary toPlan">ไปรอบ 2 ออกแบบโปร →</button></div></div>`;
+    $('.toPlan', el).onclick = () => M.nav && M.nav.play(ctx.week, 1);
+  }
+
+  const runIntro = ({ B, F, stale, practice }) => `<b>ทดลองโปร 2 ชิ้น ${bt(B)} บาท</b> ${LBL.plan} · ค่าทำโปร ${bt(F)} บาท · ช่วงเวลา ระยะเวลา เหตุการณ์ และสต็อกเปิดช่วงเดียวกับช่วงปกติ ${LBL.sim}
+      ${stale ? `<br><span class="warn">${stale}</span>` : ''}${practice ? `<br><span class="warn">โจทย์ฝึก · จำลอง — เล่นรอบ 1 เพื่อใช้ยอดของตัวเอง</span>` : ''}`;
+
+  // ใบสรุปคู่ช่วง คำถาม 3 ข้อจากคำตอบแรก กราฟ ใบงาน และบันทึกผล · extra = { route, evidence } จากฉากเดิน
+  function runSummary(after, ctx, setup, finish, extra = {}) {
+    const { pm, store, b, p, B, F, pair, r } = setup;
+    const v = PM.evaluate({ P: pm.P, C: pm.C, B, F, N0: b.N0, S: r.S, U: r.U });
+    after.innerHTML = `<div class="calc-intro"><b>เทียบสองช่วง</b> ${LBL.sim}
         <table><tr><th></th><th>ช่วงปกติ</th><th>ช่วงโปร</th></tr>
         <tr><td>จำนวนขาย</td><td>${b.N0} ชิ้น</td><td>${v.N1} ชิ้น = 2 × ${r.S} ชุด + ${r.U} เดี่ยว</td></tr>
         <tr><td>ยอดขาย</td><td>${b.N0} × ${bt(pm.P)} = ${bt(v.R0)}</td><td>${r.S} × ${bt(B)} + ${r.U} × ${bt(pm.P)} = ${bt(v.R1)}</td></tr>
@@ -338,40 +344,48 @@
         <tr><td>ค่าใช้จ่ายเพิ่มจากโปร</td><td>0</td><td>${bt(F)} ${LBL.plan}</td></tr>
         <tr><td>ผลหลังค่าใช้จ่าย</td><td>G0 = ${bt(v.G0)}</td><td class="q">?</td></tr>
         <tr><td>ปัจจัยอื่น</td><td colspan="2">${factorText(pair, r)}</td></tr></table></div><div class="fm"></div>`;
-      const wrongN = r.S * pm.C + r.U * pm.C;
-      form($('.fm', after), [
-        { key: 'c1', label: 'ต้นทุนขายช่วงโปร = N1 × ทุน', unit: 'บาท', kind: 'money', answer: v.COGS1,
-          diagnose: (x) => x === wrongN && r.S ? `ชุดหนึ่งมี 2 ชิ้น: N1 = 2 × ${r.S} + ${r.U} = ${v.N1} ชิ้น` : x === v.R1 ? 'ใช้ยอดขายแทนต้นทุน' : `${v.N1} × ${bt(pm.C)} = ${bt(v.COGS1)} บาท` },
-        { key: 'g1', label: 'ผลหลังค่าทำโปร G1 = ยอดขาย − ต้นทุนขาย − F', unit: 'บาท', kind: 'money', answer: v.G1,
-          diagnose: (x) => x === v.G1 + F ? `ยังไม่หักค่าทำโปร ${bt(F)} บาท` : x === v.R1 - F ? 'ยังไม่หักต้นทุนขาย' : `${bt(v.R1)} − ${bt(v.COGS1)} − ${bt(F)} = ${bt(v.G1)} บาท` },
-        { key: 'dec', label: 'คำตัดสิน', kind: 'choice', options: ['ทำต่อ', 'ปรับ', 'หยุด'], answer: v.decision,
-          diagnose: () => v.G1 <= 0 ? `G1 = ${bt(v.G1)} ไม่เกิน 0 → หยุด` : v.delta >= 0 ? `G1 − G0 = ${bt(v.delta)} ไม่ติดลบ → ทำต่อ` : `ยอดขายอาจเพิ่ม แต่ G1 − G0 = ${bt(v.delta)} ยังติดลบ → ปรับ (ลองเทียบผลหลังหักค่าป้ายกับช่วงปกติอีกครั้ง)` },
-      ], (ok, notes) => {
-        $$('td.q', after)[0].textContent = bt(v.COGS1); $$('td.q', after)[1].textContent = `G1 = ${bt(v.G1)}`;
-        const sol = $('.solution', after); sol.classList.remove('hidden');
-        sol.innerHTML = `${notes.length ? `<ul class="diag">${notes.join('')}</ul>` : ''}
-          ${chart([
-            { label: 'ยอดขาย', a: v.R0, b: v.R1 },
-            { label: 'ต้นทุนขาย', a: v.COGS0, b: v.COGS1 },
-            { label: 'ค่าใช้จ่ายเพิ่ม', a: 0, b: F },
-            { label: 'ผลหลังค่าใช้จ่าย', a: v.G0, b: v.G1 },
-          ])}
-          <p><b>เกณฑ์</b> G1 ≤ 0 → หยุด · G1 > 0 และ G1 − G0 ≥ 0 → ทำต่อ · G1 > 0 แต่ G1 − G0 < 0 → ปรับ<br>
-          ผลต่าง G1 − G0 = ${bt(v.G1)} − ${bt(v.G0)} = <b>${bt(v.delta)}</b> บาท → <b>${v.decision}</b>
-          ${pair.event !== 'none' ? `<br><span class="warn">${PM.EVENTS[pair.event].icon} ${PM.EVENTS[pair.event].th} เกิดทั้งสองช่วง — ร้านจริงควรลองซ้ำในวันที่เงื่อนไขปกติก่อนสรุป</span>` : ''}</p>`;
-        const getWs = worksheet(sol, 'w4r3', 'ปัจจัยอื่นที่อาจทำให้ผลคลาดเคลื่อน และถ้าลองซ้ำจะเปลี่ยนหรือคุมอะไร');
-        finishBtn(sol, `บันทึกผลทดลอง (${ok}/3)`, () => {
-          const rec = { id: State.newId('run'), baselineId: b.id, planId: p ? p.id : null, source: 'จำลอง', B, F, S: r.S, U: r.U, N1: v.N1,
-            R1: v.R1, COGS1: v.COGS1, G1: v.G1, G0: v.G0, delta: v.delta, decision: v.decision, event: pair.event, note: getWs(), at: Date.now() };
-          store.run = rec;
-          ctx.state.sim.run = { sets: r.S, singles: r.U, units: v.N1, sales: v.R1 / 100, profit: v.G1 / 100, baseProfit: v.G0 / 100, rain: pair.event === 'rain' };
-          State.addPortfolio('w4-run', 4, 'ผลทดลองโปรโมชัน',
-            `[จำลอง] ปกติ ${b.N0} ชิ้น G0 ${bt(v.G0)} บาท | โปร ${bt(B)} บาท/2 ชิ้น: ${r.S} ชุด + ${r.U} เดี่ยว ยอดขาย ${bt(v.R1)} ต้นทุนขาย ${bt(v.COGS1)} ค่าทำโปร ${bt(F)} [แผน] → G1 ${bt(v.G1)} บาท\nผลต่าง ${bt(v.delta)} บาท · คำตัดสิน: ${v.decision}\nปัจจัยอื่น: ${factorText(pair, r)}${rec.note ? `\nบันทึก: ${rec.note}` : ''}\nอ้างฐาน ${b.id} · แผน ${rec.planId || '-'} · ผล ${rec.id}`);
-          State.save();
-          finish(ok / 3, `G1 ${bt(v.G1)} บาท เทียบ G0 ${bt(v.G0)} บาท → ${v.decision}`);
-        });
+    const wrongN = r.S * pm.C + r.U * pm.C;
+    form($('.fm', after), [
+      { key: 'c1', label: 'ต้นทุนขายช่วงโปร = N1 × ทุน', unit: 'บาท', kind: 'money', answer: v.COGS1,
+        diagnose: (x) => x === wrongN && r.S ? `ชุดหนึ่งมี 2 ชิ้น: N1 = 2 × ${r.S} + ${r.U} = ${v.N1} ชิ้น` : x === v.R1 ? 'ใช้ยอดขายแทนต้นทุน' : `${v.N1} × ${bt(pm.C)} = ${bt(v.COGS1)} บาท` },
+      { key: 'g1', label: 'ผลหลังค่าทำโปร G1 = ยอดขาย − ต้นทุนขาย − F', unit: 'บาท', kind: 'money', answer: v.G1,
+        diagnose: (x) => x === v.G1 + F ? `ยังไม่หักค่าทำโปร ${bt(F)} บาท` : x === v.R1 - F ? 'ยังไม่หักต้นทุนขาย' : `${bt(v.R1)} − ${bt(v.COGS1)} − ${bt(F)} = ${bt(v.G1)} บาท` },
+      { key: 'dec', label: 'คำตัดสิน', kind: 'choice', options: ['ทำต่อ', 'ปรับ', 'หยุด'], answer: v.decision,
+        diagnose: () => v.G1 <= 0 ? `G1 = ${bt(v.G1)} ไม่เกิน 0 → หยุด` : v.delta >= 0 ? `G1 − G0 = ${bt(v.delta)} ไม่ติดลบ → ทำต่อ` : `ยอดขายอาจเพิ่ม แต่ G1 − G0 = ${bt(v.delta)} ยังติดลบ → ปรับ (ลองเทียบผลหลังหักค่าป้ายกับช่วงปกติอีกครั้ง)` },
+    ], (ok, notes) => {
+      $$('td.q', after)[0].textContent = bt(v.COGS1); $$('td.q', after)[1].textContent = `G1 = ${bt(v.G1)}`;
+      const sol = $('.solution', after); sol.classList.remove('hidden');
+      sol.innerHTML = `${notes.length ? `<ul class="diag">${notes.join('')}</ul>` : ''}
+        ${chart([
+          { label: 'ยอดขาย', a: v.R0, b: v.R1 },
+          { label: 'ต้นทุนขาย', a: v.COGS0, b: v.COGS1 },
+          { label: 'ค่าใช้จ่ายเพิ่ม', a: 0, b: F },
+          { label: 'ผลหลังค่าใช้จ่าย', a: v.G0, b: v.G1 },
+        ])}
+        <p><b>เกณฑ์</b> G1 ≤ 0 → หยุด · G1 > 0 และ G1 − G0 ≥ 0 → ทำต่อ · G1 > 0 แต่ G1 − G0 < 0 → ปรับ<br>
+        ผลต่าง G1 − G0 = ${bt(v.G1)} − ${bt(v.G0)} = <b>${bt(v.delta)}</b> บาท → <b>${v.decision}</b>
+        ${pair.event !== 'none' ? `<br><span class="warn">${PM.EVENTS[pair.event].icon} ${PM.EVENTS[pair.event].th} เกิดทั้งสองช่วง — ร้านจริงควรลองซ้ำในวันที่เงื่อนไขปกติก่อนสรุป</span>` : ''}</p>`;
+      const getWs = worksheet(sol, 'w4r3', 'ปัจจัยอื่นที่อาจทำให้ผลคลาดเคลื่อน และถ้าลองซ้ำจะเปลี่ยนหรือคุมอะไร');
+      finishBtn(sol, `บันทึกผลทดลอง (${ok}/3)`, () => {
+        const rec = { id: State.newId('run'), baselineId: b.id, planId: p ? p.id : null, source: 'จำลอง', B, F, S: r.S, U: r.U, N1: v.N1,
+          R1: v.R1, COGS1: v.COGS1, G1: v.G1, G0: v.G0, delta: v.delta, decision: v.decision, event: pair.event, note: getWs(), at: Date.now(),
+          seed: pair.seed, slot: pair.slot, practiceBase: setup.practice, route: extra.route || 'list' };
+        if (extra.evidence) rec.evidence = extra.evidence;
+        store.run = rec;
+        ctx.state.sim.run = { sets: r.S, singles: r.U, units: v.N1, sales: v.R1 / 100, profit: v.G1 / 100, baseProfit: v.G0 / 100, rain: pair.event === 'rain' };
+        State.addPortfolio('w4-run', 4, 'ผลทดลองโปรโมชัน',
+          `[จำลอง] ปกติ ${b.N0} ชิ้น G0 ${bt(v.G0)} บาท | โปร ${bt(B)} บาท/2 ชิ้น: ${r.S} ชุด + ${r.U} เดี่ยว ยอดขาย ${bt(v.R1)} ต้นทุนขาย ${bt(v.COGS1)} ค่าทำโปร ${bt(F)} [แผน] → G1 ${bt(v.G1)} บาท\nผลต่าง ${bt(v.delta)} บาท · คำตัดสิน: ${v.decision}\nปัจจัยอื่น: ${factorText(pair, r)}${rec.note ? `\nบันทึก: ${rec.note}` : ''}${setup.practice ? '\nโจทย์ฝึก · จำลอง' : ''}\nอ้างฐาน ${b.id} · แผน ${rec.planId || '-'} · ผล ${rec.id}`);
+        State.save();
+        finish(ok / 3, `G1 ${bt(v.G1)} บาท เทียบ G0 ${bt(v.G0)} บาท → ${v.decision}`);
       });
     });
+  }
+
+  function runRound(el, round, ctx, finish) {
+    const setup = runSetup(ctx);
+    if (setup.blocked) return blockedRun(el, ctx, setup.b);
+    el.innerHTML = `<div class="calc-intro">${runIntro(setup)}</div><div class="scn"></div><div class="after"></div>`;
+    play($('.scn', el), ctx, setup.pair, true, setup.B, () => runSummary($('.after', el), ctx, setup, finish));
   }
 
   function chooseMode(el, round, ctx, finish) {
@@ -387,5 +401,5 @@
     if (round.mode === 'plan') return real ? M.RealW4.plan(el, ctx, finish) : plan(el, round, ctx, finish);
     return real ? M.RealW4.run(el, ctx, finish) : runRound(el, round, ctx, finish);
   };
-  M.W4 = { chart, form, parseMoney, parseInt0 };
+  M.W4 = { chart, form, parseMoney, parseInt0, runSetup, runSummary, blockedRun, runIntro, factorText, bt, LBL, T, GROUP_SPRITE };
 })();
