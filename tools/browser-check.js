@@ -110,6 +110,29 @@ module.exports = async ({ week, idx, playRound, stopAtNumericLesson }) => {
       await waitFor(() => get('.stage .opt'), 'original quiz after the report desk');
     }
 
+    if (week === 4 && idx === 4) {
+      // W5R5 เปิดโต๊ะคำสั่ง Limit ก่อนคำถามเดิม: ส่งคำสั่งที่ราคาสูงสุดที่ภารกิจยอมจ่าย เดินเวลาจนปิด อธิบายเหตุผล แล้วบันทึกไปคำถาม
+      await waitFor(() => get('.stage .limit-desk'), 'limit desk after loading its files');
+      const D = M.LimitDeskModel;
+      healthy('.limit-desk');
+      for (const mission of D.MISSIONS) {
+        get('.stage #ld-price').value = D.price(mission.goal.cap);
+        get('.stage #ld-qty').value = String(mission.goal.qty);
+        stage('.ld-send');
+        while (get('.stage .ld-next') && !get('.stage .ld-next').hidden) stage('.ld-next');
+        const expected = D.simulate(mission, { price: mission.goal.cap, qty: mission.goal.qty });
+        stage(`input[name="ld-cause"][value="${expected.cause}"]`);
+        stage('.ld-check');
+        healthy('.ld-mission');
+        stage('.ld-go');
+      }
+      for (const item of D.FINAL) stage(`input[name="ld-final-${item.id}"][value="${item.answer}"]`);
+      stage('.ld-save');
+      const saved = State.data.portfolio[D.portfolioKey(ctx.product.id)];
+      check(saved && saved.data.wallet.cash === 602000 && saved.data.runs.length === 3, 'Limit desk entry was not saved with the three orders');
+      await waitFor(() => get('.stage .opt'), 'original quiz after the limit desk');
+    }
+
     if (round.engine === 'mcq') {
       for (const question of generated) {
         stage(`.opt[data-k="${question.answer}"]`);

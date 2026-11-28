@@ -8,11 +8,13 @@
   const shelfWalkScripts = $$('script[src]', $('#shelf-walk-scripts').content);
   const observeWalkScripts = $$('script[src]', $('#observe-walk-scripts').content);
   const w4r3WalkScripts = $$('script[src]', $('#w4r3-walk-scripts').content);
+  // โต๊ะ W5R5 ใช้เฉพาะรอบเดียว จึงโหลดสไตล์และสคริปต์เมื่อเริ่มเล่นรอบนั้น
+  const limitDeskFiles = $$('link[href], script[src]', $('#limit-desk-files').content);
   const scriptLoads = new Map();
   let currentScreen = 0;
   // ลิงก์ฉากเดินเปิดรอบทดลองหลังเลือกสินค้า
-  // #report-desk เปิดโต๊ะอ่านผลประกอบการ W6R5 (ยังผ่านบทเรียนและคำถามเช็กก่อนเล่นของรอบเดิม)
-  const previewRound = { '#shelf-walk': [1, 1], '#observe-walk': [0, 1], '#promo-walk': [3, 2], '#report-desk': [5, 4] }[location.hash];
+  // #report-desk เปิดโต๊ะอ่านผลประกอบการ W6R5 และ #limit-desk เปิดโต๊ะคำสั่ง Limit W5R5 (ยังผ่านบทเรียนและคำถามเช็กก่อนเล่นของรอบเดิม)
+  const previewRound = { '#shelf-walk': [1, 1], '#observe-walk': [0, 1], '#promo-walk': [3, 2], '#report-desk': [5, 4], '#limit-desk': [4, 4] }[location.hash];
   State.load();
 
   const product = () => M.PRODUCTS[State.data.product];
@@ -148,15 +150,18 @@
   }
 
   // ---------- หน้าเล่น ----------
+  // โหลดไฟล์จาก <template> ทีละไฟล์ครั้งเดียว: <script src> หรือ <link rel="stylesheet" href>
   function loadScript(reference) {
-    const src = reference.getAttribute('src');
+    const style = reference.tagName === 'LINK';
+    const src = reference.getAttribute(style ? 'href' : 'src');
     if (!scriptLoads.has(src)) {
       const pending = new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = () => { script.remove(); reject(new Error('โหลดบทเรียนไม่ได้')); };
-        document.head.appendChild(script);
+        const node = document.createElement(style ? 'link' : 'script');
+        // async=false ให้สคริปต์ที่แทรกพร้อมกันทำงานตามลำดับใน template (โมเดลก่อนหน้าจอ)
+        if (style) { node.rel = 'stylesheet'; node.href = src; } else { node.async = false; node.src = src; }
+        node.onload = resolve;
+        node.onerror = () => { node.remove(); reject(new Error('โหลดบทเรียนไม่ได้')); };
+        document.head.appendChild(node);
       }).catch((error) => { scriptLoads.delete(src); throw error; });
       scriptLoads.set(src, pending);
     }
@@ -222,9 +227,15 @@
       <div class="stage card hidden"></div>`;
     $('#back').onclick = () => (isFinal ? mapScreen() : weekScreen(w));
     if (!isFinal) $('.rd').onclick = () => readingPanel(w, r, R);
-    const begin = () => {
+    const begin = async () => {
       $('.task').classList.remove('hidden'); $('.stage').classList.remove('hidden');
       const stage = $('.stage');
+      // W5R5 โหลดโต๊ะคำสั่ง Limit ก่อน ถ้าโหลดไม่ได้ RealWorksheets จะเล่นคำถามเดิมแทน
+      if (!isFinal && w === 4 && r === 4 && !M.LimitDesk) {
+        stage.innerHTML = '<p class="muted" role="status">กำลังเปิดโต๊ะคำสั่ง…</p>';
+        await Promise.all(limitDeskFiles.map(loadScript)).catch(() => {});
+        if (screen !== currentScreen) return;
+      }
       if (!M.RealWorksheets.run(stage, R, ctx, finish)) M.engines[R.engine](stage, R, ctx, finish);
     };
     const afterLesson = () => { if (R.check && !isFinal) precheck(R, w, r, begin); else begin(); };

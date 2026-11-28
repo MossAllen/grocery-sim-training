@@ -18,7 +18,8 @@ BUNDLES = {
     "handoff-chatgpt-sol": {
         "readme": "handoff/to-chatgpt-sol.md",
         "files": ["แผนฝึกการตลาด 8 สัปดาห์.docx", "docs/GDD.md", "README.md", "game/js/curriculum.js", "game/js/lesson-kit.js",
-                  "handoff/2026-11-28_gpt-to-claude_w6r5-report-desk.md", "handoff/2026-11-28_claude-to-gpt_w6r5-report-desk.md"]
+                  "handoff/2026-11-28_gpt-to-claude_w6r5-report-desk.md", "handoff/2026-11-28_claude-to-gpt_w6r5-report-desk.md",
+                  "handoff/2026-11-28_claude-to-gpt_w5r5-limit-desk.md"]
         + sorted(os.path.relpath(p, ROOT).replace("\\", "/") for p in glob.glob(os.path.join(ROOT, "game/js/lessons-w*.js")))
         + COMMON,
     },

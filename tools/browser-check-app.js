@@ -49,13 +49,16 @@ module.exports = async function verifyApp(browser, url, axeScript) {
     await preview.goto('about:blank');
     await preview.goto(`${url}#report-desk`);
     await preview.evaluate(require('./browser-check-report-desk.js'), 'hash');
+    await preview.goto('about:blank');
+    await preview.goto(`${url}#limit-desk`);
+    await preview.evaluate(require('./browser-check-limit-desk.js'), 'hash');
     const range = await preview.evaluate(async () => {
       const response = await fetch('assets/audio/scanner.ogg', { headers: { Range: 'bytes=0-31' } });
       return [response.status, (await response.arrayBuffer()).byteLength];
     });
     assert.deepEqual(range, [206, 32], 'offline audio must support the byte-range request used by media elements');
     assert.deepEqual(errors, []);
-    console.log('PWA tablet: nested scope, install manifest, offline reload with saved product, lesson, all three walks, report desk and audio range passed');
+    console.log('PWA tablet: nested scope, install manifest, offline reload with saved product, lesson, all three walks, report desk, limit desk and audio range passed');
     return problems;
   } finally {
     await context.close();
